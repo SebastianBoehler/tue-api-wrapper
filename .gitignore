@@ -9,6 +9,7 @@ coverage
 *.pyc
 *.pyo
 *.egg-info/
+*.tsbuildinfo
 *.har
 *.pdf
 __pycache__/

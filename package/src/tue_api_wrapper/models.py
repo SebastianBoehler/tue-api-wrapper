@@ -1,0 +1,183 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import date, datetime
+
+
+@dataclass(frozen=True)
+class LoginForm:
+    action_url: str
+    payload: dict[str, str]
+
+
+@dataclass(frozen=True)
+class CalendarEvent:
+    summary: str
+    start: date | datetime
+    end: date | datetime | None
+    location: str | None
+    description: str | None
+    uid: str | None
+    recurrence_rule: str | None
+    excluded_starts: tuple[date | datetime, ...]
+
+
+@dataclass(frozen=True)
+class CalendarOccurrence:
+    summary: str
+    start: datetime
+    end: datetime | None
+    location: str | None
+    description: str | None
+
+
+@dataclass(frozen=True)
+class TimetableResult:
+    term_label: str
+    term_id: str
+    export_url: str
+    raw_ics: str
+    events: tuple[CalendarEvent, ...]
+    occurrences: tuple[CalendarOccurrence, ...]
+    available_terms: dict[str, str]
+
+
+@dataclass(frozen=True)
+class AlmaEnrollmentPage:
+    selected_term: str | None
+    available_terms: dict[str, str]
+    message: str | None
+
+
+@dataclass(frozen=True)
+class AlmaExamNode:
+    level: int
+    kind: str | None
+    title: str
+    number: str | None
+    attempt: str | None
+    grade: str | None
+    cp: str | None
+    malus: str | None
+    status: str | None
+    free_trial: str | None
+    remark: str | None
+    exception: str | None
+    release_date: str | None
+
+
+@dataclass(frozen=True)
+class AlmaCourseCatalogNode:
+    level: int
+    kind: str | None
+    title: str
+    description: str | None
+    permalink: str | None
+    expandable: bool
+
+
+@dataclass(frozen=True)
+class AlmaModuleSearchResult:
+    number: str | None
+    title: str
+    element_type: str | None
+    detail_url: str | None = None
+
+
+@dataclass(frozen=True)
+class AlmaDocumentReport:
+    label: str
+    trigger_name: str
+
+
+@dataclass(frozen=True)
+class AlmaModuleSearchForm:
+    action_url: str
+    payload: dict[str, str]
+    query_field_name: str
+
+
+@dataclass(frozen=True)
+class AlmaModuleSearchPage:
+    form: AlmaModuleSearchForm
+    results: tuple[AlmaModuleSearchResult, ...]
+
+
+@dataclass(frozen=True)
+class AlmaStudyServicePage:
+    action_url: str
+    payload: dict[str, str]
+    reports: tuple[AlmaDocumentReport, ...]
+    latest_download_url: str | None
+
+
+@dataclass(frozen=True)
+class AlmaDownloadedDocument:
+    source_url: str
+    final_url: str
+    filename: str
+    content_type: str | None
+    data: bytes
+
+
+@dataclass(frozen=True)
+class IliasLink:
+    label: str
+    url: str
+
+
+@dataclass(frozen=True)
+class IliasLoginForm:
+    action_url: str
+    payload: dict[str, str]
+
+
+@dataclass(frozen=True)
+class IliasRootPage:
+    title: str
+    mainbar_links: tuple[IliasLink, ...]
+    top_categories: tuple[IliasLink, ...]
+
+
+@dataclass(frozen=True)
+class IliasContentItem:
+    label: str
+    url: str
+    kind: str | None
+    properties: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class IliasContentSection:
+    label: str
+    items: tuple[IliasContentItem, ...]
+
+
+@dataclass(frozen=True)
+class IliasContentPage:
+    title: str
+    page_url: str
+    sections: tuple[IliasContentSection, ...]
+
+
+@dataclass(frozen=True)
+class IliasForumTopic:
+    title: str
+    url: str
+    author: str | None
+    posts: str | None
+    last_post: str | None
+    visits: str | None
+
+
+@dataclass(frozen=True)
+class IliasExerciseAssignment:
+    title: str
+    url: str
+    due_hint: str | None
+    due_at: str | None
+    requirement: str | None
+    last_submission: str | None
+    submission_type: str | None
+    status: str | None
+    team_action_url: str | None

@@ -1,0 +1,407 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import sys
+import unittest
+
+import requests
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from tue_api_wrapper.alma_documents_html import extract_studyservice_page
+from tue_api_wrapper.alma_academics_html import (
+    parse_course_catalog_page,
+    parse_enrollment_page,
+    parse_exam_overview,
+    parse_module_search_page,
+)
+from tue_api_wrapper.client import AlmaClient
+from tue_api_wrapper.html_contract import (
+    build_term_export_url,
+    extract_login_form,
+    extract_timetable_export_url,
+    extract_timetable_terms,
+)
+from tue_api_wrapper.ilias_html import (
+    extract_hidden_form,
+    extract_idp_login_form,
+    parse_ilias_content_page,
+    extract_shib_login_url,
+    parse_ilias_root_page,
+)
+from tue_api_wrapper.ilias_learning_html import parse_exercise_assignments, parse_forum_topics
+from tue_api_wrapper.ics import (
+    parse_ics_events,
+    expand_ics_events,
+)
+
+
+def _har_response_text(har_path: Path, predicate) -> str:
+    payload = json.loads(har_path.read_text(encoding="utf-8"))
+    for entry in payload["log"]["entries"]:
+        if not isinstance(entry, dict):
+            continue
+        request = entry.get("request", {})
+        if predicate(request):
+            return entry.get("response", {}).get("content", {}).get("text", "")
+    raise AssertionError(f"No HAR entry matched for {har_path.name}")
+
+
+def _require_fixture(test_case: unittest.TestCase, fixture_name: str) -> Path:
+    fixture_path = ROOT / "fixtures" / fixture_name
+    if not fixture_path.exists():
+        test_case.skipTest(
+            f"Local network fixture '{fixture_name}' is not available. "
+            "HAR captures are intentionally kept out of version control."
+        )
+    return fixture_path
+
+
+class AlmaContractTests(unittest.TestCase):
+    def test_login_form_contract_can_be_extracted(self) -> None:
+        html = """
+        <html>
+          <body class="notloggedin">
+            <form
+              id="loginForm"
+              action="https://alma.uni-tuebingen.de:443/alma/rds?state=user&amp;type=1&amp;category=auth.login"
+            >
+              <input type="hidden" name="userInfo" value="" />
+              <input type="hidden" name="ajax-token" value="token-123" />
+              <input type="text" name="asdf" value="" />
+              <input type="password" name="fdsa" value="" />
+              <button type="submit" name="submit"></button>
+            </form>
+          </body>
+        </html>
+        """
+        login_form = extract_login_form(
+            html=html,
+            page_url="https://alma.uni-tuebingen.de/alma/pages/cs/sys/portal/hisinoneStartPage.faces",
+        )
+
+        self.assertIn("category=auth.login", login_form.action_url)
+        self.assertIn("ajax-token", login_form.payload)
+        self.assertIn("userInfo", login_form.payload)
+
+    def test_timetable_contract_contains_summer_2026_and_export_url(self) -> None:
+        html = _har_response_text(
+            _require_fixture(self, "alma2.uni-tuebingen.de.har"),
+            lambda request: request.get("method") == "GET"
+            and "_flowExecutionKey=e2s1" in request.get("url", ""),
+        )
+        terms = extract_timetable_terms(html)
+        export_url = extract_timetable_export_url(html)
+
+        self.assertEqual(terms["Sommer 2026"], "229")
+        self.assertIn("individualTimetableCalendarExport.faces", export_url)
+        self.assertEqual(build_term_export_url(export_url, "229").split("termgroup=")[-1], "229")
+
+    def test_ics_parser_expands_simple_rrule(self) -> None:
+        raw_ics = "\r\n".join(
+            [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "BEGIN:VEVENT",
+                "UID:test-1",
+                "SUMMARY:Machine Learning Seminar",
+                "DTSTART;TZID=Europe/Berlin:20260413T101500",
+                "DTEND;TZID=Europe/Berlin:20260413T114500",
+                "RRULE:FREQ=WEEKLY;COUNT=3",
+                "LOCATION:Sand 14",
+                "END:VEVENT",
+                "END:VCALENDAR",
+            ]
+        )
+
+        events = parse_ics_events(raw_ics)
+        occurrences = expand_ics_events(events, "Sommer 2026")
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(len(occurrences), 3)
+        self.assertEqual(occurrences[0].summary, "Machine Learning Seminar")
+        self.assertEqual(occurrences[0].location, "Sand 14")
+
+    def test_ics_parser_normalizes_local_until_for_timezone_aware_events(self) -> None:
+        raw_ics = "\r\n".join(
+            [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "BEGIN:VEVENT",
+                "UID:test-2",
+                "SUMMARY:Ethics and Philosophy of Machine Learning",
+                "DTSTART;TZID=Europe/Berlin:20260413T120000",
+                "DTEND;TZID=Europe/Berlin:20260413T140000",
+                "RRULE:FREQ=WEEKLY;UNTIL=20260427T140000;BYDAY=MO",
+                "END:VEVENT",
+                "END:VCALENDAR",
+            ]
+        )
+
+        events = parse_ics_events(raw_ics)
+        occurrences = expand_ics_events(events, "Sommer 2026")
+
+        self.assertEqual(
+            [item.start.date().isoformat() for item in occurrences],
+            ["2026-04-13", "2026-04-20", "2026-04-27"],
+        )
+
+    def test_summer_term_window_excludes_winter_events(self) -> None:
+        raw_ics = "\r\n".join(
+            [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "BEGIN:VEVENT",
+                "UID:winter-only",
+                "SUMMARY:Winter Block",
+                "DTSTART;TZID=Europe/Berlin:20260112T120000",
+                "DTEND;TZID=Europe/Berlin:20260112T140000",
+                "END:VEVENT",
+                "BEGIN:VEVENT",
+                "UID:summer-only",
+                "SUMMARY:Summer Block",
+                "DTSTART;TZID=Europe/Berlin:20260413T120000",
+                "DTEND;TZID=Europe/Berlin:20260413T140000",
+                "END:VEVENT",
+                "END:VCALENDAR",
+            ]
+        )
+
+        events = parse_ics_events(raw_ics)
+        occurrences = expand_ics_events(events, "Sommer 2026")
+
+        self.assertEqual([item.summary for item in occurrences], ["Summer Block"])
+
+    def test_calendar_response_prefers_utf8_decoding(self) -> None:
+        response = requests.Response()
+        response._content = "alma-Einführung für neue Studierende".encode("utf-8")
+        response.encoding = "ISO-8859-1"
+
+        self.assertEqual(
+            AlmaClient._decode_calendar_response(response),
+            "alma-Einführung für neue Studierende",
+        )
+
+    def test_studyservice_contract_contains_report_jobs_and_download_link(self) -> None:
+        html = _har_response_text(
+            _require_fixture(self, "alma.documents.uni-tuebingen.de.har"),
+            lambda request: request.get("method") == "GET"
+            and "_flowExecutionKey=e4s3" in request.get("url", ""),
+        )
+        contract = extract_studyservice_page(
+            html,
+            "https://alma.uni-tuebingen.de/alma/pages/cm/exa/enrollment/info/start.xhtml?_flowId=studyservice-flow&_flowExecutionKey=e4s3",
+        )
+
+        labels = [report.label for report in contract.reports]
+        self.assertEqual(len(contract.reports), 6)
+        self.assertIn("Immatrikulationsbescheinigung/Studienbescheinigung/Datenkontrollblatt [PDF]", labels)
+        self.assertIn(
+            "state=docdownload&docId=73ecf0f5-68e5-4152-8651-4e5c379b1429",
+            contract.latest_download_url,
+        )
+
+    def test_download_filename_uses_content_disposition(self) -> None:
+        response = requests.Response()
+        response.status_code = 200
+        response.url = "https://alma-up.uni-tuebingen.de/alma/rds?state=docdownload&docName=fallback.pdf"
+        response.headers["content-disposition"] = (
+            'attachment; filename="ignored.pdf"; '
+            "filename*=utf-8''Immatrikulationsbescheinigung%20%5BPDF%5D.pdf"
+        )
+
+        self.assertEqual(
+            AlmaClient._extract_download_filename(response, response.url),
+            "Immatrikulationsbescheinigung [PDF].pdf",
+        )
+
+    def test_parse_enrollment_page_extracts_terms_and_message(self) -> None:
+        html = """
+        <form id="studentOverviewForm">
+          <select name="studentOverviewForm:enrollmentsDiv:termSelector:termPeriodDropDownList_input">
+            <option value="220">Wintersemester 2025/26</option>
+            <option value="229" selected="selected">Sommersemester 2026</option>
+          </select>
+          <div>Sie haben bisher keine Veranstaltungen belegt und keine Prüfungen angemeldet.</div>
+        </form>
+        """
+        page = parse_enrollment_page(html)
+        self.assertEqual(page.selected_term, "Sommersemester 2026")
+        self.assertEqual(page.available_terms["Sommersemester 2026"], "229")
+        self.assertIn("keine Veranstaltungen", page.message)
+
+    def test_parse_exam_overview_extracts_tree_rows(self) -> None:
+        html = """
+        <table class="treeTableWithIcons">
+          <tr><th>Titel</th></tr>
+          <tr class="treeTableCellLevel3">
+            <td class="invisible">1.1.1.1</td>
+            <td></td><td></td><td></td>
+            <td colspan="2"><img class="submitImageTable" alt="Konto"/><span id="x:unDeftxt">Studienbegleitende Leistungen</span></td>
+            <td><span id="x:elementnr">9055</span></td>
+            <td><span id="x:attempt">1</span></td>
+            <td></td>
+            <td><span id="x:grade">1,0</span></td>
+            <td><span id="x:bonus">9</span></td>
+            <td><span id="x:malus">0</span></td>
+            <td><span id="x:workstatus">BE</span></td>
+            <td><span id="x:freeTrial">-</span></td>
+            <td><span id="x:remark"></span></td>
+            <td><span id="x:exceptionNein">Nein</span></td>
+            <td></td>
+            <td><span id="x:geplantesFreigabedatum">2026-02-01</span></td>
+            <td></td>
+          </tr>
+        </table>
+        """
+        rows = parse_exam_overview(html)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].title, "Studienbegleitende Leistungen")
+        self.assertEqual(rows[0].number, "9055")
+        self.assertEqual(rows[0].status, "BE")
+
+    def test_parse_course_catalog_page_extracts_nodes(self) -> None:
+        html = """
+        <table class="treeTableWithIcons">
+          <tr class="treeTableCellLevel1">
+            <td class="invisible">1.2</td>
+            <td></td>
+            <td><button class="treeTableIcon" type="submit"></button></td>
+            <td colspan="20">
+              <span class="treeElementName"><img class="imagetop" alt="Überschriftenelement"/>
+                <span id="x:ot_3">7 Mathematisch-Naturwissenschaftliche Fakultät</span>
+              </span>
+            </td>
+            <td><input id="autologinRequestUrl" value="https://alma.example/catalog/7"/></td>
+          </tr>
+        </table>
+        """
+        rows = parse_course_catalog_page(html)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].title, "7 Mathematisch-Naturwissenschaftliche Fakultät")
+        self.assertEqual(rows[0].permalink, "https://alma.example/catalog/7")
+        self.assertTrue(rows[0].expandable)
+
+    def test_parse_module_search_page_extracts_query_form_and_results(self) -> None:
+        html = """
+        <form id="genericSearchMask" action="/alma/search">
+          <input type="hidden" name="javax.faces.ViewState" value="e1s2" />
+          <input type="text" name="genericSearchMask:search_foo:cm_exa_searchModuleDescription_characteristics:fieldset:inputField_0_bar:idbar" value="" />
+          <input type="hidden" name="genericSearchMask_SUBMIT" value="1" />
+        </form>
+        <table class="tableWithBorder">
+          <tr><th>Aktionen</th><th>Nummer</th><th>Titel</th><th>Elementtyp</th></tr>
+          <tr><td><a href="/alma/detail/1">Details</a></td><td>ML4201</td><td>Statistical Machine Learning</td><td>Veranstaltung</td></tr>
+        </table>
+        """
+        page = parse_module_search_page(html, "https://alma.example/search")
+        self.assertIn("searchModuleDescription", page.form.query_field_name)
+        self.assertEqual(page.results[0].title, "Statistical Machine Learning")
+        self.assertEqual(page.results[0].element_type, "Veranstaltung")
+
+    def test_ilias_login_parsers(self) -> None:
+        login_html = """
+        <html><body>
+          <a href="shib_login.php?target=">&gt;&gt; Login mit zentraler Universitäts-Kennung &lt;&lt;</a>
+        </body></html>
+        """
+        self.assertEqual(
+            extract_shib_login_url(login_html, "https://ovidius.uni-tuebingen.de/ilias3/login.php?cmd=force_login"),
+            "https://ovidius.uni-tuebingen.de/ilias3/shib_login.php?target=",
+        )
+
+        idp_html = """
+        <html><body>
+          <form action="/idp/profile/SAML2/Redirect/SSO?execution=e1s1" method="post">
+            <input name="j_username" type="text" value="" />
+            <input name="j_password" type="password" value="" />
+            <button name="_eventId_proceed" type="submit">Login</button>
+          </form>
+        </body></html>
+        """
+        idp_form = extract_idp_login_form(idp_html, "https://idp.uni-tuebingen.de/idp/profile/SAML2/Redirect/SSO?execution=e1s1")
+        self.assertIn("execution=e1s1", idp_form.action_url)
+        self.assertIn("j_username", idp_form.payload)
+        self.assertIn("j_password", idp_form.payload)
+
+        saml_html = """
+        <html><body>
+          <form action="https://ovidius.uni-tuebingen.de/Shibboleth.sso/SAML2/POST" method="post">
+            <input type="hidden" name="RelayState" value="relay" />
+            <input type="hidden" name="SAMLResponse" value="assertion" />
+          </form>
+        </body></html>
+        """
+        saml_form = extract_hidden_form(saml_html, "https://idp.uni-tuebingen.de/idp/profile/SAML2/Redirect/SSO?execution=e1s2", {"RelayState", "SAMLResponse"})
+        self.assertEqual(saml_form.payload["RelayState"], "relay")
+
+    def test_ilias_root_page_parser_uses_har(self) -> None:
+        html = _har_response_text(
+            _require_fixture(self, "ovidius.uni-tuebingen.de.har"),
+            lambda request: request.get("method") == "GET"
+            and request.get("url") == "https://ovidius.uni-tuebingen.de/ilias3/ilias.php?baseClass=ilrepositorygui&ref_id=1",
+        )
+        root_page = parse_ilias_root_page(html, "https://ovidius.uni-tuebingen.de/ilias3/ilias.php?baseClass=ilrepositorygui&ref_id=1")
+
+        self.assertIn("ILIAS", root_page.title)
+        self.assertTrue(any(link.label == "Dashboard" for link in root_page.mainbar_links))
+        self.assertTrue(any(link.label == "Sommersemester 2026" for link in root_page.top_categories))
+
+    def test_ilias_content_page_parser_uses_har(self) -> None:
+        html = _har_response_text(
+            _require_fixture(self, "ovidius2.uni-tuebingen.de.har"),
+            lambda request: request.get("method") == "GET"
+            and request.get("url") == "https://ovidius.uni-tuebingen.de/ilias3/ilias.php?baseClass=ilrepositorygui&ref_id=5289871",
+        )
+        page = parse_ilias_content_page(
+            html,
+            "https://ovidius.uni-tuebingen.de/ilias3/ilias.php?baseClass=ilrepositorygui&ref_id=5289871",
+        )
+
+        self.assertIn("MPC Materials", page.title)
+        self.assertEqual([section.label for section in page.sections], ["Foren", "Weblinks", "Übungen"])
+        labels = [item.label for section in page.sections for item in section.items]
+        self.assertIn("MPC Forum", labels)
+        self.assertIn("Link to Slides and Recordings", labels)
+        self.assertIn("Exercises", labels)
+
+    def test_parse_forum_topics_extracts_properties(self) -> None:
+        html = """
+        <div class="il-item il-std-item">
+          <h4 class="il-item-title"><a href="thread/1">Question 1</a></h4>
+          <span class="il-item-property-name">Angelegt von</span><span class="il-item-property-value">Alice</span>
+          <span class="il-item-property-name">Beiträge</span><span class="il-item-property-value">3</span>
+          <span class="il-item-property-name">Letzter Beitrag</span><span class="il-item-property-value">2026-03-09</span>
+          <span class="il-item-property-name">Besuche</span><span class="il-item-property-value">12</span>
+        </div>
+        """
+        topics = parse_forum_topics(html, "https://ovidius.example/forum")
+        self.assertEqual(topics[0].title, "Question 1")
+        self.assertEqual(topics[0].author, "Alice")
+        self.assertEqual(topics[0].posts, "3")
+
+    def test_parse_exercise_assignments_extracts_properties(self) -> None:
+        html = """
+        <div class="il-item il-std-item">
+          <div class="col-sm-3">In 2 Tagen abzugeben</div>
+          <div class="col-sm-9">
+            <h4 class="il-item-title"><a href="assignment/1">Exercise01</a></h4>
+            <button data-action="team/create"></button>
+            <span class="il-item-property-name">Abgabetermin</span><span class="il-item-property-value">Freitag, 12:00</span>
+            <span class="il-item-property-name">Anforderung</span><span class="il-item-property-value">Verpflichtend</span>
+            <span class="il-item-property-name">Datum der letzten Abgabe</span><span class="il-item-property-value">Bisher keine Abgabe</span>
+            <span class="il-item-property-name">Type</span><span class="il-item-property-value">Datei</span>
+            <span class="il-item-property-name">Status</span><span class="il-item-property-value">Nicht bewertet</span>
+          </div>
+        </div>
+        """
+        assignments = parse_exercise_assignments(html, "https://ovidius.example/exc")
+        self.assertEqual(assignments[0].title, "Exercise01")
+        self.assertEqual(assignments[0].due_at, "Freitag, 12:00")
+        self.assertEqual(assignments[0].team_action_url, "https://ovidius.example/team/create")
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,11 @@
+{
+  "name": "tue-study-hub",
+  "private": true,
+  "workspaces": ["nextjs", "chatgpt"],
+  "scripts": {
+    "dev:web": "npm --workspace nextjs run dev",
+    "build:web": "npm --workspace nextjs run build",
+    "dev:chatgpt": "npm --workspace chatgpt run dev",
+    "build:chatgpt": "npm --workspace chatgpt run build"
+  }
+}

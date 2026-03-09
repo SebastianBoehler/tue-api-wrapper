@@ -104,6 +104,87 @@ class AlmaModuleSearchPage:
 
 
 @dataclass(frozen=True)
+class AlmaSearchOption:
+    value: str
+    label: str
+
+
+@dataclass(frozen=True)
+class AlmaModuleSearchFilters:
+    element_types: tuple[AlmaSearchOption, ...]
+    languages: tuple[AlmaSearchOption, ...]
+    degrees: tuple[AlmaSearchOption, ...]
+    subjects: tuple[AlmaSearchOption, ...]
+    faculties: tuple[AlmaSearchOption, ...]
+
+
+@dataclass(frozen=True)
+class AlmaModuleSearchFieldMap:
+    query: str
+    title: str | None
+    number: str | None
+    element_type: str | None
+    language: str | None
+    degree: str | None
+    subject: str | None
+    faculty: str | None
+
+
+@dataclass(frozen=True)
+class AlmaAdvancedModuleSearchForm:
+    action_url: str
+    payload: dict[str, str]
+    query_field_name: str
+    search_button_name: str
+    toggle_advanced_button_name: str | None
+    fields: AlmaModuleSearchFieldMap
+    filters: AlmaModuleSearchFilters
+
+
+@dataclass(frozen=True)
+class AlmaModuleSearchResponse:
+    results: tuple[AlmaModuleSearchResult, ...]
+    total_results: int | None
+    returned_results: int
+    total_pages: int | None
+    truncated: bool
+
+
+@dataclass(frozen=True)
+class AlmaModuleSearchResultsPage:
+    action_url: str | None
+    payload: dict[str, str]
+    results: tuple[AlmaModuleSearchResult, ...]
+    total_results: int | None
+    total_pages: int | None
+    rows_input_name: str | None
+    rows_refresh_name: str | None
+
+
+@dataclass(frozen=True)
+class AlmaDetailField:
+    label: str
+    value: str
+
+
+@dataclass(frozen=True)
+class AlmaDetailSection:
+    title: str
+    fields: tuple[AlmaDetailField, ...]
+
+
+@dataclass(frozen=True)
+class AlmaModuleDetail:
+    title: str
+    number: str | None
+    permalink: str | None
+    source_url: str
+    active_tab: str | None
+    available_tabs: tuple[str, ...]
+    sections: tuple[AlmaDetailSection, ...]
+
+
+@dataclass(frozen=True)
 class AlmaStudyServicePage:
     action_url: str
     payload: dict[str, str]

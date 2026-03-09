@@ -31,6 +31,10 @@ def _alma_client() -> AlmaClient:
     return portal_service._alma_client()
 
 
+def _public_alma_client() -> AlmaClient:
+    return AlmaClient()
+
+
 def _translate_error(error: AlmaError) -> HTTPException:
     return HTTPException(status_code=400, detail=str(error))
 
@@ -107,9 +111,63 @@ def alma_catalog(limit: int = Query(20, ge=1, le=100)) -> list[object]:
 
 
 @app.get("/api/alma/module-search")
-def alma_module_search(query: str) -> dict[str, object]:
+def alma_module_search(
+    query: str = "",
+    title: str = "",
+    number: str = "",
+    element_type: list[str] = Query(default=[]),
+    language: list[str] = Query(default=[]),
+    degree: list[str] = Query(default=[]),
+    subject: list[str] = Query(default=[]),
+    faculty: list[str] = Query(default=[]),
+    max_results: int = Query(100, ge=1, le=300),
+) -> dict[str, object]:
     try:
-        return serialize(_alma_client().search_module_descriptions(query))
+        result = _public_alma_client().search_public_module_descriptions(
+            query=query,
+            title=title,
+            number=number,
+            element_types=tuple(element_type),
+            languages=tuple(language),
+            degrees=tuple(degree),
+            subjects=tuple(subject),
+            faculties=tuple(faculty),
+            max_results=max_results,
+        )
+        return {
+            "results": serialize(result.results),
+            "returnedResults": result.returned_results,
+            "totalResults": result.total_results,
+            "totalPages": result.total_pages,
+            "truncated": result.truncated,
+            "sourcePageUrl": _public_alma_client().public_module_search_url,
+        }
+    except AlmaError as error:
+        raise _translate_error(error) from error
+
+
+@app.get("/api/alma/module-search/filters")
+def alma_module_search_filters() -> dict[str, object]:
+    try:
+        filters = _public_alma_client().fetch_public_module_search_filters()
+        return {
+            "sourcePageUrl": _public_alma_client().public_module_search_url,
+            "filters": {
+                "elementTypes": serialize(filters.element_types),
+                "languages": serialize(filters.languages),
+                "degrees": serialize(filters.degrees),
+                "subjects": serialize(filters.subjects),
+                "faculties": serialize(filters.faculties),
+            },
+        }
+    except AlmaError as error:
+        raise _translate_error(error) from error
+
+
+@app.get("/api/alma/module-detail")
+def alma_module_detail(url: str) -> dict[str, object]:
+    try:
+        return serialize(_public_alma_client().fetch_public_module_detail(url))
     except AlmaError as error:
         raise _translate_error(error) from error
 

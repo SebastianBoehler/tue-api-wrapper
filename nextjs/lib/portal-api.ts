@@ -1,37 +1,137 @@
-import { mockDashboard, mockDocuments, mockIliasLinks } from "./mock-data";
-import type { DashboardData, DocumentReport, PortalLink } from "./types";
+import type {
+  IliasContentPage,
+  IliasExerciseAssignment,
+  IliasForumTopic,
+  ModuleDetail,
+  DashboardData,
+  DocumentsPanel,
+  ModuleSearchFiltersResponse,
+  ModuleSearchResponse,
+  PortalLink
+} from "./types";
 
 const apiBaseUrl = process.env.PORTAL_API_BASE_URL ?? "http://127.0.0.1:8000";
 
-async function fetchJson<T>(path: string, fallback: T): Promise<T> {
-  try {
-    const response = await fetch(`${apiBaseUrl}${path}`, {
-      cache: "no-store"
-    });
+export function buildPortalApiUrl(path: string): string {
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  return `${apiBaseUrl}${path}`;
+}
 
-    if (!response.ok) {
-      throw new Error(`Request failed with ${response.status}`);
-    }
-
-    return (await response.json()) as T;
-  } catch {
-    return fallback;
+export class PortalApiError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PortalApiError";
   }
 }
 
-export function getDashboard(): Promise<DashboardData> {
-  return fetchJson("/api/dashboard", mockDashboard);
+async function fetchJson<T>(path: string): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, {
+      cache: "no-store"
+    });
+  } catch (error) {
+    throw new PortalApiError(
+      `Could not reach the backend at ${apiBaseUrl}. Start the Python API or set PORTAL_API_BASE_URL correctly.`
+    );
+  }
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new PortalApiError(
+      `Backend request failed for ${path} with ${response.status}${detail ? `: ${detail}` : ""}`
+    );
+  }
+
+  return (await response.json()) as T;
 }
 
-export function getDocuments(): Promise<DocumentReport[]> {
-  return fetchJson("/api/alma/documents", mockDocuments);
+export function getDashboard(): Promise<DashboardData> {
+  return fetchJson("/api/dashboard");
+}
+
+export function getDocuments(): Promise<DocumentsPanel> {
+  return fetchJson<DashboardData>("/api/dashboard").then((dashboard) => dashboard.documents);
 }
 
 export async function getIliasLinks(): Promise<PortalLink[]> {
-  const data = await fetchJson("/api/ilias/root", {
-    mainbar_links: mockDashboard.ilias.mainbarLinks,
-    top_categories: mockDashboard.ilias.topCategories
-  });
+  const data = await fetchJson<{
+    mainbar_links: PortalLink[];
+    top_categories: PortalLink[];
+  }>("/api/ilias/root");
 
   return [...data.mainbar_links, ...data.top_categories];
+}
+
+export function getIliasContent(target: string): Promise<IliasContentPage> {
+  return fetchJson(`/api/ilias/content?target=${encodeURIComponent(target)}`);
+}
+
+export function getIliasForum(target: string): Promise<IliasForumTopic[]> {
+  return fetchJson(`/api/ilias/forum?target=${encodeURIComponent(target)}`);
+}
+
+export function getIliasExercise(target: string): Promise<IliasExerciseAssignment[]> {
+  return fetchJson(`/api/ilias/exercise?target=${encodeURIComponent(target)}`);
+}
+
+export function getModuleSearchFilters(): Promise<ModuleSearchFiltersResponse> {
+  return fetchJson("/api/alma/module-search/filters");
+}
+
+export function getModuleDetail(url: string): Promise<ModuleDetail> {
+  return fetchJson(`/api/alma/module-detail?url=${encodeURIComponent(url)}`);
+}
+
+export async function searchModules({
+  query = "",
+  title = "",
+  number = "",
+  elementTypes = [],
+  languages = [],
+  degrees = [],
+  subjects = [],
+  faculties = [],
+  maxResults = 100
+}: {
+  query?: string;
+  title?: string;
+  number?: string;
+  elementTypes?: string[];
+  languages?: string[];
+  degrees?: string[];
+  subjects?: string[];
+  faculties?: string[];
+  maxResults?: number;
+}): Promise<ModuleSearchResponse> {
+  const params = new URLSearchParams();
+  if (query.trim()) {
+    params.set("query", query.trim());
+  }
+  if (title.trim()) {
+    params.set("title", title.trim());
+  }
+  if (number.trim()) {
+    params.set("number", number.trim());
+  }
+  for (const value of elementTypes) {
+    params.append("element_type", value);
+  }
+  for (const value of languages) {
+    params.append("language", value);
+  }
+  for (const value of degrees) {
+    params.append("degree", value);
+  }
+  for (const value of subjects) {
+    params.append("subject", value);
+  }
+  for (const value of faculties) {
+    params.append("faculty", value);
+  }
+  params.set("max_results", String(maxResults));
+
+  return fetchJson(`/api/alma/module-search?${params.toString()}`);
 }

@@ -7,6 +7,7 @@ const items = [
   { href: "/", label: "Overview" },
   { href: "/agenda", label: "Agenda" },
   { href: "/courses", label: "Courses" },
+  { href: "/spaces", label: "Spaces" },
   { href: "/documents", label: "Documents" },
   { href: "/assistant", label: "Assistant" }
 ] as const;
@@ -17,7 +18,7 @@ export function PortalNav() {
   return (
     <nav className="portal-nav" aria-label="Primary">
       {items.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}

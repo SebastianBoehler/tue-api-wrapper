@@ -12,10 +12,13 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from tue_api_wrapper.alma_documents_html import extract_studyservice_page
 from tue_api_wrapper.alma_academics_html import (
+    extract_advanced_module_search_form,
+    parse_module_detail_page,
     parse_course_catalog_page,
     parse_enrollment_page,
     parse_exam_overview,
     parse_module_search_page,
+    parse_module_search_results_page,
 )
 from tue_api_wrapper.client import AlmaClient
 from tue_api_wrapper.html_contract import (
@@ -300,6 +303,109 @@ class AlmaContractTests(unittest.TestCase):
         self.assertIn("searchModuleDescription", page.form.query_field_name)
         self.assertEqual(page.results[0].title, "Statistical Machine Learning")
         self.assertEqual(page.results[0].element_type, "Veranstaltung")
+
+    def test_extract_advanced_module_search_form_extracts_public_filters(self) -> None:
+        html = """
+        <form id="genericSearchMask" action="/alma/search">
+          <button type="submit" name="genericSearchMask:buttonsBottom:search"><span>Suchen</span></button>
+          <button type="submit" name="genericSearchMask:buttonsBottom:toggleSearchShowAllCriteria"><span>Erweiterte Suche</span></button>
+          <input type="hidden" name="javax.faces.ViewState" value="e1s2" />
+          <div>
+            <label class="form-label" for="query">Suchbegriffe</label>
+            <input id="query" type="text" name="query_name" value="" />
+          </div>
+          <div>
+            <label class="form-label" for="degree-focus">Abschluss</label>
+            <input id="degree-focus" type="text" name="degree_focus" value="" />
+            <select name="degree_not_input">
+              <option value="">=</option>
+            </select>
+            <select name="degree_input">
+              <option value=""></option>
+              <option value="89">Master</option>
+              <option value="83">Bachelor</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="subject-focus">Fach</label>
+            <input id="subject-focus" type="text" name="subject_focus" value="" />
+            <select name="subject_not_input">
+              <option value="">=</option>
+            </select>
+            <select name="subject_input">
+              <option value=""></option>
+              <option value="2385">Informatik / Computer Science</option>
+              <option value="2365">Machine Learning</option>
+            </select>
+          </div>
+        </form>
+        """
+        contract = extract_advanced_module_search_form(html, "https://alma.example/search")
+
+        self.assertEqual(contract.query_field_name, "query_name")
+        self.assertEqual(contract.search_button_name, "genericSearchMask:buttonsBottom:search")
+        self.assertEqual(contract.toggle_advanced_button_name, "genericSearchMask:buttonsBottom:toggleSearchShowAllCriteria")
+        self.assertEqual([item.label for item in contract.filters.degrees], ["Master", "Bachelor"])
+        self.assertEqual([item.label for item in contract.filters.subjects], ["Informatik / Computer Science", "Machine Learning"])
+
+    def test_parse_module_search_results_page_extracts_counts_and_pager_controls(self) -> None:
+        html = """
+        <form id="genSearchRes" action="/alma/results">
+          <input type="hidden" name="javax.faces.ViewState" value="e1s3" />
+          <input type="hidden" name="genSearchRes_SUBMIT" value="1" />
+          <input type="number" name="genSearchRes:table:Navi2NumRowsInput" value="100" />
+          <button type="submit" name="genSearchRes:table:Navi2NumRowsRefresh"></button>
+        </form>
+        <table class="tableWithBorder">
+          <tr><th>Aktionen</th><th>Nummer</th><th>Titel</th><th>Elementtyp</th></tr>
+          <tr><td><a href="/alma/detail/1">Details</a></td><td>ML4201</td><td>Statistical Machine Learning</td><td>Veranstaltung</td></tr>
+        </table>
+        <span class="dataScrollerResultText">124 Ergebnisse</span>
+        <span class="dataScrollerPageText">Seite 1 von 2</span>
+        """
+        page = parse_module_search_results_page(html, "https://alma.example/results")
+
+        self.assertEqual(page.total_results, 124)
+        self.assertEqual(page.total_pages, 2)
+        self.assertEqual(page.rows_input_name, "genSearchRes:table:Navi2NumRowsInput")
+        self.assertEqual(page.rows_refresh_name, "genSearchRes:table:Navi2NumRowsRefresh")
+        self.assertEqual(page.results[0].title, "Statistical Machine Learning")
+
+    def test_parse_module_detail_page_extracts_basic_data_and_tabs(self) -> None:
+        html = """
+        <input id="autologinRequestUrl" value="https://alma.example/detail/1" />
+        <button class="active tabButton immediate" type="submit" value="Modulbeschreibung">
+          <span>Modulbeschreibung</span><span>Aktive Registerkarte</span>
+        </button>
+        <button class="inactive tabButton immediate" type="submit" value="Studiengänge">
+          <span>Studiengänge</span>
+        </button>
+        <div class="boxStandard" id="detailViewData:basicData:fieldset">
+          <div class="box_title"><h2>Grunddaten</h2></div>
+          <div class="box_content">
+            <div class="labelItemLine">
+              <label>Titel</label>
+              <div class="answer">Efficient Machine Learning in Hardware</div>
+            </div>
+            <div class="labelItemLine">
+              <label>Nummer</label>
+              <div class="answer">ML-4420</div>
+            </div>
+            <div class="labelItemLine">
+              <label>Einrichtungen</label>
+              <div class="answer">Mathematisch-Naturwissenschaftliche Fakultät</div>
+            </div>
+          </div>
+        </div>
+        """
+        detail = parse_module_detail_page(html, "https://alma.example/detail/1")
+
+        self.assertEqual(detail.title, "Efficient Machine Learning in Hardware")
+        self.assertEqual(detail.number, "ML-4420")
+        self.assertEqual(detail.permalink, "https://alma.example/detail/1")
+        self.assertEqual(detail.active_tab, "Modulbeschreibung")
+        self.assertEqual(detail.available_tabs, ("Modulbeschreibung", "Studiengänge"))
+        self.assertEqual(detail.sections[0].title, "Grunddaten")
 
     def test_ilias_login_parsers(self) -> None:
         login_html = """

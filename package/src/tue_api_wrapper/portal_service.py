@@ -62,7 +62,9 @@ class PortalService:
         timetable = alma.fetch_timetable_for_term(term_label)
         enrollments = alma.fetch_enrollment_page()
         exams = alma.fetch_exam_overview()[:limit]
-        documents = alma.list_studyservice_reports()[:limit]
+        catalog_nodes = alma.fetch_course_catalog()[:limit]
+        studyservice_contract = alma.fetch_studyservice_contract()
+        documents = studyservice_contract.reports[:limit]
         ilias_root = ilias.fetch_root_page()
 
         return {
@@ -85,7 +87,22 @@ class PortalService:
                 "exportUrl": timetable.export_url,
                 "items": serialize(timetable.occurrences[:limit]),
             },
-            "documents": serialize(documents),
+            "documents": {
+                "reports": serialize(documents),
+                "currentDownloadAvailable": studyservice_contract.latest_download_url is not None,
+                "currentDownloadUrl": "/api/alma/documents/current"
+                if studyservice_contract.latest_download_url is not None
+                else None,
+                "sourcePageUrl": alma.studyservice_url,
+            },
+            "catalog": {
+                "nodes": serialize(catalog_nodes),
+                "sourcePageUrl": (
+                    f"{alma.base_url}/alma/pages/cm/exa/coursecatalog/showCourseCatalog.xhtml"
+                    "?_flowId=showCourseCatalog-flow"
+                    "&navigationPosition=studiesOffered%2CcourseoverviewShow&recordRequest=true"
+                ),
+            },
             "exams": serialize(exams),
             "enrollment": serialize(enrollments),
             "ilias": {
@@ -115,14 +132,47 @@ class PortalService:
                 }
             )
 
-        for report in dashboard["documents"]:
+        for report in dashboard["documents"]["reports"]:
             items.append(
                 {
                     "id": f'document:{report["trigger_name"]}',
                     "title": report["label"],
-                    "url": "https://alma.uni-tuebingen.de/alma/pages/cm/exa/enrollment/info/start.xhtml?_flowId=studyservice-flow",
+                    "url": dashboard["documents"]["sourcePageUrl"],
                     "text": f'Document export job: {report["label"]}',
-                    "metadata": {"kind": "document"},
+                    "metadata": {
+                        "kind": "document",
+                        "triggerName": report["trigger_name"],
+                    },
+                }
+            )
+
+        if dashboard["documents"]["currentDownloadUrl"] is not None:
+            items.append(
+                {
+                    "id": "document:current",
+                    "title": "Current study-service PDF",
+                    "url": dashboard["documents"]["currentDownloadUrl"],
+                    "text": "Download the PDF currently exposed by Alma on the study-service page.",
+                    "metadata": {"kind": "document-download"},
+                }
+            )
+
+        for index, node in enumerate(dashboard["catalog"]["nodes"], start=1):
+            items.append(
+                {
+                    "id": f"catalog:{index}",
+                    "title": node["title"],
+                    "url": node["permalink"] or dashboard["catalog"]["sourcePageUrl"],
+                    "text": (
+                        f'Title: {node["title"]}\n'
+                        f'Description: {node["description"] or "-"}\n'
+                        f'Kind: {node["kind"] or "-"}\n'
+                        f'Level: {node["level"]}'
+                    ),
+                    "metadata": {
+                        "kind": "catalog",
+                        "expandable": str(node["expandable"]).lower(),
+                    },
                 }
             )
 

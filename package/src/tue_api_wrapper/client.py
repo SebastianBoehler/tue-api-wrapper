@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from email.utils import decode_rfc2231
+from itertools import product
 import re
 from urllib.parse import parse_qsl, quote, unquote, urlparse
 
@@ -9,12 +10,15 @@ import requests
 
 from .alma_documents_html import extract_studyservice_page
 from .alma_academics_html import (
+    extract_advanced_module_search_form,
     extract_module_search_form,
+    parse_module_detail_page,
     parse_course_catalog_page,
     parse_enrollment_page,
     parse_exam_overview,
     parse_module_search_page,
     parse_module_search_results,
+    parse_module_search_results_page,
 )
 from .config import (
     AlmaLoginError,
@@ -38,7 +42,10 @@ from .models import (
     AlmaDocumentReport,
     AlmaEnrollmentPage,
     AlmaExamNode,
+    AlmaModuleDetail,
+    AlmaModuleSearchFilters,
     AlmaModuleSearchPage,
+    AlmaModuleSearchResponse,
     AlmaStudyServicePage,
     TimetableResult,
 )
@@ -175,20 +182,22 @@ class AlmaClient:
             raise AlmaLoginError("Session is not authenticated; the course catalog page redirected back to login.")
         return parse_course_catalog_page(response.text)
 
+    @property
+    def public_module_search_url(self) -> str:
+        return (
+            f"{self.base_url}/alma/pages/cm/exa/curricula/moduleDescriptionSearch.xhtml"
+            "?_flowId=searchElementsInModuleDescription-flow"
+            "&navigationPosition=studiesOffered%2CmoduleDescriptions%2CsearchElementsInModuleDescription"
+            "&recordRequest=true"
+        )
+
     def search_module_descriptions(self, query: str) -> AlmaModuleSearchPage:
         query = query.strip()
         if not query:
             raise AlmaParseError("A non-empty module search query is required.")
 
-        response = self.session.get(
-            f"{self.base_url}/alma/pages/cm/exa/curricula/moduleDescriptionSearch.xhtml?_flowId=searchElementsInModuleDescription-flow"
-            "&navigationPosition=studiesOffered%2CmoduleDescriptions%2CsearchElementsInModuleDescription&recordRequest=true",
-            timeout=self.timeout_seconds,
-            allow_redirects=True,
-        )
+        response = self.session.get(self.public_module_search_url, timeout=self.timeout_seconds, allow_redirects=True)
         response.raise_for_status()
-        if self._looks_logged_out(response.text):
-            raise AlmaLoginError("Session is not authenticated; the module search page redirected back to login.")
 
         form = extract_module_search_form(response.text, response.url)
         payload = dict(form.payload)
@@ -198,9 +207,180 @@ class AlmaClient:
 
         response = self.session.post(form.action_url, data=payload, timeout=self.timeout_seconds, allow_redirects=True)
         response.raise_for_status()
-        if self._looks_logged_out(response.text):
-            raise AlmaLoginError("Session expired while submitting the module search form.")
         return AlmaModuleSearchPage(form=form, results=parse_module_search_results(response.text))
+
+    def fetch_public_module_search_filters(self) -> AlmaModuleSearchFilters:
+        contract = self._fetch_advanced_public_module_search_contract()
+        return contract.filters
+
+    def fetch_public_module_detail(self, detail_url: str) -> AlmaModuleDetail:
+        detail_url = detail_url.strip()
+        if not detail_url:
+            raise AlmaParseError("A non-empty Alma detail URL is required.")
+
+        response = self.session.get(detail_url, timeout=self.timeout_seconds, allow_redirects=True)
+        response.raise_for_status()
+        return parse_module_detail_page(response.text, response.url)
+
+    def search_public_module_descriptions(
+        self,
+        *,
+        query: str = "",
+        title: str = "",
+        number: str = "",
+        element_types: tuple[str, ...] = (),
+        languages: tuple[str, ...] = (),
+        degrees: tuple[str, ...] = (),
+        subjects: tuple[str, ...] = (),
+        faculties: tuple[str, ...] = (),
+        max_results: int = 100,
+    ) -> AlmaModuleSearchResponse:
+        query = query.strip()
+        title = title.strip()
+        number = number.strip()
+        element_types = tuple(dict.fromkeys(value.strip() for value in element_types if value.strip()))
+        languages = tuple(dict.fromkeys(value.strip() for value in languages if value.strip()))
+        degrees = tuple(dict.fromkeys(value.strip() for value in degrees if value.strip()))
+        subjects = tuple(dict.fromkeys(value.strip() for value in subjects if value.strip()))
+        faculties = tuple(dict.fromkeys(value.strip() for value in faculties if value.strip()))
+        max_results = max(1, min(max_results, 300))
+
+        if not any([query, title, number, element_types, languages, degrees, subjects, faculties]):
+            raise AlmaParseError("At least one public module-search filter must be provided.")
+
+        dimensions = [values or ("",) for values in (element_types, languages, degrees, subjects, faculties)]
+        combinations = list(product(*dimensions))
+        if len(combinations) > 24:
+            raise AlmaParseError("Too many filter combinations requested at once.")
+
+        unique_results: list = []
+        seen_keys: set[tuple[str | None, str, str | None]] = set()
+        total_results: int | None = 0 if len(combinations) == 1 else None
+        total_pages: int | None = 0 if len(combinations) == 1 else None
+        truncated = False
+
+        for combo in combinations:
+            response = self._search_public_module_descriptions_once(
+                query=query,
+                title=title,
+                number=number,
+                element_type=combo[0],
+                language=combo[1],
+                degree=combo[2],
+                subject=combo[3],
+                faculty=combo[4],
+                max_results=max_results,
+            )
+            if total_results is not None:
+                total_results = response.total_results
+            if total_pages is not None:
+                total_pages = response.total_pages
+            truncated = truncated or response.truncated
+
+            for result in response.results:
+                key = (result.detail_url, result.title, result.element_type)
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                unique_results.append(result)
+                if len(unique_results) >= max_results:
+                    truncated = True
+                    break
+            if len(unique_results) >= max_results:
+                break
+
+        return AlmaModuleSearchResponse(
+            results=tuple(unique_results[:max_results]),
+            total_results=total_results,
+            returned_results=min(len(unique_results), max_results),
+            total_pages=total_pages,
+            truncated=truncated,
+        )
+
+    def _fetch_advanced_public_module_search_contract(self):
+        response = self.session.get(self.public_module_search_url, timeout=self.timeout_seconds, allow_redirects=True)
+        response.raise_for_status()
+
+        contract = extract_advanced_module_search_form(response.text, response.url)
+        if contract.fields.degree is not None:
+            return contract
+
+        if contract.toggle_advanced_button_name is None:
+            raise AlmaParseError("Could not reveal Alma advanced module-search criteria.")
+
+        payload = dict(contract.payload)
+        payload["activePageElementId"] = contract.toggle_advanced_button_name
+        payload[contract.toggle_advanced_button_name] = "Erweiterte Suche"
+        response = self.session.post(contract.action_url, data=payload, timeout=self.timeout_seconds, allow_redirects=True)
+        response.raise_for_status()
+        return extract_advanced_module_search_form(response.text, response.url)
+
+    def _search_public_module_descriptions_once(
+        self,
+        *,
+        query: str,
+        title: str,
+        number: str,
+        element_type: str,
+        language: str,
+        degree: str,
+        subject: str,
+        faculty: str,
+        max_results: int,
+    ) -> AlmaModuleSearchResponse:
+        contract = self._fetch_advanced_public_module_search_contract()
+        payload = dict(contract.payload)
+        payload[contract.query_field_name] = query
+        if contract.fields.title is not None:
+            payload[contract.fields.title] = title
+        if contract.fields.number is not None:
+            payload[contract.fields.number] = number
+        if contract.fields.element_type is not None:
+            payload[contract.fields.element_type] = element_type
+        if contract.fields.language is not None:
+            payload[contract.fields.language] = language
+        if contract.fields.degree is not None:
+            payload[contract.fields.degree] = degree
+        if contract.fields.subject is not None:
+            payload[contract.fields.subject] = subject
+        if contract.fields.faculty is not None:
+            payload[contract.fields.faculty] = faculty
+        payload["activePageElementId"] = contract.search_button_name
+        payload[contract.search_button_name] = "Suchen"
+
+        response = self.session.post(contract.action_url, data=payload, timeout=self.timeout_seconds, allow_redirects=True)
+        response.raise_for_status()
+
+        results_page = parse_module_search_results_page(response.text, response.url)
+        if (
+            results_page.action_url is not None
+            and results_page.rows_input_name is not None
+            and results_page.rows_refresh_name is not None
+            and max_results > len(results_page.results)
+        ):
+            refresh_payload = dict(results_page.payload)
+            refresh_payload[results_page.rows_input_name] = str(max_results)
+            refresh_payload["activePageElementId"] = results_page.rows_refresh_name
+            refresh_payload[results_page.rows_refresh_name] = ""
+            response = self.session.post(
+                results_page.action_url,
+                data=refresh_payload,
+                timeout=self.timeout_seconds,
+                allow_redirects=True,
+            )
+            response.raise_for_status()
+            results_page = parse_module_search_results_page(response.text, response.url)
+
+        total_results = results_page.total_results
+        returned_results = min(len(results_page.results), max_results)
+        truncated = (total_results is not None and total_results > returned_results) or returned_results >= max_results
+        return AlmaModuleSearchResponse(
+            results=results_page.results[:max_results],
+            total_results=total_results,
+            returned_results=returned_results,
+            total_pages=results_page.total_pages,
+            truncated=truncated,
+        )
 
     def fetch_studyservice_contract(self) -> AlmaStudyServicePage:
         response = self.session.get(self.studyservice_url, timeout=self.timeout_seconds)

@@ -1,168 +1,135 @@
 import Link from "next/link";
 import { AppShell } from "../../components/app-shell";
 import { ErrorPanel } from "../../components/error-panel";
-import {
-  getIliasContent,
-  getIliasExercise,
-  getIliasForum,
-  getIliasLinks,
-  PortalApiError
-} from "../../lib/portal-api";
+import { Card, CardContent, CardHeader, CardTitle, CardAction, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { getIliasContent, getIliasExercise, getIliasForum, getIliasMemberships, PortalApiError } from "../../lib/portal-api";
+import { ArrowLeft, ExternalLink, FileText, ClipboardList, MessageCircle } from "lucide-react";
 
 function buildSpaceHref(target: string) {
   return `/spaces?target=${encodeURIComponent(target)}`;
 }
 
-export default async function SpacesPage({
-  searchParams
-}: {
-  searchParams?: Promise<{ target?: string }>;
-}) {
+export default async function SpacesPage({ searchParams }: { searchParams?: Promise<{ target?: string }> }) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const target = resolvedSearchParams.target?.trim();
 
   if (!target) {
     try {
-      const links = await getIliasLinks();
+      const memberships = await getIliasMemberships(40);
       return (
-        <AppShell title="Learning Spaces" kicker="Internal ILIAS view">
-          <section className="hero-card slim">
-            <div>
-              <p className="eyebrow">ILIAS inside the shell</p>
-              <h2>Open course spaces without leaving the app</h2>
-              <p className="hero-copy">
-                Start from the entry points we can already read through the unofficial API, then drill down internally.
-              </p>
-            </div>
-          </section>
-
-          <section className="panel">
-              <div className="stack">
-              {links.map((link) => (
-                <a key={`${link.label}-${link.url}`} href={buildSpaceHref(link.url)} className="list-row">
-                  <strong>{link.label}</strong>
-                  <span>Open internally</span>
-                </a>
-              ))}
-            </div>
-          </section>
+        <AppShell title="Learning Spaces">
+          <Card>
+            <CardHeader>
+              <CardTitle>My learning spaces</CardTitle>
+              <CardDescription>Authenticated memberships from ILIAS courses and groups.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="divide-y divide-border">
+                {memberships.map((space) => (
+                  <a key={`${space.title}-${space.url}`} href={buildSpaceHref(space.url)} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0 hover:bg-muted/50 -mx-1 px-1 rounded-sm transition-colors">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{space.title}</span>
+                        {space.kind ? <Badge variant="secondary">{space.kind}</Badge> : null}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {space.description ?? space.properties[0] ?? "Open the learning space"}
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">Open →</span>
+                  </a>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </AppShell>
       );
     } catch (error) {
-      const message =
-        error instanceof PortalApiError ? error.message : "The internal ILIAS space index could not load.";
-      return (
-        <AppShell title="Learning Spaces" kicker="Internal ILIAS view">
-          <ErrorPanel title="ILIAS unavailable" message={message} />
-        </AppShell>
-      );
+      const msg = error instanceof PortalApiError ? error.message : "ILIAS could not load.";
+      return <AppShell title="Learning Spaces"><ErrorPanel title="ILIAS unavailable" message={msg} /></AppShell>;
     }
   }
 
   try {
-    const [contentResult, forumResult, exerciseResult] = await Promise.allSettled([
-      getIliasContent(target),
-      getIliasForum(target),
-      getIliasExercise(target)
-    ]);
-
+    const [contentResult, forumResult, exerciseResult] = await Promise.allSettled([getIliasContent(target), getIliasForum(target), getIliasExercise(target)]);
     const content = contentResult.status === "fulfilled" ? contentResult.value : null;
     const forum = forumResult.status === "fulfilled" ? forumResult.value : [];
     const exercise = exerciseResult.status === "fulfilled" ? exerciseResult.value : [];
-
-    if (!content && !forum.length && !exercise.length) {
-      throw contentResult.status === "rejected" ? contentResult.reason : new Error("No internal ILIAS data available.");
-    }
+    if (!content && !forum.length && !exercise.length) throw contentResult.status === "rejected" ? contentResult.reason : new Error("No data.");
 
     return (
-      <AppShell title="Learning Spaces" kicker="Internal ILIAS view">
-        <section className="hero-card slim">
-          <div>
-            <p className="eyebrow">ILIAS proxy view</p>
-            <h2>{content?.title ?? "Learning space"}</h2>
-            <p className="hero-copy">
-              Read the space structure through the wrapper first. Leave for the original page only when an action still
-              requires the native interface.
-            </p>
-          </div>
-          <div className="hero-actions">
-            <Link href="/spaces" className="action-link ghost">
-              Back to spaces
-            </Link>
-            <a href={target} className="inline-link">
-              Original ILIAS page
-            </a>
-          </div>
-        </section>
+      <AppShell title="Learning Spaces">
+        <Card>
+          <CardHeader>
+            <div>
+              <CardDescription>ILIAS proxy</CardDescription>
+              <CardTitle>{content?.title ?? "Learning space"}</CardTitle>
+            </div>
+            <CardAction className="flex gap-2">
+              <Button variant="secondary" size="sm" asChild><Link href="/spaces"><ArrowLeft className="size-3.5" />Spaces</Link></Button>
+              <Button variant="outline" size="sm" asChild><a href={target}><ExternalLink className="size-3.5" />Original</a></Button>
+            </CardAction>
+          </CardHeader>
+        </Card>
 
         {content?.sections.length ? (
-          <section className="panel">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Contents</p>
-                <h3>Structured space contents</h3>
-              </div>
-            </div>
-            <div className="stack">
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="size-4 text-primary" />Contents</CardTitle></CardHeader>
+            <CardContent className="flex flex-col gap-3">
               {content.sections.map((section) => (
-                <article key={section.label} className="detail-card">
-                  <p className="eyebrow">{section.label}</p>
-                  <div className="stack">
+                <div key={section.label} className="border border-border rounded-lg p-3 bg-muted/30">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">{section.label}</p>
+                  <div className="divide-y divide-border">
                     {section.items.map((item) => (
-                      <a key={`${item.label}-${item.url}`} href={buildSpaceHref(item.url)} className="list-row compact">
-                        <div>
-                          <strong>{item.label}</strong>
-                          <p>{[item.kind, ...item.properties].filter(Boolean).join(" | ") || "ILIAS object"}</p>
+                      <a key={`${item.label}-${item.url}`} href={buildSpaceHref(item.url)} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0 hover:bg-background -mx-1 px-1 rounded-sm transition-colors">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{item.label}</p>
+                          <p className="text-xs text-muted-foreground">{[item.kind, ...item.properties].filter(Boolean).join(" · ") || "ILIAS object"}</p>
                         </div>
-                        <span>Open</span>
+                        <Badge variant="secondary" className="shrink-0">Open</Badge>
                       </a>
                     ))}
                   </div>
-                </article>
+                </div>
               ))}
-            </div>
-          </section>
+            </CardContent>
+          </Card>
         ) : null}
 
         {exercise.length ? (
-          <section className="panel">
-            <p className="eyebrow">Exercises</p>
-            <h3>Assignment view</h3>
-            <div className="stack">
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><ClipboardList className="size-4 text-primary" />Exercises</CardTitle></CardHeader>
+            <CardContent className="flex flex-col gap-2">
               {exercise.map((item) => (
-                <article key={`${item.title}-${item.url}`} className="detail-card">
-                  <strong>{item.title}</strong>
-                  <p>{item.due_at ?? item.due_hint ?? "No due date exposed."}</p>
-                  <p>{[item.status, item.requirement, item.submission_type].filter(Boolean).join(" | ")}</p>
-                </article>
+                <div key={`${item.title}-${item.url}`} className="border border-border rounded-lg p-3">
+                  <p className="text-sm font-medium">{item.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.due_at ?? item.due_hint ?? "No due date"}</p>
+                  <div className="flex gap-1.5 mt-2">{[item.status, item.requirement, item.submission_type].filter(Boolean).map((t) => <Badge key={t} variant="outline">{t}</Badge>)}</div>
+                </div>
               ))}
-            </div>
-          </section>
+            </CardContent>
+          </Card>
         ) : null}
 
         {forum.length ? (
-          <section className="panel">
-            <p className="eyebrow">Forum</p>
-            <h3>Topic list</h3>
-            <div className="stack">
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><MessageCircle className="size-4 text-primary" />Forum</CardTitle></CardHeader>
+            <CardContent className="flex flex-col gap-2">
               {forum.map((topic) => (
-                <article key={`${topic.title}-${topic.url}`} className="detail-card">
-                  <strong>{topic.title}</strong>
-                  <p>{[topic.author, topic.posts ? `${topic.posts} posts` : null, topic.visits ? `${topic.visits} visits` : null].filter(Boolean).join(" | ")}</p>
-                  <p>{topic.last_post ?? "No last-post timestamp exposed."}</p>
-                </article>
+                <div key={`${topic.title}-${topic.url}`} className="border border-border rounded-lg p-3">
+                  <p className="text-sm font-medium">{topic.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{[topic.author, topic.posts ? `${topic.posts} posts` : null, topic.visits ? `${topic.visits} visits` : null].filter(Boolean).join(" · ")}</p>
+                </div>
               ))}
-            </div>
-          </section>
+            </CardContent>
+          </Card>
         ) : null}
       </AppShell>
     );
   } catch (error) {
-    const message = error instanceof PortalApiError ? error.message : "The internal ILIAS space view could not load.";
-    return (
-      <AppShell title="Learning Spaces" kicker="Internal ILIAS view">
-        <ErrorPanel title="ILIAS unavailable" message={message} />
-      </AppShell>
-    );
+    const msg = error instanceof PortalApiError ? error.message : "ILIAS could not load.";
+    return <AppShell title="Learning Spaces"><ErrorPanel title="ILIAS unavailable" message={msg} /></AppShell>;
   }
 }

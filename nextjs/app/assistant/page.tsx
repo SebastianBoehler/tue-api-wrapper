@@ -1,4 +1,6 @@
 import { AppShell } from "../../components/app-shell";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Lightbulb, Sparkles } from "lucide-react";
 
 const prompts = [
   "Show me the next machine learning events from Alma.",
@@ -9,37 +11,32 @@ const prompts = [
 
 export default function AssistantPage() {
   return (
-    <AppShell title="Assistant" kicker="ChatGPT companion">
-      <section className="hero-card slim">
-        <div>
-          <p className="eyebrow">Companion surface</p>
-          <h2>Pair the dashboard with a ChatGPT app</h2>
-          <p className="hero-copy">
-            The `chatgpt/` app uses the same unified portal model, so the assistant can search, fetch, and render a compact study snapshot inside ChatGPT.
-          </p>
-        </div>
-      </section>
+    <AppShell title="Assistant">
+      <div className="grid grid-cols-2 gap-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Lightbulb className="size-4 text-primary" />Best use</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Let the web app handle browsing and routine wayfinding. Use the ChatGPT app for summarization, cross-checking, and &ldquo;what matters next?&rdquo; questions.
+            </p>
+          </CardContent>
+        </Card>
 
-      <section className="content-grid">
-        <article className="panel">
-          <p className="eyebrow">Best use</p>
-          <h3>Ask for synthesis, not raw clicks</h3>
-          <p>
-            Let the web app handle browsing and routine wayfinding. Use the ChatGPT app for summarization, cross-checking, and “what matters next?” questions.
-          </p>
-        </article>
-
-        <article className="panel">
-          <p className="eyebrow">Suggested prompts</p>
-          <div className="stack">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Sparkles className="size-4 text-primary" />Suggested prompts</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
             {prompts.map((prompt) => (
-              <code key={prompt} className="prompt-chip">
+              <div key={prompt} className="text-sm font-mono p-2.5 rounded-md bg-muted text-muted-foreground break-words">
                 {prompt}
-              </code>
+              </div>
             ))}
-          </div>
-        </article>
-      </section>
+          </CardContent>
+        </Card>
+      </div>
     </AppShell>
   );
 }

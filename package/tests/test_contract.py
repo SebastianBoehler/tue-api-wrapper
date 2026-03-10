@@ -34,11 +34,40 @@ from tue_api_wrapper.ilias_html import (
     extract_shib_login_url,
     parse_ilias_root_page,
 )
-from tue_api_wrapper.ilias_learning_html import parse_exercise_assignments, parse_forum_topics
+from tue_api_wrapper.ilias_learning_html import (
+    parse_exercise_assignments,
+    parse_forum_topics,
+    parse_membership_overview,
+    parse_task_overview,
+)
 from tue_api_wrapper.ics import (
     parse_ics_events,
     expand_ics_events,
 )
+from tue_api_wrapper.route_discovery_cli import discover_routes
+
+
+class _FakeResponse:
+    def __init__(self, *, url: str, text: str, status_code: int = 200, headers: dict[str, str] | None = None) -> None:
+        self.url = url
+        self.text = text
+        self.status_code = status_code
+        self.headers = headers or {"content-type": "text/html; charset=utf-8"}
+
+    def raise_for_status(self) -> None:
+        if self.status_code >= 400:
+            raise requests.HTTPError(f"{self.status_code} for {self.url}")
+
+
+class _FakeSession:
+    def __init__(self, pages: dict[str, _FakeResponse]) -> None:
+        self._pages = pages
+
+    def get(self, url: str, timeout: int, allow_redirects: bool = True) -> _FakeResponse:
+        try:
+            return self._pages[url]
+        except KeyError as exc:
+            raise requests.RequestException(f"Missing fixture for {url}") from exc
 
 
 def _har_response_text(har_path: Path, predicate) -> str:
@@ -507,6 +536,127 @@ class AlmaContractTests(unittest.TestCase):
         self.assertEqual(assignments[0].title, "Exercise01")
         self.assertEqual(assignments[0].due_at, "Freitag, 12:00")
         self.assertEqual(assignments[0].team_action_url, "https://ovidius.example/team/create")
+
+    def test_parse_membership_overview_extracts_items(self) -> None:
+        html = """
+        <div class="il-item il-std-item">
+          <div class="media">
+            <div class="media-left"><img alt="Kurs" /></div>
+            <div class="media-body">
+              <h4 class="il-item-title"><a href="goto.php/crs/5278426">Data Literacy (ML 4102)</a></h4>
+              <div class="il-item-description">This course conveys the basic techniques of quantitative thinking.</div>
+              <button data-action="ilias.php?baseClass=ilrepositorygui&amp;cmd=infoScreen&amp;ref_id=5278426">Info</button>
+              <div class="row">
+                <div class="col-md-6">
+                  <span class="il-item-property-name">Anmeldungszeitraum</span><span class="il-item-property-value">Keine Anmeldung möglich</span>
+                </div>
+                <div class="col-md-6">
+                  <span class="il-item-property-name">Veranstaltungszeitraum</span><span class="il-item-property-value">14. Okt 2025 - 10. Feb 2026</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        """
+        items = parse_membership_overview(html, "https://ovidius.example/ilias.php?baseClass=ilmembershipoverviewgui")
+
+        self.assertEqual(items[0].title, "Data Literacy (ML 4102)")
+        self.assertEqual(items[0].kind, "Kurs")
+        self.assertIn("quantitative thinking", items[0].description)
+        self.assertEqual(
+            items[0].info_url,
+            "https://ovidius.example/ilias.php?baseClass=ilrepositorygui&cmd=infoScreen&ref_id=5278426",
+        )
+        self.assertIn("Veranstaltungszeitraum: 14. Okt 2025 - 10. Feb 2026", items[0].properties)
+
+    def test_parse_task_overview_extracts_due_items(self) -> None:
+        html = """
+        <div class="il-item il-std-item">
+          <h4 class="il-item-title">
+            <button data-action="goto.php/exc/5509760/93823">Abgabe zur Übungseinheit "Exercise05"</button>
+          </h4>
+          <div class="row">
+            <div class="col-md-6">
+              <span class="il-item-property-name">Übung</span><span class="il-item-property-value">Exercises</span>
+            </div>
+            <div class="col-md-6">
+              <span class="il-item-property-name">Beginn</span><span class="il-item-property-value">Heute, 10:30</span>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <span class="il-item-property-name">Ende</span><span class="il-item-property-value">Morgen, 12:00</span>
+            </div>
+          </div>
+        </div>
+        """
+        items = parse_task_overview(html, "https://ovidius.example/ilias.php?baseClass=ilderivedtasksgui")
+
+        self.assertEqual(items[0].title, 'Abgabe zur Übungseinheit "Exercise05"')
+        self.assertEqual(items[0].item_type, "Exercises")
+        self.assertEqual(items[0].start, "Heute, 10:30")
+        self.assertEqual(items[0].end, "Morgen, 12:00")
+        self.assertEqual(items[0].url, "https://ovidius.example/goto.php/exc/5509760/93823")
+
+    def test_route_discovery_collects_links_forms_and_script_hints(self) -> None:
+        session = _FakeSession(
+            {
+                "https://alma.example/start": _FakeResponse(
+                    url="https://alma.example/start",
+                    text="""
+                    <html>
+                      <head><title>Start</title></head>
+                      <body>
+                        <a href="/alma/pages/search.xhtml?degree=89&subject=2385">Search</a>
+                        <form action="/alma/api/filter" method="post">
+                          <input type="hidden" name="javax.faces.ViewState" value="e1s2" />
+                          <input type="text" name="query" value="" />
+                          <button type="submit" name="search">Search</button>
+                        </form>
+                        <script>
+                          window.__routes = ["/alma/pages/detail.xhtml?module=ML-4420"];
+                        </script>
+                      </body>
+                    </html>
+                    """,
+                ),
+                "https://alma.example/alma/pages/search.xhtml?degree=89&subject=2385": _FakeResponse(
+                    url="https://alma.example/alma/pages/search.xhtml?degree=89&subject=2385",
+                    text="""
+                    <html>
+                      <head><title>Search</title></head>
+                      <body>
+                        <a href="/alma/pages/detail.xhtml?module=ML-4420">Detail</a>
+                      </body>
+                    </html>
+                    """,
+                ),
+                "https://alma.example/alma/pages/detail.xhtml?module=ML-4420": _FakeResponse(
+                    url="https://alma.example/alma/pages/detail.xhtml?module=ML-4420",
+                    text="<html><head><title>Detail</title></head><body></body></html>",
+                ),
+            }
+        )
+
+        report = discover_routes(
+            session=session,
+            start_urls=("https://alma.example/start",),
+            allowed_hosts={"alma.example"},
+            depth=1,
+            max_pages=5,
+            request_timeout=5,
+        )
+
+        paths = {(route["path"], tuple(route["query_keys"])): route for route in report["routes"]}
+        self.assertIn(("/alma/pages/search.xhtml", ("degree", "subject")), paths)
+        self.assertIn(("/alma/api/filter", ()), paths)
+        self.assertIn(("/alma/pages/detail.xhtml", ("module",)), paths)
+
+        form = report["forms"][0]
+        self.assertEqual(form["action_url"], "https://alma.example/alma/api/filter")
+        self.assertEqual(form["method"], "POST")
+        self.assertEqual(form["field_names"], ["javax.faces.ViewState", "query"])
+        self.assertEqual(form["button_names"], ["search"])
 
 
 if __name__ == "__main__":

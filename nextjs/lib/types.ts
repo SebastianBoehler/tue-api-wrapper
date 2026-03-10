@@ -53,6 +53,12 @@ export interface PortalLink {
   url: string;
 }
 
+export interface QuickLink {
+  label: string;
+  href: string;
+  description: string;
+}
+
 export interface ModuleSearchResult {
   number: string | null;
   title: string;
@@ -150,6 +156,31 @@ export interface EnrollmentState {
   message: string | null;
 }
 
+export interface StudySummary {
+  selectedTerm: string | null;
+  message: string | null;
+  passedExamCount: number;
+  trackedCredits: number;
+  availableTerms: Record<string, string>;
+}
+
+export interface IliasMembershipItem {
+  title: string;
+  url: string;
+  kind: string | null;
+  description: string | null;
+  info_url: string | null;
+  properties: string[];
+}
+
+export interface IliasTaskItem {
+  title: string;
+  url: string;
+  item_type: string | null;
+  start: string | null;
+  end: string | null;
+}
+
 export interface DashboardData {
   generatedAt: string;
   termLabel: string;
@@ -162,13 +193,16 @@ export interface DashboardData {
     exportUrl: string;
     items: AgendaItem[];
   };
+  study: StudySummary;
   documents: DocumentsPanel;
-  catalog: CatalogPanel;
   exams: ExamItem[];
   enrollment: EnrollmentState;
   ilias: {
     title: string;
     mainbarLinks: PortalLink[];
     topCategories: PortalLink[];
+    memberships: IliasMembershipItem[];
+    tasks: IliasTaskItem[];
   };
+  quickLinks: QuickLink[];
 }

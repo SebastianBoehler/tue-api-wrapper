@@ -242,6 +242,25 @@ class IliasContentPage:
 
 
 @dataclass(frozen=True)
+class IliasMembershipItem:
+    title: str
+    url: str
+    kind: str | None
+    description: str | None
+    info_url: str | None
+    properties: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class IliasTaskItem:
+    title: str
+    url: str
+    item_type: str | None
+    start: str | None
+    end: str | None
+
+
+@dataclass(frozen=True)
 class IliasForumTopic:
     title: str
     url: str

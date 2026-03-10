@@ -62,30 +62,46 @@ class PortalService:
         timetable = alma.fetch_timetable_for_term(term_label)
         enrollments = alma.fetch_enrollment_page()
         exams = alma.fetch_exam_overview()[:limit]
-        catalog_nodes = alma.fetch_course_catalog()[:limit]
         studyservice_contract = alma.fetch_studyservice_contract()
         documents = studyservice_contract.reports[:limit]
         ilias_root = ilias.fetch_root_page()
+        memberships = ilias.fetch_membership_overview()[:limit]
+        tasks = ilias.fetch_task_overview()[:limit]
+
+        passed_exams = [
+            exam for exam in exams
+            if (exam.status or "").strip().upper() in {"BE", "PASSED", "BESTANDEN"}
+            or bool(exam.grade and exam.grade.strip() not in {"", "-", "5,0"})
+        ]
+        credit_values = [
+            float((exam.cp or "0").replace(",", "."))
+            for exam in exams
+            if exam.cp and exam.cp.strip() not in {"", "-"}
+        ]
 
         return {
             "generatedAt": datetime.utcnow().isoformat() + "Z",
             "termLabel": timetable.term_label,
             "hero": {
                 "title": "Study Hub",
-                "subtitle": "A single surface for Alma schedule data, study-service documents, and ILIAS navigation.",
+                "subtitle": "Your next classes, open course work, study records, and learning spaces in one place.",
             },
             "metrics": [
                 {"label": "Upcoming events", "value": len(timetable.occurrences)},
-                {"label": "Exam rows", "value": len(exams)},
-                {"label": "Document jobs", "value": len(documents)},
-                {
-                    "label": "ILIAS entry points",
-                    "value": len(ilias_root.mainbar_links) + len(ilias_root.top_categories),
-                },
+                {"label": "Open tasks", "value": len(tasks)},
+                {"label": "Learning spaces", "value": len(memberships)},
+                {"label": "Passed exams", "value": len(passed_exams)},
             ],
             "agenda": {
                 "exportUrl": timetable.export_url,
                 "items": serialize(timetable.occurrences[:limit]),
+            },
+            "study": {
+                "selectedTerm": enrollments.selected_term,
+                "message": enrollments.message,
+                "passedExamCount": len(passed_exams),
+                "trackedCredits": round(sum(credit_values), 1),
+                "availableTerms": serialize(enrollments.available_terms),
             },
             "documents": {
                 "reports": serialize(documents),
@@ -95,21 +111,37 @@ class PortalService:
                 else None,
                 "sourcePageUrl": alma.studyservice_url,
             },
-            "catalog": {
-                "nodes": serialize(catalog_nodes),
-                "sourcePageUrl": (
-                    f"{alma.base_url}/alma/pages/cm/exa/coursecatalog/showCourseCatalog.xhtml"
-                    "?_flowId=showCourseCatalog-flow"
-                    "&navigationPosition=studiesOffered%2CcourseoverviewShow&recordRequest=true"
-                ),
-            },
             "exams": serialize(exams),
             "enrollment": serialize(enrollments),
             "ilias": {
                 "title": ilias_root.title,
                 "mainbarLinks": serialize(ilias_root.mainbar_links),
                 "topCategories": serialize(ilias_root.top_categories),
+                "memberships": serialize(memberships),
+                "tasks": serialize(tasks),
             },
+            "quickLinks": [
+                {
+                    "label": "Progress",
+                    "href": "/progress",
+                    "description": "Review grades, credits, and term-level study status.",
+                },
+                {
+                    "label": "Tasks",
+                    "href": "/tasks",
+                    "description": "See active ILIAS due items without opening multiple spaces.",
+                },
+                {
+                    "label": "Learning spaces",
+                    "href": "/spaces",
+                    "description": "Open course, group, and materials spaces from your memberships.",
+                },
+                {
+                    "label": "Documents",
+                    "href": "/documents",
+                    "description": "Access Alma study-service PDFs and report jobs.",
+                },
+            ],
         }
 
     def build_search_index(self, *, term_label: str = DEFAULT_DASHBOARD_TERM) -> list[dict[str, Any]]:
@@ -157,22 +189,14 @@ class PortalService:
                 }
             )
 
-        for index, node in enumerate(dashboard["catalog"]["nodes"], start=1):
+        for index, link in enumerate(dashboard["quickLinks"], start=1):
             items.append(
                 {
-                    "id": f"catalog:{index}",
-                    "title": node["title"],
-                    "url": node["permalink"] or dashboard["catalog"]["sourcePageUrl"],
-                    "text": (
-                        f'Title: {node["title"]}\n'
-                        f'Description: {node["description"] or "-"}\n'
-                        f'Kind: {node["kind"] or "-"}\n'
-                        f'Level: {node["level"]}'
-                    ),
-                    "metadata": {
-                        "kind": "catalog",
-                        "expandable": str(node["expandable"]).lower(),
-                    },
+                    "id": f"quicklink:{index}",
+                    "title": link["label"],
+                    "url": link["href"],
+                    "text": link["description"],
+                    "metadata": {"kind": "quicklink"},
                 }
             )
 
@@ -212,6 +236,42 @@ class PortalService:
                     "url": link["url"],
                     "text": f'ILIAS top category: {link["label"]}',
                     "metadata": {"kind": "ilias-category"},
+                }
+            )
+
+        for membership in dashboard["ilias"]["memberships"]:
+            items.append(
+                {
+                    "id": f'membership:{membership["title"]}',
+                    "title": membership["title"],
+                    "url": membership["url"],
+                    "text": "\n".join(
+                        [
+                            membership.get("description") or "",
+                            *membership.get("properties", []),
+                        ]
+                    ).strip(),
+                    "metadata": {
+                        "kind": "ilias-membership",
+                        "type": membership.get("kind") or "",
+                    },
+                }
+            )
+
+        for task in dashboard["ilias"]["tasks"]:
+            items.append(
+                {
+                    "id": f'task:{task["title"]}',
+                    "title": task["title"],
+                    "url": task["url"],
+                    "text": "\n".join(
+                        [
+                            f'Type: {task.get("item_type") or "-"}',
+                            f'Start: {task.get("start") or "-"}',
+                            f'End: {task.get("end") or "-"}',
+                        ]
+                    ),
+                    "metadata": {"kind": "ilias-task"},
                 }
             )
 

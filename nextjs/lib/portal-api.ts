@@ -2,6 +2,8 @@ import type {
   IliasContentPage,
   IliasExerciseAssignment,
   IliasForumTopic,
+  IliasMembershipItem,
+  IliasTaskItem,
   ModuleDetail,
   DashboardData,
   DocumentsPanel,
@@ -75,6 +77,14 @@ export function getIliasForum(target: string): Promise<IliasForumTopic[]> {
 
 export function getIliasExercise(target: string): Promise<IliasExerciseAssignment[]> {
   return fetchJson(`/api/ilias/exercise?target=${encodeURIComponent(target)}`);
+}
+
+export function getIliasMemberships(limit = 20): Promise<IliasMembershipItem[]> {
+  return fetchJson(`/api/ilias/memberships?limit=${limit}`);
+}
+
+export function getIliasTasks(limit = 20): Promise<IliasTaskItem[]> {
+  return fetchJson(`/api/ilias/tasks?limit=${limit}`);
 }
 
 export function getModuleSearchFilters(): Promise<ModuleSearchFiltersResponse> {

@@ -1,89 +1,63 @@
 import Link from "next/link";
 import { AppShell } from "../../../components/app-shell";
 import { ErrorPanel } from "../../../components/error-panel";
+import { Card, CardContent, CardHeader, CardTitle, CardAction, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { getModuleDetail, PortalApiError } from "../../../lib/portal-api";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 
-export default async function CourseDetailPage({
-  searchParams
-}: {
-  searchParams?: Promise<{ url?: string }>;
-}) {
+export default async function CourseDetailPage({ searchParams }: { searchParams?: Promise<{ url?: string }> }) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const detailUrl = resolvedSearchParams.url?.trim();
 
   if (!detailUrl) {
-    return (
-      <AppShell title="Course Detail" kicker="Internal detail view">
-        <ErrorPanel title="Course detail unavailable" message="No Alma detail URL was provided." />
-      </AppShell>
-    );
+    return <AppShell title="Course Detail"><ErrorPanel title="Missing URL" message="No Alma detail URL was provided." /></AppShell>;
   }
 
   try {
     const detail = await getModuleDetail(detailUrl);
 
     return (
-      <AppShell title="Course Detail" kicker="Internal detail view">
-        <section className="hero-card slim">
-          <div>
-            <p className="eyebrow">Public Alma detail</p>
-            <h2>{detail.title}</h2>
-            <p className="hero-copy">
-              {detail.number ? `${detail.number} ` : ""}rendered through the unofficial API so the flow stays inside
-              the app.
-            </p>
-          </div>
-          <div className="hero-actions">
-            <Link href="/courses" className="action-link ghost">
-              Back to discovery
-            </Link>
-            {detail.permalink ? (
-              <a href={detail.permalink} className="inline-link">
-                Source permalink
-              </a>
-            ) : null}
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="results-summary">
+      <AppShell title="Course Detail">
+        <Card>
+          <CardHeader>
             <div>
-              <p className="eyebrow">Detail tabs</p>
-              <h3>{detail.active_tab ?? "Detail data"}</h3>
+              <CardDescription>{detail.number}</CardDescription>
+              <CardTitle className="text-lg">{detail.title}</CardTitle>
             </div>
-            <div className="selected-chip-row">
+            <CardAction className="flex gap-2">
+              <Button variant="secondary" size="sm" asChild><Link href="/courses"><ArrowLeft className="size-3.5" />Back</Link></Button>
+              {detail.permalink ? <Button variant="outline" size="sm" asChild><a href={detail.permalink}><ExternalLink className="size-3.5" />Source</a></Button> : null}
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-1.5 mb-4">
               {detail.available_tabs.map((tab) => (
-                <span key={tab} className={tab === detail.active_tab ? "selected-chip" : "status-pill"}>
-                  {tab}
-                </span>
+                <Badge key={tab} variant={tab === detail.active_tab ? "default" : "outline"}>{tab}</Badge>
               ))}
             </div>
-          </div>
-          <div className="detail-section-grid">
-            {detail.sections.map((section) => (
-              <article key={section.title} className="detail-card">
-                <p className="eyebrow">{section.title}</p>
-                <div className="detail-field-list">
-                  {section.fields.map((field) => (
-                    <div key={`${section.title}-${field.label}`} className="detail-field">
-                      <span>{field.label}</span>
-                      <strong>{field.value}</strong>
-                    </div>
-                  ))}
+            <div className="grid grid-cols-2 gap-3">
+              {detail.sections.map((section) => (
+                <div key={section.title} className="border border-border rounded-lg p-3 bg-muted/30">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">{section.title}</p>
+                  <div className="flex flex-col gap-2">
+                    {section.fields.map((field) => (
+                      <div key={`${section.title}-${field.label}`}>
+                        <span className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">{field.label}</span>
+                        <p className="text-sm leading-snug font-medium">{field.value}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </article>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </AppShell>
     );
   } catch (error: unknown) {
-    const message =
-      error instanceof PortalApiError ? error.message : "The course detail view could not load live Alma data.";
-    return (
-      <AppShell title="Course Detail" kicker="Internal detail view">
-        <ErrorPanel title="Course detail unavailable" message={message} />
-      </AppShell>
-    );
+    const message = error instanceof PortalApiError ? error.message : "Course detail could not load.";
+    return <AppShell title="Course Detail"><ErrorPanel title="Unavailable" message={message} /></AppShell>;
   }
 }

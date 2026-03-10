@@ -221,6 +221,22 @@ def ilias_root() -> dict[str, object]:
         raise _translate_error(error) from error
 
 
+@app.get("/api/ilias/memberships")
+def ilias_memberships(limit: int = Query(20, ge=1, le=100)) -> list[object]:
+    try:
+        return serialize(portal_service._ilias_client().fetch_membership_overview()[:limit])
+    except AlmaError as error:
+        raise _translate_error(error) from error
+
+
+@app.get("/api/ilias/tasks")
+def ilias_tasks(limit: int = Query(20, ge=1, le=100)) -> list[object]:
+    try:
+        return serialize(portal_service._ilias_client().fetch_task_overview()[:limit])
+    except AlmaError as error:
+        raise _translate_error(error) from error
+
+
 @app.get("/api/ilias/content")
 def ilias_content(target: str) -> dict[str, object]:
     try:

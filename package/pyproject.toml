@@ -23,6 +23,7 @@ alma-document = "tue_api_wrapper.alma_documents_cli:main"
 ilias-content = "tue_api_wrapper.ilias_content_cli:main"
 ilias-learning = "tue_api_wrapper.ilias_learning_cli:main"
 ilias-root = "tue_api_wrapper.ilias_cli:main"
+route-discovery = "tue_api_wrapper.route_discovery_cli:main"
 tue-api-server = "tue_api_wrapper.api_server:main"
 
 [tool.setuptools]

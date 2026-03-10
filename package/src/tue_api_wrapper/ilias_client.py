@@ -13,8 +13,20 @@ from .ilias_html import (
     parse_ilias_content_page,
     parse_ilias_root_page,
 )
-from .ilias_learning_html import parse_exercise_assignments, parse_forum_topics
-from .models import IliasContentPage, IliasExerciseAssignment, IliasForumTopic, IliasRootPage
+from .ilias_learning_html import (
+    parse_exercise_assignments,
+    parse_forum_topics,
+    parse_membership_overview,
+    parse_task_overview,
+)
+from .models import (
+    IliasContentPage,
+    IliasExerciseAssignment,
+    IliasForumTopic,
+    IliasMembershipItem,
+    IliasRootPage,
+    IliasTaskItem,
+)
 
 
 class IliasClient:
@@ -97,6 +109,24 @@ class IliasClient:
         )
         response.raise_for_status()
         return parse_exercise_assignments(response.text, response.url)
+
+    def fetch_membership_overview(self) -> tuple[IliasMembershipItem, ...]:
+        response = self.session.get(
+            "https://ovidius.uni-tuebingen.de/ilias3/ilias.php?baseClass=ilmembershipoverviewgui",
+            timeout=self.timeout_seconds,
+            allow_redirects=True,
+        )
+        response.raise_for_status()
+        return parse_membership_overview(response.text, response.url)
+
+    def fetch_task_overview(self) -> tuple[IliasTaskItem, ...]:
+        response = self.session.get(
+            "https://ovidius.uni-tuebingen.de/ilias3/ilias.php?baseClass=ilderivedtasksgui",
+            timeout=self.timeout_seconds,
+            allow_redirects=True,
+        )
+        response.raise_for_status()
+        return parse_task_overview(response.text, response.url)
 
     def _complete_saml_handoff(self, response: requests.Response) -> requests.Response:
         for _ in range(6):

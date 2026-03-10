@@ -7,6 +7,8 @@ import type {
   ModuleDetail,
   DashboardData,
   DocumentsPanel,
+  EnrollmentState,
+  ExamItem,
   ModuleSearchFiltersResponse,
   ModuleSearchResponse,
   PortalLink
@@ -55,7 +57,15 @@ export function getDashboard(): Promise<DashboardData> {
 }
 
 export function getDocuments(): Promise<DocumentsPanel> {
-  return fetchJson<DashboardData>("/api/dashboard").then((dashboard) => dashboard.documents);
+  return fetchJson("/api/alma/studyservice");
+}
+
+export function getAlmaExams(limit = 20): Promise<ExamItem[]> {
+  return fetchJson(`/api/alma/exams?limit=${limit}`);
+}
+
+export function getAlmaEnrollment(): Promise<EnrollmentState> {
+  return fetchJson("/api/alma/enrollments");
 }
 
 export async function getIliasLinks(): Promise<PortalLink[]> {
@@ -93,6 +103,10 @@ export function getModuleSearchFilters(): Promise<ModuleSearchFiltersResponse> {
 
 export function getModuleDetail(url: string): Promise<ModuleDetail> {
   return fetchJson(`/api/alma/module-detail?url=${encodeURIComponent(url)}`);
+}
+
+export function buildAlmaDocumentUrl(docId: string): string {
+  return buildPortalApiUrl(`/api/alma/documents/${encodeURIComponent(docId)}`);
 }
 
 export async function searchModules({

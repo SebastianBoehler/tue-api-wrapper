@@ -114,6 +114,35 @@ a {
   gap: 0.7rem;
 }
 
+.widget-summary,
+.widget-actions {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.widget-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 0.9rem;
+}
+
+.widget-summary div {
+  display: grid;
+  gap: 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--accent-soft);
+  padding: 0.85rem;
+}
+
+.widget-summary span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.widget-summary strong {
+  font-size: 1.05rem;
+}
+
 .widget-row {
   display: flex;
   align-items: center;
@@ -152,6 +181,10 @@ a {
   .widget-hero,
   .widget-grid,
   .metric-row {
+    grid-template-columns: 1fr;
+  }
+
+  .widget-summary {
     grid-template-columns: 1fr;
   }
 

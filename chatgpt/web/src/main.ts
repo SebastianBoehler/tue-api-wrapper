@@ -8,10 +8,11 @@ type WidgetResult =
     }
   | {
       view: "documents";
-      documents: Array<{
-        label: string;
-        trigger_name: string;
-      }>;
+      documents: DashboardPayload["documents"];
+    }
+  | {
+      view: "error";
+      message: string;
     }
   | null;
 
@@ -62,6 +63,14 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
+function renderFallbackRow(message: string): string {
+  return `
+    <div class="widget-row compact">
+      <strong>${escapeHtml(message)}</strong>
+    </div>
+  `;
+}
+
 function renderDashboard(dashboard: DashboardPayload): string {
   const metrics = dashboard.metrics
     .map(
@@ -74,7 +83,8 @@ function renderDashboard(dashboard: DashboardPayload): string {
     )
     .join("");
 
-  const agenda = dashboard.agenda.items
+  const agenda = (dashboard.agenda.items.length ? dashboard.agenda.items : [])
+    .slice(0, 5)
     .map(
       (item) => `
         <div class="widget-row">
@@ -86,9 +96,10 @@ function renderDashboard(dashboard: DashboardPayload): string {
         </div>
       `
     )
-    .join("");
+    .join("") || renderFallbackRow("No upcoming Alma events found.");
 
-  const documents = dashboard.documents
+  const documents = dashboard.documents.reports
+    .slice(0, 4)
     .map(
       (item) => `
         <div class="widget-row compact">
@@ -97,29 +108,81 @@ function renderDashboard(dashboard: DashboardPayload): string {
         </div>
       `
     )
-    .join("");
+    .join("") || renderFallbackRow("No Alma document jobs available.");
 
   const exams = dashboard.exams
+    .slice(0, 4)
     .map(
       (item) => `
         <div class="widget-row compact">
           <div>
             <strong>${escapeHtml(item.title)}</strong>
-            <p>${escapeHtml(item.number ?? "Unnumbered")}</p>
+            <p>${escapeHtml(item.number ?? item.status ?? "Status pending")}</p>
           </div>
-          <span>${escapeHtml(item.grade ?? item.status ?? "-")}</span>
+          <span>${escapeHtml(item.grade ?? item.cp ?? item.status ?? "-")}</span>
         </div>
       `
     )
-    .join("");
+    .join("") || renderFallbackRow("No Alma exam rows found.");
 
-  const links = [...dashboard.ilias.mainbarLinks, ...dashboard.ilias.topCategories]
+  const tasks = dashboard.ilias.tasks
+    .slice(0, 5)
     .map(
       (item) => `
-        <a class="widget-row" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">
-          <strong>${escapeHtml(item.label)}</strong>
-          <span>Open</span>
+        <a class="widget-row compact" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">
+          <div>
+            <strong>${escapeHtml(item.title)}</strong>
+            <p>${escapeHtml(item.item_type ?? "Task")}</p>
+          </div>
+          <span>${escapeHtml(item.end ?? item.start ?? "-")}</span>
         </a>
+      `
+    )
+    .join("") || renderFallbackRow("No open ILIAS tasks found.");
+
+  const memberships = dashboard.ilias.memberships
+    .slice(0, 4)
+    .map(
+      (item) => `
+        <a class="widget-row compact" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">
+          <div>
+            <strong>${escapeHtml(item.title)}</strong>
+            <p>${escapeHtml(item.description ?? item.properties[0] ?? item.kind ?? "Learning space")}</p>
+          </div>
+          <span>${escapeHtml(item.kind ?? "Open")}</span>
+        </a>
+      `
+    )
+    .join("") || renderFallbackRow("No current ILIAS memberships found.");
+
+  const studySummary = `
+    <div class="widget-summary">
+      <div>
+        <span>Tracked credits</span>
+        <strong>${dashboard.study.trackedCredits}</strong>
+      </div>
+      <div>
+        <span>Passed exams</span>
+        <strong>${dashboard.study.passedExamCount}</strong>
+      </div>
+      <div>
+        <span>Term</span>
+        <strong>${escapeHtml(dashboard.study.selectedTerm ?? dashboard.termLabel)}</strong>
+      </div>
+    </div>
+  `;
+
+  const quickActions = [
+    "What should I focus on this week based on my schedule, tasks, and grades?",
+    "List my next lectures and meetings.",
+    "Summarize my current grades and credits.",
+    "Suggest courses for next semester based on my current study progress."
+  ]
+    .map(
+      (prompt) => `
+        <button class="widget-button ghost" data-follow-up="${escapeHtml(prompt)}">
+          ${escapeHtml(prompt)}
+        </button>
       `
     )
     .join("");
@@ -154,10 +217,49 @@ function renderDashboard(dashboard: DashboardPayload): string {
         <article class="widget-card">
           <div class="widget-card-header">
             <div>
+              <p class="widget-kicker">Tasks</p>
+              <h2>Open ILIAS work</h2>
+            </div>
+            <button class="widget-button" data-follow-up="List my open ILIAS tasks with the nearest deadlines.">
+              Ask
+            </button>
+          </div>
+          <div class="widget-list">${tasks}</div>
+        </article>
+
+        <article class="widget-card">
+          <div class="widget-card-header">
+            <div>
+              <p class="widget-kicker">Progress</p>
+              <h2>Study status</h2>
+            </div>
+          </div>
+          ${studySummary}
+          <div class="widget-list">${exams}</div>
+        </article>
+
+        <article class="widget-card">
+          <div class="widget-card-header">
+            <div>
+              <p class="widget-kicker">Spaces</p>
+              <h2>Learning spaces</h2>
+            </div>
+            <button class="widget-button ghost" data-follow-up="List my current learning spaces and what each one is for.">
+              Ask
+            </button>
+          </div>
+          <div class="widget-list">${memberships}</div>
+        </article>
+
+        <article class="widget-card">
+          <div class="widget-card-header">
+            <div>
               <p class="widget-kicker">Documents</p>
               <h2>Study service</h2>
             </div>
-            <button class="widget-button" data-follow-up="List the study-service document options from Alma.">Ask</button>
+            <button class="widget-button" data-follow-up="List the study-service document options from Alma.">
+              Ask
+            </button>
           </div>
           <div class="widget-list">${documents}</div>
         </article>
@@ -165,21 +267,11 @@ function renderDashboard(dashboard: DashboardPayload): string {
         <article class="widget-card">
           <div class="widget-card-header">
             <div>
-              <p class="widget-kicker">Exams</p>
-              <h2>Status snapshot</h2>
+              <p class="widget-kicker">Assistant</p>
+              <h2>Ask next</h2>
             </div>
           </div>
-          <div class="widget-list">${exams}</div>
-        </article>
-
-        <article class="widget-card">
-          <div class="widget-card-header">
-            <div>
-              <p class="widget-kicker">ILIAS</p>
-              <h2>Fast links</h2>
-            </div>
-          </div>
-          <div class="widget-list">${links}</div>
+          <div class="widget-actions">${quickActions}</div>
         </article>
       </section>
     </div>
@@ -187,10 +279,7 @@ function renderDashboard(dashboard: DashboardPayload): string {
 }
 
 function renderDocuments(
-  documents: Array<{
-    label: string;
-    trigger_name: string;
-  }>
+  documents: DashboardPayload["documents"]
 ): string {
   return `
     <div class="widget-stack">
@@ -201,9 +290,26 @@ function renderDocuments(
           <p>Keep the bureaucratic options visible without forcing the user back through Alma navigation.</p>
         </div>
       </header>
+      ${
+        documents.currentDownloadUrl
+          ? `
+            <section class="widget-card">
+              <div class="widget-card-header">
+                <div>
+                  <p class="widget-kicker">Live download</p>
+                  <h2>Current Alma PDF</h2>
+                </div>
+                <a href="${escapeHtml(documents.currentDownloadUrl)}" target="_blank" rel="noreferrer">
+                  Download
+                </a>
+              </div>
+            </section>
+          `
+          : ""
+      }
       <section class="widget-card">
         <div class="widget-list">
-          ${documents
+          ${documents.reports
             .map(
               (item) => `
                 <div class="widget-row compact">
@@ -215,6 +321,16 @@ function renderDocuments(
             .join("")}
         </div>
       </section>
+    </div>
+  `;
+}
+
+function renderError(message: string): string {
+  return `
+    <div class="widget-empty">
+      <p class="widget-kicker">Live data required</p>
+      <h1>Backend unavailable</h1>
+      <p>${escapeHtml(message)}</p>
     </div>
   `;
 }
@@ -250,7 +366,9 @@ function render(result: WidgetResult) {
   root.innerHTML =
     result.view === "documents"
       ? renderDocuments(result.documents)
-      : renderDashboard(result.dashboard);
+      : result.view === "error"
+        ? renderError(result.message)
+        : renderDashboard(result.dashboard);
   bindActions(root);
 }
 

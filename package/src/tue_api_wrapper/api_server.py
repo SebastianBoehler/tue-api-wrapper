@@ -180,6 +180,22 @@ def alma_documents() -> list[object]:
         raise _translate_error(error) from error
 
 
+@app.get("/api/alma/studyservice")
+def alma_studyservice() -> dict[str, object]:
+    try:
+        contract = _alma_client().fetch_studyservice_contract()
+        return {
+            "reports": serialize(contract.reports),
+            "currentDownloadAvailable": contract.latest_download_url is not None,
+            "currentDownloadUrl": "/api/alma/documents/current"
+            if contract.latest_download_url is not None
+            else None,
+            "sourcePageUrl": _alma_client().studyservice_url,
+        }
+    except AlmaError as error:
+        raise _translate_error(error) from error
+
+
 @app.get("/api/alma/documents/current")
 def alma_current_document() -> Response:
     try:

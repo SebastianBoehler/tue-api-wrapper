@@ -31,6 +31,7 @@ const widgetJs = readFileSync(join(projectRoot, "web/dist/widget.js"), "utf8");
 const widgetCss = readFileSync(join(projectRoot, "web/dist/widget.css"), "utf8");
 
 const widgetUri = "ui://study-hub/dashboard-v1.html";
+const detailWidgetUri = "ui://study-hub/detail-v1.html";
 const widgetDomain = process.env.APP_BASE_URL;
 const apiBaseUrl = process.env.PORTAL_API_BASE_URL;
 const serverName = "tue-study-hub";
@@ -38,7 +39,7 @@ const defaultTerm = "Sommer 2026";
 const limitSchema = z.number().int().min(1).max(20).optional();
 const courseFilterListSchema = z.array(z.string().min(1)).max(12).optional();
 
-function buildWidgetHtml() {
+function buildWidgetHtml(template: "dashboard" | "detail") {
   const meta: Record<string, unknown> = {
     ui: {
       prefersBorder: true,
@@ -48,7 +49,9 @@ function buildWidgetHtml() {
       }
     },
     "openai/widgetDescription":
-      "Shows a compact study dashboard with upcoming Alma events, open ILIAS tasks, exam progress, documents, and learning spaces."
+      template === "detail"
+        ? "Shows a host modal with focused details for a selected study item."
+        : "Shows an interactive study dashboard with upcoming Alma events, open ILIAS tasks, exam progress, documents, and learning spaces."
   };
 
   if (widgetDomain) {
@@ -61,7 +64,7 @@ function buildWidgetHtml() {
   return {
     contents: [
       {
-        uri: widgetUri,
+        uri: template === "detail" ? detailWidgetUri : widgetUri,
         mimeType: RESOURCE_MIME_TYPE,
         text: `<!doctype html>
 <html lang="en">
@@ -70,7 +73,7 @@ function buildWidgetHtml() {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>${widgetCss}</style>
   </head>
-  <body>
+  <body data-template="${template}">
     <div id="root"></div>
     <script type="module">${widgetJs}</script>
   </body>
@@ -169,9 +172,10 @@ function asStructured(value: object): Record<string, unknown> {
 }
 
 function createAppServer() {
-  const server = new McpServer({ name: serverName, version: "0.3.0" });
+  const server = new McpServer({ name: serverName, version: "0.4.0" });
 
-  registerAppResource(server, "study-hub-widget", widgetUri, {}, async () => buildWidgetHtml());
+  registerAppResource(server, "study-hub-widget", widgetUri, {}, async () => buildWidgetHtml("dashboard"));
+  registerAppResource(server, "study-hub-detail-widget", detailWidgetUri, {}, async () => buildWidgetHtml("detail"));
 
   registerAppTool(
     server,

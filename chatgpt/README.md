@@ -24,6 +24,14 @@ The widget uses the MCP Apps bridge for tool-result updates and only falls back 
 - "Which learning spaces am I enrolled in?"
 - "What courses fit my degree or subject next semester?"
 
+The widget also uses ChatGPT host capabilities when available:
+
+- `window.openai.callTool(...)` for in-widget panel refreshes without remounting the widget
+- `window.openai.setWidgetState(...)` to persist the active panel, course query, and selected detail
+- `window.openai.requestModal(...)` to open host-owned detail views
+- `window.openai.requestDisplayMode(...)` for fullscreen expansion
+- `window.openai.requestClose()` inside the modal detail view
+
 ## Development
 
 ```bash

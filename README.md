@@ -1,44 +1,59 @@
 [![CI](https://github.com/SebastianBoehler/tue-api-wrapper/actions/workflows/ci.yml/badge.svg)](https://github.com/SebastianBoehler/tue-api-wrapper/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)
+![Go](https://img.shields.io/badge/go-1.21%2B-00ADD8?logo=go&logoColor=white)
 ![Next.js](https://img.shields.io/badge/next.js-15-000000?logo=nextdotjs&logoColor=white)
 ![MCP Apps](https://img.shields.io/badge/MCP-Apps%20SDK-1f6feb)
-![Cloud Run](https://img.shields.io/badge/deploy-cloud%20run-4285F4?logo=googlecloud&logoColor=white)
 
 # tue-api-wrapper
 
-Unified Alma + ILIAS access for the University of Tuebingen, packaged as:
+Unified Alma + ILIAS access for the University of Tuebingen.
 
-- a reusable Python client and API backend
+This repository packages the same core contracts in multiple surfaces:
+
+- a reusable Python client and FastAPI backend
 - a Unix-native Go CLI for constrained environments
-- thin local CLI commands
 - a Next.js student dashboard
 - a ChatGPT Apps SDK MCP server and widget
 
-The goal is straightforward: keep Alma and ILIAS as the source of truth, but build better navigation, search, and summarization layers on top.
+The goal is to keep Alma and ILIAS as the source of truth while building cleaner access layers, better search, and more maintainable tooling around them.
 
-## Monorepo layout
+## Open-source readiness note
 
-- `package/`: Python package, request-based Alma/ILIAS clients, FastAPI backend
-- `go/`: JSON-first Go CLI for authenticated Alma and ILIAS flows
-- `cli/`: repo-local shell wrappers around the Python entry points
-- `nextjs/`: student-facing web app
-- `chatgpt/`: ChatGPT app with MCP tools and widget UI
+The repository now has contribution and community scaffolding, but it still needs an explicit `LICENSE` file before outside reuse terms are clear. Contributions are welcome, but licensing should be finalized before a broad public launch.
 
-## Features
+## Why this repo exists
 
-- Read Alma timetable exports without browser automation
-- Read Alma academic views and study-service document options
-- Read ILIAS repository roots, content pages, forum topics, and exercises
-- Read Alma day-specific lecture listings from the authenticated current-lectures flow
-- Search authenticated ILIAS repository objects and resolve object info screens
-- Run the stable authenticated flows as a single Go binary without Python or Node
-- Expose a unified backend API for web and ChatGPT surfaces
-- Provide standard `search` and `fetch` MCP tools for ChatGPT compatibility
-- Package both backend and ChatGPT server for Google Cloud Run
+University systems often expose useful workflows only through brittle browser flows. This project turns those flows into documented, testable request contracts so they can be reused by:
+
+- dashboards
+- CLI tools
+- local automations
+- ChatGPT tools
+- other student or research tooling
+
+## What works today
+
+- Alma timetable exports without browser automation
+- Alma study-service document discovery
+- Alma authenticated current-lectures listing
+- ILIAS repository root and content parsing
+- ILIAS authenticated search
+- ILIAS info-screen resolution
+- shared JSON-friendly contracts across Python and Go
+
+## Repository structure
+
+| Path | Purpose |
+| --- | --- |
+| `package/` | Python package, request-based Alma/ILIAS clients, FastAPI backend |
+| `go/` | JSON-first Go CLI for stable authenticated flows |
+| `cli/` | Repo-local shell wrappers around Python entry points |
+| `nextjs/` | Student-facing web app |
+| `chatgpt/` | ChatGPT app with MCP tools and widget UI |
 
 ## Quick start
 
-### 1. Start the backend
+### Backend
 
 ```bash
 cd package
@@ -54,9 +69,9 @@ export ILIAS_PASSWORD="your-password"
 tue-api-server
 ```
 
-The backend runs on `http://127.0.0.1:8000` by default.
+Default URL: `http://127.0.0.1:8000`
 
-### 2. Start the web app
+### Web app
 
 ```bash
 cd nextjs
@@ -64,7 +79,7 @@ npm ci --workspaces=false
 PORTAL_API_BASE_URL=http://127.0.0.1:8000 npm run dev
 ```
 
-### 3. Build the Go CLI
+### Go CLI
 
 ```bash
 cd go
@@ -72,14 +87,22 @@ go build ./cmd/tue
 ./tue --help
 ```
 
-For constrained Linux targets, cross-compile a single binary:
+Example commands:
+
+```bash
+./tue alma current-lectures --date 14.03.2026 --json
+./tue ilias search --term graphics --json
+./tue ilias info --target 5289871 --json
+```
+
+Cross-compile for a Linux ARM64 board:
 
 ```bash
 cd go
 GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o tue-linux-arm64 ./cmd/tue
 ```
 
-### 4. Start the ChatGPT app
+### ChatGPT app
 
 ```bash
 cd chatgpt
@@ -88,33 +111,60 @@ PORTAL_API_BASE_URL=http://127.0.0.1:8000 npm run build
 PORTAL_API_BASE_URL=http://127.0.0.1:8000 npm run dev
 ```
 
-The MCP endpoint will be available at `http://127.0.0.1:8080/mcp`.
+Default MCP URL: `http://127.0.0.1:8080/mcp`
+
+## Contributing
+
+Contributions are welcome across parsers, contract discovery, tests, docs, UI, and packaging.
+
+Good contribution areas:
+
+- new authenticated Alma or ILIAS endpoints
+- parser hardening against real markup drift
+- fixture-based contract tests
+- dashboard improvements
+- CLI ergonomics
+- packaging and deployment work
+
+Start with:
+
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+- [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md)
+- [`SECURITY.md`](./SECURITY.md)
+- [`MAINTAINERS.md`](./MAINTAINERS.md)
+
+If you want to open a PR, small scoped changes with tests or fixture updates are the easiest to review.
+
+## Maintainers Wanted
+
+This repository is intentionally becoming easier to maintain in public. Help is especially useful in:
+
+- Go client expansion beyond the initial stable flows
+- CI hardening across Python, Go, and frontend packages
+- docs and onboarding cleanup
+- fixture curation and parser regression coverage
+- UI improvements for the student dashboard and ChatGPT app
+
+If you want to become a regular reviewer or maintainer, see [`MAINTAINERS.md`](./MAINTAINERS.md).
 
 ## CI
 
-GitHub Actions runs:
+GitHub Actions currently validates:
 
-- Python install, source compilation, and unit tests in `package/`
-- Type checks and production builds in `nextjs/`
-- Type checks and production builds in `chatgpt/`
+- Python package install, compile, and tests in `package/`
+- Go CLI build and tests in `go/`
+- Next.js typecheck and production build in `nextjs/`
+- ChatGPT app typecheck and production build in `chatgpt/`
 
 Workflow file: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
 
-## Security and local fixtures
+## Security and data handling
 
-Captured HAR/network exports and downloaded PDFs can contain session material and signed URLs.
+Captured HAR exports, cookies, signed URLs, and downloaded PDFs may contain sensitive material.
 
-- They are ignored by git.
-- Local debugging fixtures belong under `package/fixtures/`.
-- CI does not require those files; HAR-dependent tests are skipped when the fixtures are absent.
-
-## Deployment
-
-- [`package/Dockerfile`](./package/Dockerfile): backend API container
-- [`chatgpt/Dockerfile`](./chatgpt/Dockerfile): ChatGPT MCP server container
-- [`chatgpt/cloudbuild.yaml`](./chatgpt/cloudbuild.yaml): Cloud Build config
-
-The ChatGPT app expects `PORTAL_API_BASE_URL` to point at a reachable backend deployment for live data.
+- do not commit secrets, HAR captures, PDFs, or live session artifacts
+- keep private debugging fixtures under ignored local paths only
+- report vulnerabilities privately as described in [`SECURITY.md`](./SECURITY.md)
 
 ## Related docs
 

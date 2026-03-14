@@ -21,10 +21,6 @@ The goal is to keep Alma and ILIAS as the source of truth while building cleaner
 
 ![Study Hub overview preview](docs/assets/overview-screenshot.png)
 
-## Open-source readiness note
-
-The repository now has contribution and community scaffolding, but it still needs an explicit `LICENSE` file before outside reuse terms are clear. Contributions are welcome, but licensing should be finalized before a broad public launch.
-
 ## Why this repo exists
 
 University systems often expose useful workflows only through brittle browser flows. This project turns those flows into documented, testable request contracts so they can be reused by:
@@ -167,6 +163,12 @@ Captured HAR exports, cookies, signed URLs, and downloaded PDFs may contain sens
 - do not commit secrets, HAR captures, PDFs, or live session artifacts
 - keep private debugging fixtures under ignored local paths only
 - report vulnerabilities privately as described in [`SECURITY.md`](./SECURITY.md)
+
+## License
+
+This repository is licensed under the MIT License. See [`LICENSE`](./LICENSE).
+
+The license applies to the code and documentation in this repository. It does not grant rights to third-party systems, trademarks, or data exposed by Alma, ILIAS, or the University of Tuebingen.
 
 ## Related docs
 

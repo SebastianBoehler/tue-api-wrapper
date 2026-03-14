@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 
 from .client import AlmaClient
 from .config import AlmaError
+from .credentials import read_uni_credentials
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -32,10 +32,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    username = os.getenv("ALMA_USERNAME")
-    password = os.getenv("ALMA_PASSWORD")
+    username, password = read_uni_credentials()
     if not username or not password:
-        parser.error("Set ALMA_USERNAME and ALMA_PASSWORD in the environment first.")
+        parser.error(
+            "Set UNI_USERNAME and UNI_PASSWORD in the environment first. "
+            "Legacy ALMA_* and ILIAS_* env vars are still supported as fallbacks."
+        )
 
     client = AlmaClient()
     try:

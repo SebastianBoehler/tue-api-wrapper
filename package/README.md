@@ -49,13 +49,11 @@ The existing CLI entry points are still available after installation:
 ## Credentials
 
 ```bash
-export ALMA_USERNAME='your-uni-login'
-export ALMA_PASSWORD='your-password'
-export ILIAS_USERNAME='your-uni-login'
-export ILIAS_PASSWORD='your-password'
+export UNI_USERNAME='your-uni-login'
+export UNI_PASSWORD='your-password'
 ```
 
-ILIAS also falls back to `UNI_USERNAME` / `UNI_PASSWORD`, then to the Alma credentials.
+`UNI_USERNAME` / `UNI_PASSWORD` is the canonical credential pair. Legacy `ALMA_*` and `ILIAS_*` vars are still accepted as fallbacks for compatibility.
 
 ## Tests
 

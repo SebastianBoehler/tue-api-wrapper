@@ -48,7 +48,7 @@ Typical local setup:
 
 ```bash
 cd ../package
-ALMA_USERNAME=... ALMA_PASSWORD=... ILIAS_USERNAME=... ILIAS_PASSWORD=... PORT=8001 PYTHONPATH=src python -m tue_api_wrapper.api_server
+UNI_USERNAME=... UNI_PASSWORD=... PORT=8001 PYTHONPATH=src python -m tue_api_wrapper.api_server
 
 cd ../chatgpt
 PORTAL_API_BASE_URL=http://127.0.0.1:8001 npm run dev

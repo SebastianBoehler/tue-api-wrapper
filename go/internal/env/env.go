@@ -25,21 +25,23 @@ func LoadLocalEnv(paths ...string) error {
 }
 
 func AlmaCredentials() (string, string) {
-	return os.Getenv("ALMA_USERNAME"), os.Getenv("ALMA_PASSWORD")
+	return sharedCredentials()
 }
 
 func IliasCredentials() (string, string) {
-	username := firstNonEmpty(
-		os.Getenv("ILIAS_USERNAME"),
-		os.Getenv("UNI_USERNAME"),
-		os.Getenv("ALMA_USERNAME"),
-	)
-	password := firstNonEmpty(
-		os.Getenv("ILIAS_PASSWORD"),
-		os.Getenv("UNI_PASSWORD"),
-		os.Getenv("ALMA_PASSWORD"),
-	)
-	return username, password
+	return sharedCredentials()
+}
+
+func sharedCredentials() (string, string) {
+	return firstNonEmpty(
+			os.Getenv("UNI_USERNAME"),
+			os.Getenv("ALMA_USERNAME"),
+			os.Getenv("ILIAS_USERNAME"),
+		), firstNonEmpty(
+			os.Getenv("UNI_PASSWORD"),
+			os.Getenv("ALMA_PASSWORD"),
+			os.Getenv("ILIAS_PASSWORD"),
+		)
 }
 
 func firstNonEmpty(values ...string) string {

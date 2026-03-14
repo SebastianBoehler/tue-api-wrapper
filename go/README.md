@@ -10,14 +10,14 @@ tue ilias search --term graphics --page 1 --json
 tue ilias info --target 5289871 --json
 ```
 
-The CLI automatically loads `.env.local` and `.env` from the current directory or any parent directory. Supported credentials:
+The CLI automatically loads `.env.local` and `.env` from the current directory or any parent directory. Canonical credentials:
 
-- `ALMA_USERNAME`
-- `ALMA_PASSWORD`
-- `ILIAS_USERNAME`
-- `ILIAS_PASSWORD`
+Preferred setup:
+
 - `UNI_USERNAME`
 - `UNI_PASSWORD`
+
+Legacy `ALMA_*` and `ILIAS_*` env vars are still accepted as fallbacks for compatibility.
 
 ## Build
 

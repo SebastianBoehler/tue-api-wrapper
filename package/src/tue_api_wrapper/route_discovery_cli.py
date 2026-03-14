@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 
 from .client import AlmaClient
 from .config import AlmaError, AlmaParseError
+from .credentials import read_uni_credentials
 from .ilias_client import IliasClient
 
 DEFAULT_ALMA_START_URLS = (
@@ -61,14 +62,6 @@ class FormArtifact:
     method: str
     field_names: tuple[str, ...]
     button_names: tuple[str, ...]
-
-
-def _read_credential(*names: str) -> str | None:
-    for name in names:
-        value = os.getenv(name)
-        if value:
-            return value
-    return None
 
 
 def _normalize_url(url: str) -> str:
@@ -279,21 +272,23 @@ def _build_session(site: str, authenticated: bool) -> tuple[requests.Session, tu
     if site == "alma":
         client = AlmaClient()
         if authenticated:
-            username = _read_credential("ALMA_USERNAME")
-            password = _read_credential("ALMA_PASSWORD")
+            username, password = read_uni_credentials()
             if not username or not password:
-                raise AlmaParseError("Set ALMA_USERNAME and ALMA_PASSWORD for authenticated Alma crawling.")
+                raise AlmaParseError(
+                    "Set UNI_USERNAME and UNI_PASSWORD for authenticated crawling. "
+                    "Legacy ALMA_* and ILIAS_* env vars are still supported as fallbacks."
+                )
             client.login(username=username, password=password)
             return client.session, (client.start_page_url, client.public_module_search_url)
         return client.session, DEFAULT_ALMA_START_URLS
 
     client = IliasClient()
     if authenticated:
-        username = _read_credential("ILIAS_USERNAME", "UNI_USERNAME", "ALMA_USERNAME")
-        password = _read_credential("ILIAS_PASSWORD", "UNI_PASSWORD", "ALMA_PASSWORD")
+        username, password = read_uni_credentials()
         if not username or not password:
             raise AlmaParseError(
-                "Set ILIAS_USERNAME/ILIAS_PASSWORD, UNI_USERNAME/UNI_PASSWORD, or ALMA_USERNAME/ALMA_PASSWORD for authenticated ILIAS crawling."
+                "Set UNI_USERNAME and UNI_PASSWORD for authenticated crawling. "
+                "Legacy ALMA_* and ILIAS_* env vars are still supported as fallbacks."
             )
         client.login(username=username, password=password)
         return client.session, ("https://ovidius.uni-tuebingen.de/ilias3/goto.php/root/1",)

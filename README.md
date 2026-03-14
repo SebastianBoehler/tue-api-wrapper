@@ -17,6 +17,10 @@ This repository packages the same core contracts in multiple surfaces:
 
 The goal is to keep Alma and ILIAS as the source of truth while building cleaner access layers, better search, and more maintainable tooling around them.
 
+## Preview
+
+![Study Hub overview preview](docs/assets/overview-screenshot.png)
+
 ## Open-source readiness note
 
 The repository now has contribution and community scaffolding, but it still needs an explicit `LICENSE` file before outside reuse terms are clear. Contributions are welcome, but licensing should be finalized before a broad public launch.
@@ -61,10 +65,8 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 
-export ALMA_USERNAME="your-uni-login"
-export ALMA_PASSWORD="your-password"
-export ILIAS_USERNAME="your-uni-login"
-export ILIAS_PASSWORD="your-password"
+export UNI_USERNAME="your-uni-login"
+export UNI_PASSWORD="your-password"
 
 tue-api-server
 ```

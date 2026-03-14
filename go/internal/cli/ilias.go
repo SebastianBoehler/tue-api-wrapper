@@ -106,7 +106,9 @@ func runIliasInfo(args []string) int {
 func authenticatedIliasClient() (*ilias.Client, bool) {
 	username, password := env.IliasCredentials()
 	if username == "" || password == "" {
-		output.PrintError(fmt.Errorf("set ILIAS_USERNAME and ILIAS_PASSWORD, or UNI_USERNAME / UNI_PASSWORD, before using ILIAS commands"))
+		output.PrintError(fmt.Errorf(
+			"set UNI_USERNAME and UNI_PASSWORD before using authenticated commands; legacy ALMA_* and ILIAS_* env vars are still supported as fallbacks",
+		))
 		return nil, false
 	}
 

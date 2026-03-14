@@ -35,7 +35,9 @@ func runAlmaCurrentLectures(args []string) int {
 
 	username, password := env.AlmaCredentials()
 	if username == "" || password == "" {
-		return output.PrintError(fmt.Errorf("set ALMA_USERNAME and ALMA_PASSWORD before using Alma commands"))
+		return output.PrintError(fmt.Errorf(
+			"set UNI_USERNAME and UNI_PASSWORD before using authenticated commands; legacy ALMA_* and ILIAS_* env vars are still supported as fallbacks",
+		))
 	}
 
 	client, err := alma.NewClient(config.DefaultTimeout())

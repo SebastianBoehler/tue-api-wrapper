@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
 from datetime import date, datetime
-import os
 from typing import Any
 
 from .client import AlmaClient
 from .config import AlmaParseError
+from .credentials import read_uni_credentials
 from .ilias_client import IliasClient
 
 DEFAULT_DASHBOARD_TERM = "Sommer 2026"
@@ -26,29 +26,23 @@ def serialize(value: Any) -> Any:
 
 class PortalService:
     def _alma_client(self) -> AlmaClient:
-        username = os.getenv("ALMA_USERNAME")
-        password = os.getenv("ALMA_PASSWORD")
+        username, password = read_uni_credentials()
         if not username or not password:
-            raise AlmaParseError("Set ALMA_USERNAME and ALMA_PASSWORD before using Alma endpoints.")
+            raise AlmaParseError(
+                "Set UNI_USERNAME and UNI_PASSWORD before using authenticated endpoints. "
+                "Legacy ALMA_* and ILIAS_* env vars are still supported as fallbacks."
+            )
 
         client = AlmaClient()
         client.login(username=username, password=password)
         return client
 
     def _ilias_client(self) -> IliasClient:
-        username = (
-            os.getenv("ILIAS_USERNAME")
-            or os.getenv("UNI_USERNAME")
-            or os.getenv("ALMA_USERNAME")
-        )
-        password = (
-            os.getenv("ILIAS_PASSWORD")
-            or os.getenv("UNI_PASSWORD")
-            or os.getenv("ALMA_PASSWORD")
-        )
+        username, password = read_uni_credentials()
         if not username or not password:
             raise AlmaParseError(
-                "Set ILIAS_USERNAME and ILIAS_PASSWORD, or UNI_USERNAME / UNI_PASSWORD, before using ILIAS endpoints."
+                "Set UNI_USERNAME and UNI_PASSWORD before using authenticated endpoints. "
+                "Legacy ALMA_* and ILIAS_* env vars are still supported as fallbacks."
             )
 
         client = IliasClient()

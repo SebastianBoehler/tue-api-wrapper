@@ -9,6 +9,7 @@
 Unified Alma + ILIAS access for the University of Tuebingen, packaged as:
 
 - a reusable Python client and API backend
+- a Unix-native Go CLI for constrained environments
 - thin local CLI commands
 - a Next.js student dashboard
 - a ChatGPT Apps SDK MCP server and widget
@@ -18,6 +19,7 @@ The goal is straightforward: keep Alma and ILIAS as the source of truth, but bui
 ## Monorepo layout
 
 - `package/`: Python package, request-based Alma/ILIAS clients, FastAPI backend
+- `go/`: JSON-first Go CLI for authenticated Alma and ILIAS flows
 - `cli/`: repo-local shell wrappers around the Python entry points
 - `nextjs/`: student-facing web app
 - `chatgpt/`: ChatGPT app with MCP tools and widget UI
@@ -29,6 +31,7 @@ The goal is straightforward: keep Alma and ILIAS as the source of truth, but bui
 - Read ILIAS repository roots, content pages, forum topics, and exercises
 - Read Alma day-specific lecture listings from the authenticated current-lectures flow
 - Search authenticated ILIAS repository objects and resolve object info screens
+- Run the stable authenticated flows as a single Go binary without Python or Node
 - Expose a unified backend API for web and ChatGPT surfaces
 - Provide standard `search` and `fetch` MCP tools for ChatGPT compatibility
 - Package both backend and ChatGPT server for Google Cloud Run
@@ -61,7 +64,22 @@ npm ci --workspaces=false
 PORTAL_API_BASE_URL=http://127.0.0.1:8000 npm run dev
 ```
 
-### 3. Start the ChatGPT app
+### 3. Build the Go CLI
+
+```bash
+cd go
+go build ./cmd/tue
+./tue --help
+```
+
+For constrained Linux targets, cross-compile a single binary:
+
+```bash
+cd go
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o tue-linux-arm64 ./cmd/tue
+```
+
+### 4. Start the ChatGPT app
 
 ```bash
 cd chatgpt
@@ -101,5 +119,6 @@ The ChatGPT app expects `PORTAL_API_BASE_URL` to point at a reachable backend de
 ## Related docs
 
 - [`package/README.md`](./package/README.md)
+- [`go/README.md`](./go/README.md)
 - [`chatgpt/README.md`](./chatgpt/README.md)
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md)

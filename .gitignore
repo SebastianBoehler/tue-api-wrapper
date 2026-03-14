@@ -23,3 +23,7 @@ package/.venv/
 package/fixtures/
 tmp-*.pdf
 output/
+go/*.test
+go/tue
+go/tue-external
+go/tue-*

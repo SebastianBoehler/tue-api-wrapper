@@ -27,6 +27,8 @@ The goal is straightforward: keep Alma and ILIAS as the source of truth, but bui
 - Read Alma timetable exports without browser automation
 - Read Alma academic views and study-service document options
 - Read ILIAS repository roots, content pages, forum topics, and exercises
+- Read Alma day-specific lecture listings from the authenticated current-lectures flow
+- Search authenticated ILIAS repository objects and resolve object info screens
 - Expose a unified backend API for web and ChatGPT surfaces
 - Provide standard `search` and `fetch` MCP tools for ChatGPT compatibility
 - Package both backend and ChatGPT server for Google Cloud Run

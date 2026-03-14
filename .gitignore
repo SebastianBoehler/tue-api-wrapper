@@ -1,4 +1,6 @@
 .DS_Store
+.env
+.env.*
 .next
 .venv
 .pytest_cache

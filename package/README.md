@@ -31,6 +31,12 @@ The API starts on `http://127.0.0.1:8000` and exposes:
 - `GET /api/alma/*`
 - `GET /api/ilias/*`
 
+New discovery-backed additions:
+
+- `GET /api/alma/current-lectures`
+- `GET /api/ilias/search`
+- `GET /api/ilias/info`
+
 The existing CLI entry points are still available after installation:
 
 - `alma-timetable`

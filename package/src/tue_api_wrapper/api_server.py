@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 import uvicorn
 
+from .api_routes_extended import router as extended_router
 from .client import AlmaClient
 from .config import AlmaError
 from .portal_service import DEFAULT_DASHBOARD_TERM, PortalService, serialize
@@ -23,6 +24,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(extended_router)
 
 portal_service = PortalService()
 

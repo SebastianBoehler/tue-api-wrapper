@@ -1,0 +1,159 @@
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from tue_api_wrapper.alma_feature_html import extract_current_lectures_form, parse_current_lectures_page
+from tue_api_wrapper.ilias_feature_html import extract_ilias_search_form, parse_ilias_info_page, parse_ilias_search_page
+
+
+class ExtendedContractTests(unittest.TestCase):
+    def test_extract_ilias_search_form(self) -> None:
+        html = """
+        <form action="/ilias.php?baseClass=ilsearchcontrollergui&amp;cmd=post&amp;fallbackCmd=performSearch&amp;rtoken=abc" method="post">
+          <input type="text" name="term" value="" />
+          <input type="radio" name="type" value="1" checked="checked" />
+          <input type="submit" name="cmd[performSearch]" value="Suche" />
+        </form>
+        """
+        form = extract_ilias_search_form(html, "https://ovidius.example/ilias.php?baseClass=ilSearchControllerGUI")
+
+        self.assertEqual(form.term_field_name, "term")
+        self.assertEqual(form.search_button_name, "cmd[performSearch]")
+        self.assertEqual(form.payload["type"], "1")
+
+    def test_parse_ilias_search_page_extracts_results_and_paging(self) -> None:
+        html = """
+        <div class="ilTableNav">
+          <a href="/ilias.php?page_number=2">weiter</a>
+        </div>
+        <table class="table table-striped fullwidth">
+          <tr><th>Typ</th><th>Titel / Beschreibung</th><th>Aktionen</th></tr>
+          <tr>
+            <td></td>
+            <td>
+              <div class="il_ContainerListItem">
+                <div class="il_ContainerItemTitle form-inline">
+                  <h3 class="il_ContainerItemTitle"><a class="il_ContainerItemTitle" href="/goto.php/cat/42">Computer Graphics</a></h3>
+                </div>
+                <div class="ilListItemSection il_Description">Group homepage</div>
+                <div class="ilListItemSection il_ItemProperties">
+                  <span class="il_ItemProperty">Status: Online</span>
+                </div>
+                <div class="il_ItemProperties">
+                  <ol class="breadcrumb hidden-print">
+                    <li><a href="/goto.php/root/1">Veranstaltungen (Magazin)</a></li>
+                    <li><a href="/goto.php/cat/9">Sommersemester 2026</a></li>
+                  </ol>
+                </div>
+              </div>
+            </td>
+            <td>
+              <a href="/ilias.php?baseClass=ilrepositorygui&amp;cmd=infoScreen&amp;ref_id=42">Info</a>
+              <a href="/ilias.php?cmd=addToDesk&amp;item_ref_id=42&amp;type=cat">Zu Favoriten hinzufügen</a>
+            </td>
+          </tr>
+        </table>
+        """
+        page = parse_ilias_search_page(html, "https://ovidius.example/ilias.php", query="graphics", page_number=1)
+
+        self.assertEqual(page.query, "graphics")
+        self.assertEqual(page.next_page_url, "https://ovidius.example/ilias.php?page_number=2")
+        self.assertEqual(page.results[0].title, "Computer Graphics")
+        self.assertEqual(page.results[0].url, "https://ovidius.example/goto.php/cat/42")
+        self.assertEqual(page.results[0].item_type, "cat")
+        self.assertEqual(page.results[0].breadcrumbs, ("Veranstaltungen (Magazin)", "Sommersemester 2026"))
+
+    def test_parse_ilias_info_page_extracts_sections(self) -> None:
+        html = """
+        <h1>MPC Materials</h1>
+        <div><h2>Allgemein</h2></div>
+        <div class="form-group row">
+          <div class="il_InfoScreenProperty control-label">Sprache</div>
+          <div class="il_InfoScreenPropertyValue">Englisch</div>
+        </div>
+        <div><h2>Gruppenbeitritt</h2></div>
+        <div class="form-group row">
+          <div class="il_InfoScreenProperty control-label">Freie Plätze</div>
+          <div class="il_InfoScreenPropertyValue">0</div>
+        </div>
+        """
+        page = parse_ilias_info_page(html, "https://ovidius.example/info")
+
+        self.assertEqual(page.title, "MPC Materials")
+        self.assertEqual(page.sections[0].title, "Allgemein")
+        self.assertEqual(page.sections[0].fields[0].label, "Sprache")
+        self.assertEqual(page.sections[0].fields[0].value, "Englisch")
+        self.assertEqual(page.sections[1].fields[0].value, "0")
+
+    def test_extract_current_lectures_form(self) -> None:
+        html = """
+        <form id="showEventsAndExaminationsOnDateForm" action="/alma/currentLectures">
+          <input type="hidden" name="javax.faces.ViewState" value="e1s1" />
+          <input type="text" name="showEventsAndExaminationsOnDateForm:tabContainer:date-selection-container:date" value="14.03.2026" />
+          <button type="submit" name="showEventsAndExaminationsOnDateForm:searchButtonId">Suchen</button>
+        </form>
+        """
+        form = extract_current_lectures_form(html, "https://alma.example/current")
+
+        self.assertTrue(form.date_field_name.endswith(":date"))
+        self.assertTrue(form.search_button_name.endswith(":searchButtonId"))
+        self.assertEqual(form.payload["javax.faces.ViewState"], "e1s1")
+        self.assertIsNone(form.filter_field_name)
+        self.assertEqual(form.filter_values, ())
+
+    def test_extract_current_lectures_form_defaults_all_courses_filter(self) -> None:
+        html = """
+        <form id="showEventsAndExaminationsOnDateForm" action="/alma/currentLectures">
+          <input type="hidden" name="javax.faces.ViewState" value="e1s1" />
+          <input type="text" name="showEventsAndExaminationsOnDateForm:tabContainer:date-selection-container:date" value="14.03.2026" />
+          <input type="checkbox" name="showEventsAndExaminationsOnDateForm:tabContainer:filter-container:selectCheckbox" value="selectAllCourses" />
+          <input type="checkbox" name="showEventsAndExaminationsOnDateForm:tabContainer:filter-container:selectCheckbox" value="selectChangedCourses" />
+          <button type="submit" name="showEventsAndExaminationsOnDateForm:searchButtonId">Suchen</button>
+        </form>
+        """
+        form = extract_current_lectures_form(html, "https://alma.example/current")
+
+        self.assertEqual(
+            form.filter_field_name,
+            "showEventsAndExaminationsOnDateForm:tabContainer:filter-container:selectCheckbox",
+        )
+        self.assertEqual(form.filter_values, ("selectAllCourses",))
+
+    def test_parse_current_lectures_page_extracts_rows(self) -> None:
+        html = """
+        <input type="text" name="showEventsAndExaminationsOnDateForm:tabContainer:date-selection-container:date" value="14.03.2026" />
+        <table id="showEventsAndExaminationsOnDateForm:tabContainer:term-planning-container:coursesAndExaminationsOnDateListTable:coursesAndExaminationsOnDateListTableTable" class="tableWithSelect table">
+          <tr><th>Aktion</th><th>Titel</th></tr>
+          <tr>
+            <td><a href="/alma/pages/startFlow.xhtml?_flowId=detailView-flow&amp;unitId=42&amp;periodId=236">Details</a></td>
+            <td><a href="/alma/pages/startFlow.xhtml?_flowId=detailView-flow&amp;unitId=42&amp;periodId=236">Computer Graphics</a></td>
+            <td>09:00</td>
+            <td>11:00</td>
+            <td>INF-4201</td>
+            <td>1. PG</td>
+            <td>Vorlesung</td>
+            <td>Prof. Lensch</td>
+            <td>Prof. Lensch</td>
+            <td>Sand 14</td>
+            <td>A301</td>
+            <td>Sommersemester 2026</td>
+            <td>mit Übung</td>
+            <td></td>
+          </tr>
+        </table>
+        """
+        page = parse_current_lectures_page(html, "https://alma.example/current")
+
+        self.assertEqual(page.selected_date, "14.03.2026")
+        self.assertEqual(page.results[0].title, "Computer Graphics")
+        self.assertEqual(page.results[0].detail_url, "https://alma.example/alma/pages/startFlow.xhtml?_flowId=detailView-flow&unitId=42&periodId=236")
+        self.assertEqual(page.results[0].event_type, "Vorlesung")
+
+
+if __name__ == "__main__":
+    unittest.main()

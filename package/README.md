@@ -26,6 +26,9 @@ tue-api-server
 The API starts on `http://127.0.0.1:8000` and exposes:
 
 - `GET /api/dashboard`
+- `GET /api/mail/mailboxes`
+- `GET /api/mail/inbox`
+- `GET /api/mail/messages/{uid}`
 - `GET /api/search`
 - `GET /api/items/{id}`
 - `GET /api/alma/*`
@@ -54,6 +57,8 @@ export UNI_PASSWORD='your-password'
 ```
 
 `UNI_USERNAME` / `UNI_PASSWORD` is the canonical credential pair. Legacy `ALMA_*` and `ILIAS_*` vars are still accepted as fallbacks for compatibility.
+
+Mail uses the same `UNI_USERNAME` / `UNI_PASSWORD` pair by default. `MAIL_USERNAME` / `MAIL_PASSWORD` remains available only as an optional override if a mailbox ever needs separate values.
 
 ## Tests
 

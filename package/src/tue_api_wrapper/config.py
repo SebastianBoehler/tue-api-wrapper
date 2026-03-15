@@ -28,3 +28,11 @@ class AlmaLoginError(AlmaError):
 
 class AlmaParseError(AlmaError):
     pass
+
+
+class MailError(AlmaError):
+    pass
+
+
+class MailLoginError(MailError):
+    pass

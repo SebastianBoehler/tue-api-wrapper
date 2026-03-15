@@ -4,6 +4,10 @@ import type {
   IliasForumTopic,
   IliasMembershipItem,
   IliasTaskItem,
+  MailInboxResponse,
+  MailInboxFilters,
+  MailMessageDetailResponse,
+  MailboxSummary,
   ModuleDetail,
   DashboardData,
   DocumentsPanel,
@@ -58,6 +62,32 @@ export function getDashboard(): Promise<DashboardData> {
 
 export function getDocuments(): Promise<DocumentsPanel> {
   return fetchJson("/api/alma/studyservice");
+}
+
+export function getMailMailboxes(): Promise<MailboxSummary[]> {
+  return fetchJson("/api/mail/mailboxes");
+}
+
+export function getMailInbox(filters: Partial<MailInboxFilters> = {}): Promise<MailInboxResponse> {
+  const params = new URLSearchParams();
+  params.set("limit", String(filters.limit ?? 12));
+  if (filters.mailbox?.trim()) {
+    params.set("mailbox", filters.mailbox.trim());
+  }
+  if (filters.query?.trim()) {
+    params.set("query", filters.query.trim());
+  }
+  if (filters.sender?.trim()) {
+    params.set("sender", filters.sender.trim());
+  }
+  if (filters.unreadOnly) {
+    params.set("unread_only", "true");
+  }
+  return fetchJson(`/api/mail/inbox?${params.toString()}`);
+}
+
+export function getMailMessage(uid: string, mailbox = "INBOX"): Promise<MailMessageDetailResponse> {
+  return fetchJson(`/api/mail/messages/${encodeURIComponent(uid)}?mailbox=${encodeURIComponent(mailbox)}`);
 }
 
 export function getAlmaExams(limit = 20): Promise<ExamItem[]> {

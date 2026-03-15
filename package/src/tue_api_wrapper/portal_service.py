@@ -5,9 +5,10 @@ from datetime import date, datetime
 from typing import Any
 
 from .client import AlmaClient
-from .config import AlmaParseError
-from .credentials import read_uni_credentials
+from .config import AlmaParseError, MailError
+from .credentials import read_mail_credentials, read_uni_credentials
 from .ilias_client import IliasClient
+from .mail_client import MailClient
 
 DEFAULT_DASHBOARD_TERM = "Sommer 2026"
 
@@ -49,9 +50,48 @@ class PortalService:
         client.login(username=username, password=password)
         return client
 
+    def _mail_client(self) -> MailClient:
+        username, password = read_mail_credentials()
+        if not username or not password:
+            raise MailError(
+                "Set UNI_USERNAME and UNI_PASSWORD before using mail endpoints. "
+                "MAIL_USERNAME and MAIL_PASSWORD remain available as optional overrides."
+            )
+
+        client = MailClient()
+        client.login(username=username, password=password)
+        return client
+
+    def _mail_panel(self, *, limit: int = 6) -> dict[str, Any]:
+        try:
+            client = self._mail_client()
+            try:
+                inbox = client.fetch_inbox_summary(limit=limit)
+            finally:
+                client.close()
+        except MailError as error:
+            return {
+                "available": False,
+                "account": None,
+                "mailbox": "INBOX",
+                "unreadCount": 0,
+                "items": [],
+                "error": str(error),
+            }
+
+        return {
+            "available": True,
+            "account": inbox.account,
+            "mailbox": inbox.mailbox,
+            "unreadCount": inbox.unread_count,
+            "items": serialize(inbox.messages),
+            "error": None,
+        }
+
     def build_dashboard(self, *, term_label: str = DEFAULT_DASHBOARD_TERM, limit: int = 8) -> dict[str, Any]:
         alma = self._alma_client()
         ilias = self._ilias_client()
+        mail = self._mail_panel(limit=limit)
 
         timetable = alma.fetch_timetable_for_term(term_label)
         enrollments = alma.fetch_enrollment_page()
@@ -114,7 +154,13 @@ class PortalService:
                 "memberships": serialize(memberships),
                 "tasks": serialize(tasks),
             },
+            "mail": mail,
             "quickLinks": [
+                {
+                    "label": "Inbox",
+                    "href": "/mail",
+                    "description": "Read your Uni mailbox through the same dashboard backend.",
+                },
                 {
                     "label": "Progress",
                     "href": "/progress",
@@ -191,6 +237,18 @@ class PortalService:
                     "url": link["href"],
                     "text": link["description"],
                     "metadata": {"kind": "quicklink"},
+                }
+            )
+
+        for message in dashboard.get("mail", {}).get("items", []):
+            sender = message.get("from_address") or message.get("from_name") or "Unknown sender"
+            items.append(
+                {
+                    "id": f'mail:{message["uid"]}',
+                    "title": message["subject"],
+                    "url": f'/mail/{message["uid"]}',
+                    "text": f"From: {sender}\nPreview: {message.get('preview') or '-'}",
+                    "metadata": {"kind": "mail", "unread": bool(message.get("is_unread"))},
                 }
             )
 

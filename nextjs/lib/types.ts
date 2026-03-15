@@ -23,6 +23,63 @@ export interface DocumentsPanel {
   sourcePageUrl: string;
 }
 
+export interface MailMessageSummary {
+  uid: string;
+  subject: string;
+  from_name: string | null;
+  from_address: string | null;
+  received_at: string | null;
+  preview: string | null;
+  is_unread: boolean;
+}
+
+export interface MailInboxResponse {
+  account: string;
+  mailbox: string;
+  unread_count: number;
+  messages: MailMessageSummary[];
+}
+
+export interface MailMessageDetailResponse {
+  uid: string;
+  mailbox: string;
+  subject: string;
+  from_name: string | null;
+  from_address: string | null;
+  to_recipients: string[];
+  cc_recipients: string[];
+  received_at: string | null;
+  preview: string | null;
+  body_text: string | null;
+  attachment_names: string[];
+  is_unread: boolean;
+}
+
+export interface MailboxSummary {
+  name: string;
+  label: string;
+  special_use: string | null;
+  message_count: number | null;
+  unread_count: number | null;
+}
+
+export interface MailInboxFilters {
+  mailbox: string;
+  query: string;
+  sender: string;
+  unreadOnly: boolean;
+  limit: number;
+}
+
+export interface MailPanel {
+  available: boolean;
+  account: string | null;
+  mailbox: string;
+  unreadCount: number;
+  items: MailMessageSummary[];
+  error: string | null;
+}
+
 export interface CatalogNode {
   level: number;
   kind: string | null;
@@ -204,5 +261,6 @@ export interface DashboardData {
     memberships: IliasMembershipItem[];
     tasks: IliasTaskItem[];
   };
+  mail: MailPanel;
   quickLinks: QuickLink[];
 }

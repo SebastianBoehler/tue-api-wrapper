@@ -39,6 +39,7 @@ University systems often expose useful workflows only through brittle browser fl
 - ILIAS repository root and content parsing
 - ILIAS authenticated search
 - ILIAS info-screen resolution
+- Uni Tübingen read-only inbox access over IMAP
 - shared JSON-friendly contracts across Python and Go
 
 ## Repository structure
@@ -68,6 +69,8 @@ tue-api-server
 ```
 
 Default URL: `http://127.0.0.1:8000`
+
+`UNI_USERNAME` / `UNI_PASSWORD` is the canonical credential pair for Alma, ILIAS, and mail. `MAIL_*` remains available only as an optional override for unusual setups.
 
 ### Web app
 
@@ -175,4 +178,5 @@ The license applies to the code and documentation in this repository. It does no
 - [`package/README.md`](./package/README.md)
 - [`go/README.md`](./go/README.md)
 - [`chatgpt/README.md`](./chatgpt/README.md)
+- [`docs/mail-discovery.md`](./docs/mail-discovery.md)
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md)

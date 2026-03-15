@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "../components/app-shell";
+import { DashboardMailCard } from "../components/dashboard-mail-card";
 import { ErrorPanel } from "../components/error-panel";
 import { Card, CardContent, CardHeader, CardTitle, CardAction, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ export default async function HomePage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <p className="text-sm text-muted-foreground max-w-3xl">{dashboard.hero.subtitle}</p>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
               {dashboard.metrics.map((metric) => (
                 <Card key={metric.label} size="sm">
                   <CardContent>
@@ -102,6 +103,7 @@ export default async function HomePage() {
                 ))}
               </CardContent>
             </Card>
+            <DashboardMailCard mail={dashboard.mail} />
           </div>
 
           <div className="flex flex-col gap-3">

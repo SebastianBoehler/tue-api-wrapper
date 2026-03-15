@@ -36,8 +36,10 @@ University systems often expose useful workflows only through brittle browser fl
 - Alma timetable exports without browser automation
 - Alma study-service document discovery
 - Alma authenticated current-lectures listing
+- Alma study-planner parsing
+- Alma authenticated course and event search
 - ILIAS repository root and content parsing
-- ILIAS authenticated search
+- ILIAS authenticated search with richer filters
 - ILIAS info-screen resolution
 - Uni Tübingen read-only inbox access over IMAP
 - shared JSON-friendly contracts across Python and Go
@@ -178,5 +180,6 @@ The license applies to the code and documentation in this repository. It does no
 - [`package/README.md`](./package/README.md)
 - [`go/README.md`](./go/README.md)
 - [`chatgpt/README.md`](./chatgpt/README.md)
+- [`docs/alma-ilias-discovery.md`](./docs/alma-ilias-discovery.md)
 - [`docs/mail-discovery.md`](./docs/mail-discovery.md)
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md)

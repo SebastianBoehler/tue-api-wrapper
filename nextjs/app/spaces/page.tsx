@@ -1,25 +1,52 @@
 import Link from "next/link";
 import { AppShell } from "../../components/app-shell";
 import { ErrorPanel } from "../../components/error-panel";
+import { IliasSearchPanel } from "../../components/ilias-search-panel";
 import { Card, CardContent, CardHeader, CardTitle, CardAction, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getIliasContent, getIliasExercise, getIliasForum, getIliasMemberships, PortalApiError } from "../../lib/portal-api";
+import { parseIliasSearchParams } from "../../lib/discovery-query";
+import { getIliasContent, getIliasExercise, getIliasForum, getIliasMemberships, getIliasSearchOptions, PortalApiError, searchIlias } from "../../lib/portal-api";
 import { ArrowLeft, ExternalLink, FileText, ClipboardList, MessageCircle } from "lucide-react";
 
 function buildSpaceHref(target: string) {
   return `/spaces?target=${encodeURIComponent(target)}`;
 }
 
-export default async function SpacesPage({ searchParams }: { searchParams?: Promise<{ target?: string }> }) {
+function firstValue(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+export default async function SpacesPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   const resolvedSearchParams = (await searchParams) ?? {};
-  const target = resolvedSearchParams.target?.trim();
+  const target = firstValue(resolvedSearchParams.target).trim();
+  const search = parseIliasSearchParams(resolvedSearchParams);
 
   if (!target) {
     try {
-      const memberships = await getIliasMemberships(40);
+      const [memberships, searchOptions, searchResults] = await Promise.all([
+        getIliasMemberships(40),
+        getIliasSearchOptions(),
+        search.term
+          ? searchIlias({
+            term: search.term,
+            searchMode: search.searchMode,
+            contentTypes: search.contentTypes,
+            createdEnabled: search.createdEnabled,
+            createdMode: search.createdMode,
+            createdDate: search.createdDate
+          })
+          : Promise.resolve(null)
+      ]);
       return (
         <AppShell title="Learning Spaces">
+          <IliasSearchPanel
+            filters={searchOptions}
+            result={searchResults}
+            term={search.term}
+            searchMode={search.searchMode}
+            contentTypes={search.contentTypes}
+          />
           <Card>
             <CardHeader>
               <CardTitle>My learning spaces</CardTitle>

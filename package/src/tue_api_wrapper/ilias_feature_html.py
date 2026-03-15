@@ -8,7 +8,9 @@ from .config import AlmaParseError
 from .ilias_feature_models import (
     IliasInfoField,
     IliasInfoPage,
+    IliasSearchFilters,
     IliasInfoSection,
+    IliasSearchOption,
     IliasSearchForm,
     IliasSearchPage,
     IliasSearchResult,
@@ -16,6 +18,65 @@ from .ilias_feature_models import (
 
 
 ILIAS_SEARCH_URL = "https://ovidius.uni-tuebingen.de/ilias.php?baseClass=ilSearchControllerGUI"
+
+
+def _normalize_text(value: str) -> str:
+    return " ".join(value.split())
+
+
+def _extract_search_filters(soup: BeautifulSoup) -> IliasSearchFilters:
+    area_value = None
+    area_label = None
+    area_input = soup.find("input", attrs={"name": "area"})
+    if area_input is not None:
+        area_value = area_input.get("value", "").strip() or None
+    area_anchor = soup.find("a", attrs={"name": "area_anchor"})
+    if area_anchor is not None:
+        area_label = _normalize_text(area_anchor.get_text(" ", strip=True)) or None
+
+    search_modes = tuple(
+        IliasSearchOption(
+            value=radio.get("value", ""),
+            label=_normalize_text(label.get_text(" ", strip=True)) if label is not None else radio.get("value", ""),
+            is_selected=radio.has_attr("checked"),
+        )
+        for radio in soup.select("#type input[type='radio']")
+        for label in [radio.find_parent("label")]
+    )
+
+    content_types = tuple(
+        IliasSearchOption(
+            value=checkbox.get("name", "").split("[", 1)[-1].rstrip("]"),
+            label=_normalize_text(label.get_text(" ", strip=True)) if label is not None else checkbox.get("name", ""),
+            is_selected=checkbox.has_attr("checked"),
+        )
+        for checkbox in soup.select("input[name^='filter_type[']")
+        for label in [soup.find("label", attrs={"for": checkbox.get("id")})]
+    )
+
+    creation_select = soup.find("select", attrs={"name": "screation_ontype"})
+    creation_modes = tuple(
+        IliasSearchOption(
+            value=option.get("value", ""),
+            label=_normalize_text(option.get_text(" ", strip=True)),
+            is_selected=option.has_attr("selected"),
+        )
+        for option in creation_select.find_all("option")
+    ) if creation_select is not None else ()
+    creation_checkbox = soup.find("input", attrs={"name": "screation"})
+    creation_enabled = creation_checkbox.has_attr("checked") if creation_checkbox is not None else False
+    creation_date_input = soup.find("input", attrs={"name": "screation_date"})
+    creation_date = creation_date_input.get("value", "").strip() or None if creation_date_input is not None else None
+
+    return IliasSearchFilters(
+        area_value=area_value,
+        area_label=area_label,
+        search_modes=search_modes,
+        content_types=content_types,
+        creation_modes=creation_modes,
+        creation_enabled=creation_enabled,
+        creation_date=creation_date,
+    )
 
 
 def extract_ilias_search_form(html: str, page_url: str) -> IliasSearchForm:
@@ -52,6 +113,11 @@ def extract_ilias_search_form(html: str, page_url: str) -> IliasSearchForm:
         payload=payload,
         term_field_name="term",
         search_button_name=search_button["name"],
+        search_mode_field_name="type",
+        creation_enabled_field_name="screation",
+        creation_mode_field_name="screation_ontype",
+        creation_date_field_name="screation_date",
+        filters=_extract_search_filters(soup),
     )
 
 
@@ -119,7 +185,7 @@ def parse_ilias_search_page(
     previous_page_url = None
     next_page_url = None
     for link in soup.select(".ilTableNav a[href]"):
-        label = " ".join(link.get_text(" ", strip=True).split()).lower()
+        label = _normalize_text(link.get_text(" ", strip=True)).lower()
         if label == "zurück":
             previous_page_url = urljoin(page_url, link["href"])
         elif label == "weiter":
@@ -131,6 +197,7 @@ def parse_ilias_search_page(
         page_number=page_number,
         previous_page_url=previous_page_url,
         next_page_url=next_page_url,
+        filters=_extract_search_filters(soup),
         results=tuple(results),
     )
 

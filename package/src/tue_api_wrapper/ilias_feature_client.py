@@ -5,15 +5,36 @@ import re
 from .config import AlmaParseError
 from .ilias_client import IliasClient
 from .ilias_feature_html import ILIAS_SEARCH_URL, extract_ilias_search_form, parse_ilias_info_page, parse_ilias_search_page
-from .ilias_feature_models import IliasInfoPage, IliasSearchPage
+from .ilias_feature_models import IliasInfoPage, IliasSearchFilters, IliasSearchPage
 
 
-def search_ilias(client: IliasClient, *, term: str, page: int = 1) -> IliasSearchPage:
+def fetch_ilias_search_filters(client: IliasClient) -> IliasSearchFilters:
+    response = client.session.get(
+        ILIAS_SEARCH_URL,
+        timeout=client.timeout_seconds,
+        allow_redirects=True,
+    )
+    response.raise_for_status()
+    return extract_ilias_search_form(response.text, response.url).filters
+
+
+def search_ilias(
+    client: IliasClient,
+    *,
+    term: str,
+    page: int = 1,
+    search_mode: str | None = None,
+    content_types: tuple[str, ...] = (),
+    created_enabled: bool = False,
+    created_mode: str | None = None,
+    created_date: str | None = None,
+) -> IliasSearchPage:
     normalized_term = term.strip()
     if not normalized_term:
         raise AlmaParseError("A non-empty ILIAS search term is required.")
 
     target_page = max(1, page)
+    normalized_content_types = tuple(dict.fromkeys(value.strip() for value in content_types if value.strip()))
     response = client.session.get(
         ILIAS_SEARCH_URL,
         timeout=client.timeout_seconds,
@@ -24,6 +45,21 @@ def search_ilias(client: IliasClient, *, term: str, page: int = 1) -> IliasSearc
     contract = extract_ilias_search_form(response.text, response.url)
     payload = dict(contract.payload)
     payload[contract.term_field_name] = normalized_term
+    if search_mode:
+        payload[contract.search_mode_field_name] = search_mode
+    for option in contract.filters.content_types:
+        key = f"filter_type[{option.value}]"
+        payload.pop(key, None)
+    for value in normalized_content_types:
+        payload[f"filter_type[{value}]"] = "1"
+    if created_enabled:
+        payload[contract.creation_enabled_field_name] = "1"
+        if created_mode:
+            payload[contract.creation_mode_field_name] = created_mode
+        if created_date:
+            payload[contract.creation_date_field_name] = created_date
+    else:
+        payload.pop(contract.creation_enabled_field_name, None)
     payload[contract.search_button_name] = "Suche"
     response = client.session.post(
         contract.action_url,

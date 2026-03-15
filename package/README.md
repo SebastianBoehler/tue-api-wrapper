@@ -37,7 +37,10 @@ The API starts on `http://127.0.0.1:8000` and exposes:
 New discovery-backed additions:
 
 - `GET /api/alma/current-lectures`
+- `GET /api/alma/study-planner`
+- `GET /api/alma/course-search`
 - `GET /api/ilias/search`
+- `GET /api/ilias/search/options`
 - `GET /api/ilias/info`
 
 The existing CLI entry points are still available after installation:

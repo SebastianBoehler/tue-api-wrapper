@@ -17,6 +17,12 @@ import type {
   ModuleSearchResponse,
   PortalLink
 } from "./types";
+import type {
+  AlmaCourseSearchResponse,
+  AlmaStudyPlannerResponse,
+  IliasSearchFilters,
+  IliasSearchResponse
+} from "./discovery-types";
 
 const apiBaseUrl = process.env.PORTAL_API_BASE_URL ?? "http://127.0.0.1:8000";
 
@@ -98,6 +104,30 @@ export function getAlmaEnrollment(): Promise<EnrollmentState> {
   return fetchJson("/api/alma/enrollments");
 }
 
+export function getAlmaStudyPlanner(): Promise<AlmaStudyPlannerResponse> {
+  return fetchJson("/api/alma/study-planner");
+}
+
+export function getAlmaCourseSearch({
+  query = "",
+  term = "",
+  limit = 20
+}: {
+  query?: string;
+  term?: string;
+  limit?: number;
+} = {}): Promise<AlmaCourseSearchResponse> {
+  const params = new URLSearchParams();
+  if (query.trim()) {
+    params.set("query", query.trim());
+  }
+  if (term.trim()) {
+    params.set("term", term.trim());
+  }
+  params.set("limit", String(limit));
+  return fetchJson(`/api/alma/course-search?${params.toString()}`);
+}
+
 export async function getIliasLinks(): Promise<PortalLink[]> {
   const data = await fetchJson<{
     mainbar_links: PortalLink[];
@@ -121,6 +151,48 @@ export function getIliasExercise(target: string): Promise<IliasExerciseAssignmen
 
 export function getIliasMemberships(limit = 20): Promise<IliasMembershipItem[]> {
   return fetchJson(`/api/ilias/memberships?limit=${limit}`);
+}
+
+export function getIliasSearchOptions(): Promise<IliasSearchFilters> {
+  return fetchJson("/api/ilias/search/options");
+}
+
+export function searchIlias({
+  term,
+  page = 1,
+  searchMode = "",
+  contentTypes = [],
+  createdEnabled = false,
+  createdMode = "",
+  createdDate = ""
+}: {
+  term: string;
+  page?: number;
+  searchMode?: string;
+  contentTypes?: string[];
+  createdEnabled?: boolean;
+  createdMode?: string;
+  createdDate?: string;
+}): Promise<IliasSearchResponse> {
+  const params = new URLSearchParams();
+  params.set("term", term.trim());
+  params.set("page", String(page));
+  if (searchMode.trim()) {
+    params.set("search_mode", searchMode.trim());
+  }
+  for (const value of contentTypes) {
+    params.append("content_type", value);
+  }
+  if (createdEnabled) {
+    params.set("created_enabled", "true");
+  }
+  if (createdMode.trim()) {
+    params.set("created_mode", createdMode.trim());
+  }
+  if (createdDate.trim()) {
+    params.set("created_date", createdDate.trim());
+  }
+  return fetchJson(`/api/ilias/search?${params.toString()}`);
 }
 
 export function getIliasTasks(limit = 20): Promise<IliasTaskItem[]> {

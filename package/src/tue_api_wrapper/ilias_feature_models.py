@@ -4,11 +4,34 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
+class IliasSearchOption:
+    value: str
+    label: str
+    is_selected: bool
+
+
+@dataclass(frozen=True)
+class IliasSearchFilters:
+    area_value: str | None
+    area_label: str | None
+    search_modes: tuple[IliasSearchOption, ...]
+    content_types: tuple[IliasSearchOption, ...]
+    creation_modes: tuple[IliasSearchOption, ...]
+    creation_enabled: bool
+    creation_date: str | None
+
+
+@dataclass(frozen=True)
 class IliasSearchForm:
     action_url: str
     payload: dict[str, str]
     term_field_name: str
     search_button_name: str
+    search_mode_field_name: str
+    creation_enabled_field_name: str
+    creation_mode_field_name: str
+    creation_date_field_name: str
+    filters: IliasSearchFilters
 
 
 @dataclass(frozen=True)
@@ -30,6 +53,7 @@ class IliasSearchPage:
     page_number: int
     previous_page_url: str | None
     next_page_url: str | None
+    filters: IliasSearchFilters
     results: tuple[IliasSearchResult, ...]
 
 

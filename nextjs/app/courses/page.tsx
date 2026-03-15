@@ -1,18 +1,37 @@
 import { AppShell } from "../../components/app-shell";
+import { AlmaCourseSearchPanel } from "../../components/alma-course-search-panel";
 import { CourseDiscovery } from "../../components/course-discovery";
 import { ErrorPanel } from "../../components/error-panel";
+import { StudyPlannerCard } from "../../components/study-planner-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { buildPortalApiUrl, getIliasMemberships, getModuleSearchFilters, PortalApiError } from "../../lib/portal-api";
+import { buildPortalApiUrl, getAlmaCourseSearch, getAlmaStudyPlanner, getIliasMemberships, getModuleSearchFilters, PortalApiError } from "../../lib/portal-api";
+import { parseCourseDiscoveryParams } from "../../lib/discovery-query";
 
-export default async function CoursesPage() {
+export default async function CoursesPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const courseSearch = parseCourseDiscoveryParams(resolvedSearchParams);
+
   try {
-    const [filtersResult, iliasResult] = await Promise.allSettled([getModuleSearchFilters(), getIliasMemberships(8)]);
+    const [filtersResult, iliasResult, plannerResult, almaSearchResult] = await Promise.allSettled([
+      getModuleSearchFilters(),
+      getIliasMemberships(8),
+      getAlmaStudyPlanner(),
+      getAlmaCourseSearch({ query: courseSearch.query, term: courseSearch.term, limit: 16 })
+    ]);
     if (filtersResult.status === "rejected") throw filtersResult.reason;
     const memberships = iliasResult.status === "fulfilled" ? iliasResult.value : [];
+    const planner = plannerResult.status === "fulfilled" ? plannerResult.value : null;
+    const almaSearch = almaSearchResult.status === "fulfilled" ? almaSearchResult.value : null;
 
     return (
       <AppShell title="Courses">
+        {planner ? <StudyPlannerCard planner={planner} /> : null}
+        {almaSearch ? <AlmaCourseSearchPanel response={almaSearch} query={courseSearch.query} term={courseSearch.term} /> : null}
         <CourseDiscovery apiBaseUrl={buildPortalApiUrl("")} filters={filtersResult.value.filters} sourcePageUrl={filtersResult.value.sourcePageUrl} />
         {memberships.length ? (
           <Card>

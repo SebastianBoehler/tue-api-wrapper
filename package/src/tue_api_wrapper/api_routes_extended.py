@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query
 from .alma_course_search_client import search_courses
 from .alma_feature_client import fetch_current_lectures
 from .alma_planner_client import fetch_study_planner
+from .client import AlmaClient
 from .config import AlmaError
 from .ilias_feature_client import fetch_ilias_info_page, fetch_ilias_search_filters, search_ilias
 from .portal_service import PortalService, serialize
@@ -25,6 +26,21 @@ def _translate_error(error: AlmaError):
     from fastapi import HTTPException
 
     return HTTPException(status_code=400, detail=str(error))
+
+
+def _studyservice_summary(client: AlmaClient) -> dict[str, object]:
+    contract = client.fetch_studyservice_contract()
+    return {
+        "bannerText": contract.banner_text,
+        "personName": contract.person_name,
+        "activeTabLabel": contract.active_tab_label,
+        "tabs": serialize(contract.tabs),
+        "outputRequests": serialize(contract.output_requests),
+        "reports": serialize(contract.reports),
+        "currentDownloadAvailable": contract.latest_download_url is not None,
+        "currentDownloadUrl": "/api/alma/documents/current" if contract.latest_download_url is not None else None,
+        "sourcePageUrl": client.studyservice_url,
+    }
 
 
 @router.get("/api/alma/current-lectures")
@@ -56,6 +72,14 @@ def alma_course_search(
 ) -> dict[str, object]:
     try:
         return serialize(search_courses(_alma_client(), query=query, term=term.strip() or None, limit=limit))
+    except AlmaError as error:
+        raise _translate_error(error) from error
+
+
+@router.get("/api/alma/studyservice/summary")
+def alma_studyservice_summary() -> dict[str, object]:
+    try:
+        return _studyservice_summary(_alma_client())
     except AlmaError as error:
         raise _translate_error(error) from error
 

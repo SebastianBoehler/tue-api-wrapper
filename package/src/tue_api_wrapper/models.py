@@ -185,14 +185,6 @@ class AlmaModuleDetail:
 
 
 @dataclass(frozen=True)
-class AlmaStudyServicePage:
-    action_url: str
-    payload: dict[str, str]
-    reports: tuple[AlmaDocumentReport, ...]
-    latest_download_url: str | None
-
-
-@dataclass(frozen=True)
 class AlmaDownloadedDocument:
     source_url: str
     final_url: str

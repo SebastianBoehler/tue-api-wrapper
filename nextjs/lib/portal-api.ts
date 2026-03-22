@@ -67,7 +67,7 @@ export function getDashboard(): Promise<DashboardData> {
 }
 
 export function getDocuments(): Promise<DocumentsPanel> {
-  return fetchJson("/api/alma/studyservice");
+  return fetchJson("/api/alma/studyservice/summary");
 }
 
 export function getMailMailboxes(): Promise<MailboxSummary[]> {

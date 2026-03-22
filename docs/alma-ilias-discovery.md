@@ -6,6 +6,14 @@ This note summarizes additional Alma and ILIAS request contracts discovered from
 - local HAR fixtures under `package/fixtures/`
 - an authenticated live crawl with `python -m tue_api_wrapper.route_discovery_cli`
 
+The discovery CLI now also supports offline HAR imports, which is useful when a full authenticated session is already captured locally:
+
+```bash
+package/.venv/bin/python -m tue_api_wrapper.route_discovery_cli alma \
+  --har alma_full_session.directory.uni-tuebingen.de.har \
+  --format json
+```
+
 No credentials, cookies, raw documents, or full private HTML dumps are stored here. Live observations are reduced to route shapes, query keys, page titles, and selected form/button names.
 
 ## Existing Implemented Surface

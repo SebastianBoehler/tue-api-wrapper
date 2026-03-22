@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 import requests
 
 from .alma_documents_html import extract_studyservice_page
+from .alma_studyservice_models import AlmaStudyServicePage
 from .alma_academics_html import (
     extract_advanced_module_search_form,
     extract_module_search_form,
@@ -46,7 +47,6 @@ from .models import (
     AlmaModuleSearchFilters,
     AlmaModuleSearchPage,
     AlmaModuleSearchResponse,
-    AlmaStudyServicePage,
     TimetableResult,
 )
 

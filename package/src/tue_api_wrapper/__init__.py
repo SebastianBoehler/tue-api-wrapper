@@ -1,6 +1,7 @@
 from .client import AlmaClient
 from .config import AlmaError, AlmaLoginError
 from .ilias_client import IliasClient
+from .alma_studyservice_models import AlmaStudyServicePage
 from .models import (
     AlmaCourseCatalogNode,
     AlmaDownloadedDocument,
@@ -9,7 +10,6 @@ from .models import (
     AlmaExamNode,
     AlmaModuleSearchPage,
     AlmaModuleSearchResult,
-    AlmaStudyServicePage,
     IliasContentItem,
     IliasContentPage,
     IliasContentSection,

@@ -16,7 +16,25 @@ export interface DocumentReport {
   trigger_name: string;
 }
 
+export interface StudyServiceTab {
+  button_name: string;
+  label: string;
+  is_active: boolean;
+}
+
+export interface StudyServiceOutputRequest {
+  trigger_name: string;
+  label: string;
+  count: number | null;
+  message: string | null;
+}
+
 export interface DocumentsPanel {
+  bannerText: string | null;
+  personName: string | null;
+  activeTabLabel: string | null;
+  tabs: StudyServiceTab[];
+  outputRequests: StudyServiceOutputRequest[];
   reports: DocumentReport[];
   currentDownloadAvailable: boolean;
   currentDownloadUrl: string | null;

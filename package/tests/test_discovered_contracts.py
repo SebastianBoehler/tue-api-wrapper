@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import sys
+import tempfile
 from pathlib import Path
 import unittest
 
@@ -8,8 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tue_api_wrapper.alma_course_search_html import extract_course_search_form, parse_course_search_page
+from tue_api_wrapper.alma_documents_html import extract_studyservice_page
 from tue_api_wrapper.alma_planner_html import parse_study_planner_page
 from tue_api_wrapper.ilias_feature_html import extract_ilias_search_form
+from tue_api_wrapper.route_discovery import discover_routes_from_har
 
 
 class DiscoveredContractTests(unittest.TestCase):
@@ -147,6 +151,106 @@ class DiscoveredContractTests(unittest.TestCase):
         self.assertEqual(form.filters.creation_modes[0].label, "Objekte erstellt nach dem...")
         self.assertTrue(form.filters.creation_enabled)
         self.assertEqual(form.filters.creation_date, "15.03.2026")
+
+    def test_extract_studyservice_page_includes_banner_tabs_and_output_requests(self) -> None:
+        html = """
+        <form id="studyserviceForm" action="/alma/studyservice">
+          <input type="hidden" name="javax.faces.ViewState" value="e2s4" />
+          <span id="studyserviceForm:outputTextInforbar">Rückgemeldet für Sommersemester 2026</span>
+          <div id="studyserviceForm:fieldsetPersoenlicheData">
+            <h2>Personendaten: Sebastian Böhler</h2>
+          </div>
+          <ul>
+            <li><button type="submit" name="studyserviceForm:content.2" class="tabButton">Meine Studiengänge</button></li>
+            <li><button type="submit" name="studyserviceForm:content.5" class="tabButton">Kontaktdaten</button></li>
+            <li><button type="submit" name="studyserviceForm:content.10" class="tabButton active">Bescheide / Bescheinigungen</button></li>
+          </ul>
+          <a id="studyserviceForm:report:outputRequests:studentOutputRequests:outputRequestButtonsGroups:0:showOutputRequestGroup">
+            Leistungsbescheide
+            <span>(0)</span>
+            <small>Sie haben noch keine Bescheide.</small>
+          </a>
+          <button name="studyserviceForm:report:reports:reportButtons:jobConfigurationButtons:0:jobConfigurationButtons:3:job2" type="submit">
+            <span class="jobname">Immatrikulationsbescheinigung/Studienbescheinigung/Datenkontrollblatt [PDF]</span>
+          </button>
+          <a href="/alma/rds?state=docdownload&amp;docId=abc-123">Latest PDF</a>
+        </form>
+        """
+
+        page = extract_studyservice_page(html, "https://alma.example/alma/pages/cm/stu/studyService/start.xhtml")
+
+        self.assertEqual(page.banner_text, "Rückgemeldet für Sommersemester 2026")
+        self.assertEqual(page.person_name, "Sebastian Böhler")
+        self.assertEqual(page.active_tab_label, "Bescheide / Bescheinigungen")
+        self.assertEqual([tab.label for tab in page.tabs], ["Meine Studiengänge", "Kontaktdaten", "Bescheide / Bescheinigungen"])
+        self.assertEqual(page.output_requests[0].label, "Leistungsbescheide")
+        self.assertEqual(page.output_requests[0].count, 0)
+        self.assertEqual(page.output_requests[0].message, "Sie haben noch keine Bescheide.")
+        self.assertTrue(page.latest_download_url.endswith("state=docdownload&docId=abc-123"))
+
+    def test_discover_routes_from_har_extracts_post_triggers(self) -> None:
+        har_payload = {
+            "log": {
+                "entries": [
+                    {
+                        "request": {
+                            "method": "GET",
+                            "url": "https://alma.example/alma/start",
+                            "headers": [],
+                        },
+                        "response": {
+                            "status": 200,
+                            "content": {
+                                "mimeType": "text/html",
+                                "text": """
+                                <html>
+                                  <head><title>Start</title></head>
+                                  <body>
+                                    <a href="/alma/planner">Planner</a>
+                                    <form action="/alma/search" method="post">
+                                      <input name="query" value="" />
+                                      <button name="genericSearchMask:buttonsBottom:search" type="submit">Suchen</button>
+                                    </form>
+                                  </body>
+                                </html>
+                                """,
+                            },
+                        },
+                    },
+                    {
+                        "request": {
+                            "method": "POST",
+                            "url": "https://alma.example/alma/search",
+                            "headers": [{"name": "Referer", "value": "https://alma.example/alma/start"}],
+                            "postData": {
+                                "params": [
+                                    {"name": "query", "value": "bioinformatik"},
+                                    {"name": "activePageElementId", "value": "genericSearchMask%3AbuttonsBottom%3Asearch"},
+                                    {"name": "javax.faces.source", "value": "genericSearchMask%3AbuttonsBottom%3Asearch"},
+                                ]
+                            },
+                        },
+                        "response": {
+                            "status": 200,
+                            "content": {"mimeType": "text/xml"},
+                        },
+                    },
+                ]
+            }
+        }
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            har_path = Path(tmpdir) / "session.har"
+            har_path.write_text(json.dumps(har_payload), encoding="utf-8")
+            report = discover_routes_from_har(har_path=har_path, allowed_hosts={"alma.example"})
+
+        search_route = next(route for route in report["routes"] if route["path"] == "/alma/search")
+        self.assertEqual(search_route["methods"], ["POST"])
+        self.assertIn("har-request", search_route["sources"])
+
+        synthetic_form = next(form for form in report["forms"] if form["action_url"] == "https://alma.example/alma/search")
+        self.assertIn("query", synthetic_form["field_names"])
+        self.assertIn("genericSearchMask:buttonsBottom:search", synthetic_form["button_names"])
 
 
 if __name__ == "__main__":

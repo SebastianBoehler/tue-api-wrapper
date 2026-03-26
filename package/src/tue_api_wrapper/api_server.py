@@ -10,6 +10,7 @@ import uvicorn
 
 from .api_routes_extended import router as extended_router
 from .api_routes_mail import router as mail_router
+from .api_routes_moodle import router as moodle_router
 from .client import AlmaClient
 from .config import AlmaError
 from .portal_service import DEFAULT_DASHBOARD_TERM, PortalService, serialize
@@ -27,6 +28,7 @@ app.add_middleware(
 )
 app.include_router(extended_router)
 app.include_router(mail_router)
+app.include_router(moodle_router)
 
 portal_service = PortalService()
 

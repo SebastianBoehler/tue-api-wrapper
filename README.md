@@ -6,7 +6,7 @@
 
 # tue-api-wrapper
 
-Unified Alma + ILIAS access for the University of Tuebingen.
+Unified Alma + ILIAS + Moodle access for the University of Tuebingen.
 
 This repository packages the same core contracts in multiple surfaces:
 
@@ -15,7 +15,7 @@ This repository packages the same core contracts in multiple surfaces:
 - a Next.js student dashboard
 - a ChatGPT Apps SDK MCP server and widget
 
-The goal is to keep Alma and ILIAS as the source of truth while building cleaner access layers, better search, and more maintainable tooling around them.
+The goal is to keep Alma, ILIAS, and Moodle as the source of truth while building cleaner access layers, better search, and more maintainable tooling around them.
 
 ## Preview
 
@@ -38,6 +38,7 @@ University systems often expose useful workflows only through brittle browser fl
 - Alma authenticated current-lectures listing
 - Alma study-planner parsing
 - Alma authenticated course and event search
+- Moodle dashboard, calendar, courses, categories, grades, messages, and notifications
 - ILIAS repository root and content parsing
 - ILIAS authenticated search with richer filters
 - ILIAS info-screen resolution
@@ -181,5 +182,6 @@ The license applies to the code and documentation in this repository. It does no
 - [`go/README.md`](./go/README.md)
 - [`chatgpt/README.md`](./chatgpt/README.md)
 - [`docs/alma-ilias-discovery.md`](./docs/alma-ilias-discovery.md)
+- [`docs/moodle-discovery.md`](./docs/moodle-discovery.md)
 - [`docs/mail-discovery.md`](./docs/mail-discovery.md)
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md)

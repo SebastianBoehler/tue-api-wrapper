@@ -1,6 +1,6 @@
 # tue-api-wrapper package
 
-Core Python package for the unified Alma + ILIAS study hub.
+Core Python package for the unified Alma + ILIAS + Moodle study hub.
 
 This subproject now owns:
 
@@ -33,6 +33,7 @@ The API starts on `http://127.0.0.1:8000` and exposes:
 - `GET /api/items/{id}`
 - `GET /api/alma/*`
 - `GET /api/ilias/*`
+- `GET /api/moodle/*`
 
 New discovery-backed additions:
 
@@ -42,6 +43,14 @@ New discovery-backed additions:
 - `GET /api/ilias/search`
 - `GET /api/ilias/search/options`
 - `GET /api/ilias/info`
+- `GET /api/moodle/dashboard`
+- `GET /api/moodle/calendar`
+- `GET /api/moodle/courses`
+- `GET /api/moodle/categories`
+- `GET /api/moodle/course/{course_id}`
+- `GET /api/moodle/grades`
+- `GET /api/moodle/messages`
+- `GET /api/moodle/notifications`
 
 The existing CLI entry points are still available after installation:
 

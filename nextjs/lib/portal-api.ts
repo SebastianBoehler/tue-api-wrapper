@@ -15,6 +15,14 @@ import type {
   ExamItem,
   ModuleSearchFiltersResponse,
   ModuleSearchResponse,
+  MoodleCalendarData,
+  MoodleCategoryPage,
+  MoodleCourseDetail,
+  MoodleCoursesResponse,
+  MoodleDashboardData,
+  MoodleGradesResponse,
+  MoodleMessagesResponse,
+  MoodleNotificationsResponse,
   PortalLink
 } from "./types";
 import type {
@@ -205,6 +213,41 @@ export function getModuleSearchFilters(): Promise<ModuleSearchFiltersResponse> {
 
 export function getModuleDetail(url: string): Promise<ModuleDetail> {
   return fetchJson(`/api/alma/module-detail?url=${encodeURIComponent(url)}`);
+}
+
+export function getMoodleDashboard(): Promise<MoodleDashboardData> {
+  return fetchJson("/api/moodle/dashboard");
+}
+
+export function getMoodleCalendar(days = 30, limit = 50): Promise<MoodleCalendarData> {
+  return fetchJson(`/api/moodle/calendar?days=${days}&limit=${limit}`);
+}
+
+export function getMoodleCourses(limit = 24, offset = 0): Promise<MoodleCoursesResponse> {
+  return fetchJson(`/api/moodle/courses?limit=${limit}&offset=${offset}`);
+}
+
+export function getMoodleCategories(categoryId?: number): Promise<MoodleCategoryPage> {
+  if (categoryId === undefined) {
+    return fetchJson("/api/moodle/categories");
+  }
+  return fetchJson(`/api/moodle/categories/${categoryId}`);
+}
+
+export function getMoodleCourseDetail(courseId: number): Promise<MoodleCourseDetail> {
+  return fetchJson(`/api/moodle/course/${courseId}`);
+}
+
+export function getMoodleGrades(limit = 50): Promise<MoodleGradesResponse> {
+  return fetchJson(`/api/moodle/grades?limit=${limit}`);
+}
+
+export function getMoodleMessages(limit = 20): Promise<MoodleMessagesResponse> {
+  return fetchJson(`/api/moodle/messages?limit=${limit}`);
+}
+
+export function getMoodleNotifications(limit = 20): Promise<MoodleNotificationsResponse> {
+  return fetchJson(`/api/moodle/notifications?limit=${limit}`);
 }
 
 export function buildAlmaDocumentUrl(docId: string): string {

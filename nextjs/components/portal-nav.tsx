@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, BookOpen, FolderOpen, FileText, MessageSquare, ClipboardList, GraduationCap, Mail } from "lucide-react";
+import { LayoutDashboard, Calendar, BookOpen, FolderOpen, FileText, MessageSquare, ClipboardList, GraduationCap, Mail, LibraryBig } from "lucide-react";
 
 const items = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/agenda", label: "Agenda", icon: Calendar },
   { href: "/courses", label: "Courses", icon: BookOpen },
+  { href: "/moodle", label: "Moodle", icon: LibraryBig },
   { href: "/spaces", label: "Spaces", icon: FolderOpen },
   { href: "/tasks", label: "Tasks", icon: ClipboardList },
   { href: "/mail", label: "Inbox", icon: Mail },

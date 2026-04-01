@@ -14,7 +14,20 @@ export function parseCourseDiscoveryParams(
 ) {
   return {
     query: first(searchParams.course_query).trim(),
-    term: first(searchParams.course_term).trim()
+    term: first(searchParams.course_term).trim(),
+    catalogTerm: first(searchParams.catalog_term).trim()
+  };
+}
+
+export function parseAgendaParams(
+  searchParams: Record<string, string | string[] | undefined>
+) {
+  return {
+    term: first(searchParams.term).trim(),
+    week: first(searchParams.week).trim(),
+    fromDate: first(searchParams.from_date).trim(),
+    toDate: first(searchParams.to_date).trim(),
+    singleDay: first(searchParams.single_day).trim()
   };
 }
 

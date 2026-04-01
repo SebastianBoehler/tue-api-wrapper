@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 import uvicorn
 
+from .alma_catalog_client import fetch_course_catalog_page
 from .api_routes_extended import router as extended_router
 from .api_routes_mail import router as mail_router
 from .api_routes_moodle import router as moodle_router
@@ -109,9 +110,10 @@ def alma_exams(limit: int = Query(20, ge=1, le=100)) -> list[object]:
 
 
 @app.get("/api/alma/catalog")
-def alma_catalog(limit: int = Query(20, ge=1, le=100)) -> list[object]:
+def alma_catalog(term: str = "", limit: int = Query(20, ge=1, le=100)) -> list[object]:
     try:
-        return serialize(_alma_client().fetch_course_catalog()[:limit])
+        page = fetch_course_catalog_page(_alma_client(), term=term.strip() or None, limit=limit)
+        return serialize(page.nodes)
     except AlmaError as error:
         raise _translate_error(error) from error
 

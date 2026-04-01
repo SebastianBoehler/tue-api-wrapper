@@ -167,3 +167,85 @@ It should not yet emphasize:
 - profile and account-management pages
 - low-visibility administrative surfaces
 - directory features ahead of planning and search
+
+## Addendum: Alma Long Session HAR
+Discovery date: 2026-04-01
+
+This addendum summarizes `alma_long_session.directory.uni-tuebingen.de.har`, analyzed with:
+
+```bash
+PYTHONPATH=package/src python3 -m tue_api_wrapper.route_discovery_cli alma \
+  --har alma_long_session.directory.uni-tuebingen.de.har \
+  --format json
+```
+
+The long session is narrower than the earlier full-session crawl. It is dominated by:
+- `individualTimetableSchedule-flow`
+- `showCourseCatalog-flow`
+
+That makes it especially useful for finding missing timetable and catalog controls rather than broad Alma coverage.
+
+### What The Repo Already Covers
+
+The current repo already wraps the baseline flows visible in this HAR:
+- timetable export via `/api/alma/timetable`
+- course catalog read-only parsing via `/api/alma/catalog`
+- current lectures via `/api/alma/current-lectures`
+
+The gaps below are therefore about richer controls on top of those existing routes.
+
+### Newly Observed Timetable Contracts
+
+| Route or flow | Observed contract | Inferred capability | Priority |
+| --- | --- | --- | --- |
+| `/alma/pages/plan/individualTimetable.xhtml?_flowId=individualTimetableSchedule-flow&_flowExecutionKey=...` | `POST`; fields `changeTerm_input`, `selectWeek_input`, `from`, `to`; button `plan:scheduleConfiguration:anzeigeoptionen:refreshAuswahlZeitraum` | switch timetable term, jump to a specific week, or request an arbitrary date range without relying only on the ICS export | `very high` |
+| same flow | buttons `plan:schedule:scheduleColumn:0..4:showOnlyOneDay` | single-day agenda endpoint or UI toggle backed by Alma's own filtered schedule view | `high` |
+| same flow | buttons `plan:scheduleConfiguration:anzeigeoptionen:ical:showPopup`, `...:renewSecurityToken`, `...:hidePopup`; export route `/alma/pages/cm/exa/timetable/individualTimetableCalendarExport.faces?user=...&hash=...&termgroup=` | expose the live ICS URL and refresh an expired export token on demand | `high` |
+| same flow | button `plan:scheduleConfiguration:anzeigeoptionen:weitereAnzeigeoptionen:overlayShowButton`; related collapsed-state fields for `planListenansicht`, `rhythms`, `timetableDatesdata`, `timetableEventdata`, `timetableRoomdata`, `wochentageFieldset` | richer timetable preferences: list view, weekday filters, room/date visibility, rhythm details | `high` |
+| same flow | button `plan:scheduleConfiguration:anzeigeoptionen:print` | server-backed printable timetable or PDF-friendly schedule view | `medium` |
+| same flow | button `plan:schedule:scheduleColumn:0:termin:1:scheduleItemButtons:stundenplanVormerkenButton:vormerkungEntfernen` | remove a preselected or bookmarked timetable item from the personal schedule | `medium` |
+
+### Newly Observed Course Catalog Contracts
+
+| Route or flow | Observed contract | Inferred capability | Priority |
+| --- | --- | --- | --- |
+| `/alma/pages/cm/exa/coursecatalog/showCourseCatalog.xhtml?_flowId=showCourseCatalog-flow&_flowExecutionKey=...` | `POST`; field `detailViewData:tabContainer:term-selection-container:termPeriodDropDownList_input` | fetch the course catalog for a selected term instead of only the default current term | `high` |
+| same flow | multiple `detailViewData:tabContainer:term-planning-container:*:collapsiblePanelCollapsedState` fields | parse or preserve embedded term-planning detail panels when drilling into catalog nodes | `medium` |
+
+### Lower-Priority Routes Surfaced By Discovery
+
+These appeared in the discovered route graph from the captured pages, but the long session did not provide enough direct interaction evidence to rank them above the timetable work:
+
+- `/alma/pages/cm/exa/nominalactualcomparison/sollistvergleichBaum.xhtml`
+  Capability: requirement-vs-achievement comparison or elective-registration support.
+- `/alma/pages/cm/exa/curricula/genericRailsSearchUnitsSimple.xhtml`
+  Capability: degree-program narrowing before module-description browsing.
+- `/alma/pages/psv/person/searchPerson.xhtml`
+  Capability: public person search.
+- `/alma/pages/cs/psv/orgunit/searchOrgunits.xhtml`
+  Capability: organization search.
+- `/alma/pages/cs/psv/orgunit/structureOrgunits.xhtml`
+  Capability: public org hierarchy browser.
+- `/alma/pages/cs/sys/portal/deviceLogin/devices.faces`
+  Capability: device-login management.
+- `/alma/pages/cs/psv/email/emailVerification/verificationStartPage.xhtml`
+  Capability: email-verification status.
+
+### Recommended Next Methods
+
+If the goal is to turn this HAR into backend work with immediate app value, the most useful next methods are:
+
+1. `fetch_timetable_controls()` returning available terms, week options, and supported range controls.
+2. `fetch_timetable_view(term=None, week=None, from_date=None, to_date=None, single_day=None)` returning Alma's rendered schedule state, not just ICS-derived events.
+3. `refresh_timetable_export_url()` to reopen or renew the authenticated ICS token.
+4. `fetch_course_catalog(term=None)` so catalog results can follow the selected semester.
+
+### Recommended Next App Features
+
+The best user-facing follow-ups are:
+- an agenda filter bar for term, week, and day selection
+- a "copy Alma calendar feed" action that can refresh the feed token
+- a catalog semester switcher on `/courses`
+- an optional printable timetable view for quick export or sharing
+
+The clearest takeaway from the long-session HAR is that Alma's timetable flow is richer than the repo's current ICS-only treatment. The highest-value work is therefore not adding another broad Alma area first, but deepening timetable control and surfacing term-aware catalog navigation.

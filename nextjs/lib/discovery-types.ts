@@ -1,3 +1,5 @@
+import type { AgendaItem, CatalogNode } from "./types";
+
 export interface AlmaStudyPlannerSemester {
   index: number;
   label: string;
@@ -52,6 +54,64 @@ export interface AlmaCourseSearchResponse {
   selected_term_label: string | null;
   term_options: AlmaCourseSearchTermOption[];
   results: AlmaCourseSearchResult[];
+}
+
+export interface AlmaTimetableOption {
+  value: string;
+  label: string;
+  is_selected: boolean;
+}
+
+export interface AlmaTimetableDay {
+  label: string;
+  iso_date: string | null;
+  restrict_view_name: string | null;
+  note: string | null;
+}
+
+export interface AlmaTimetableView {
+  page_url: string;
+  selected_term_value: string | null;
+  selected_term_label: string | null;
+  selected_range_mode_value: string | null;
+  selected_range_mode_label: string | null;
+  selected_week_value: string | null;
+  selected_week_label: string | null;
+  visible_range_start: string | null;
+  visible_range_end: string | null;
+  source_export_url: string | null;
+  calendar_feed_url: string | null;
+  can_refresh_export_url: boolean;
+  can_print_pdf: boolean;
+  supports_custom_range: boolean;
+  terms: AlmaTimetableOption[];
+  range_modes: AlmaTimetableOption[];
+  weeks: AlmaTimetableOption[];
+  days: AlmaTimetableDay[];
+  occurrences: AgendaItem[];
+}
+
+export interface AlmaTimetableExportLink {
+  page_url: string;
+  selected_term_value: string | null;
+  selected_term_label: string | null;
+  source_export_url: string | null;
+  calendar_feed_url: string | null;
+  can_refresh_export_url: boolean;
+}
+
+export interface AlmaCourseCatalogTermOption {
+  value: string;
+  label: string;
+  is_selected: boolean;
+}
+
+export interface AlmaCourseCatalogPage {
+  page_url: string;
+  selected_term_value: string | null;
+  selected_term_label: string | null;
+  term_options: AlmaCourseCatalogTermOption[];
+  nodes: CatalogNode[];
 }
 
 export interface IliasSearchOption {

@@ -26,8 +26,11 @@ import type {
   PortalLink
 } from "./types";
 import type {
+  AlmaCourseCatalogPage,
   AlmaCourseSearchResponse,
   AlmaStudyPlannerResponse,
+  AlmaTimetableExportLink,
+  AlmaTimetableView,
   IliasSearchFilters,
   IliasSearchResponse
 } from "./discovery-types";
@@ -48,11 +51,12 @@ export class PortalApiError extends Error {
   }
 }
 
-async function fetchJson<T>(path: string): Promise<T> {
+async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${apiBaseUrl}${path}`, {
-      cache: "no-store"
+      cache: "no-store",
+      ...init
     });
   } catch (error) {
     throw new PortalApiError(
@@ -116,6 +120,51 @@ export function getAlmaStudyPlanner(): Promise<AlmaStudyPlannerResponse> {
   return fetchJson("/api/alma/study-planner");
 }
 
+export function getAlmaTimetableView({
+  term = "",
+  week = "",
+  fromDate = "",
+  toDate = "",
+  singleDay = "",
+  limit = 200
+}: {
+  term?: string;
+  week?: string;
+  fromDate?: string;
+  toDate?: string;
+  singleDay?: string;
+  limit?: number;
+} = {}): Promise<AlmaTimetableView> {
+  const params = new URLSearchParams();
+  if (term.trim()) {
+    params.set("term", term.trim());
+  }
+  if (week.trim()) {
+    params.set("week", week.trim());
+  }
+  if (fromDate.trim()) {
+    params.set("from_date", fromDate.trim());
+  }
+  if (toDate.trim()) {
+    params.set("to_date", toDate.trim());
+  }
+  if (singleDay.trim()) {
+    params.set("single_day", singleDay.trim());
+  }
+  params.set("limit", String(limit));
+  return fetchJson(`/api/alma/timetable/view?${params.toString()}`);
+}
+
+export function refreshAlmaTimetableExportUrl(term = ""): Promise<AlmaTimetableExportLink> {
+  const params = new URLSearchParams();
+  if (term.trim()) {
+    params.set("term", term.trim());
+  }
+  return fetchJson(`/api/alma/timetable/export-url/refresh?${params.toString()}`, {
+    method: "POST"
+  });
+}
+
 export function getAlmaCourseSearch({
   query = "",
   term = "",
@@ -134,6 +183,21 @@ export function getAlmaCourseSearch({
   }
   params.set("limit", String(limit));
   return fetchJson(`/api/alma/course-search?${params.toString()}`);
+}
+
+export function getAlmaCourseCatalogPage({
+  term = "",
+  limit = 80
+}: {
+  term?: string;
+  limit?: number;
+} = {}): Promise<AlmaCourseCatalogPage> {
+  const params = new URLSearchParams();
+  if (term.trim()) {
+    params.set("term", term.trim());
+  }
+  params.set("limit", String(limit));
+  return fetchJson(`/api/alma/catalog/page?${params.toString()}`);
 }
 
 export async function getIliasLinks(): Promise<PortalLink[]> {

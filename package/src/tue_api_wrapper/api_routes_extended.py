@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Query
+from fastapi.responses import Response
 
+from .alma_catalog_client import fetch_course_catalog_page
 from .alma_course_search_client import search_courses
 from .alma_feature_client import fetch_current_lectures
 from .alma_planner_client import fetch_study_planner
+from .alma_timetable_client import (
+    fetch_timetable_controls,
+    fetch_timetable_pdf,
+    fetch_timetable_view,
+    refresh_timetable_export_url,
+)
 from .client import AlmaClient
 from .config import AlmaError
 from .ilias_feature_client import fetch_ilias_info_page, fetch_ilias_search_filters, search_ilias
@@ -56,6 +64,78 @@ def alma_current_lectures(date: str = "", limit: int = Query(50, ge=1, le=200)) 
         raise _translate_error(error) from error
 
 
+@router.get("/api/alma/timetable/controls")
+def alma_timetable_controls() -> dict[str, object]:
+    try:
+        return serialize(fetch_timetable_controls(_alma_client()))
+    except AlmaError as error:
+        raise _translate_error(error) from error
+
+
+@router.get("/api/alma/timetable/view")
+def alma_timetable_view(
+    term: str = "",
+    week: str = "",
+    from_date: str = "",
+    to_date: str = "",
+    single_day: str = "",
+    limit: int = Query(200, ge=1, le=2000),
+) -> dict[str, object]:
+    try:
+        view = fetch_timetable_view(
+            _alma_client(),
+            term=term.strip() or None,
+            week=week.strip() or None,
+            from_date=from_date.strip() or None,
+            to_date=to_date.strip() or None,
+            single_day=single_day.strip() or None,
+            limit=limit,
+        )
+        return serialize(view)
+    except AlmaError as error:
+        raise _translate_error(error) from error
+
+
+@router.post("/api/alma/timetable/export-url/refresh")
+def alma_timetable_export_refresh(term: str = "") -> dict[str, object]:
+    try:
+        return serialize(refresh_timetable_export_url(_alma_client(), term=term.strip() or None))
+    except AlmaError as error:
+        raise _translate_error(error) from error
+
+
+@router.get("/api/alma/timetable/pdf")
+def alma_timetable_pdf(
+    term: str = "",
+    week: str = "",
+    from_date: str = "",
+    to_date: str = "",
+    single_day: str = "",
+) -> Response:
+    try:
+        pdf_response = fetch_timetable_pdf(
+            _alma_client(),
+            term=term.strip() or None,
+            week=week.strip() or None,
+            from_date=from_date.strip() or None,
+            to_date=to_date.strip() or None,
+            single_day=single_day.strip() or None,
+        )
+    except AlmaError as error:
+        raise _translate_error(error) from error
+
+    return Response(
+        content=pdf_response.content,
+        media_type=pdf_response.headers.get("content-type", "application/pdf"),
+        headers={
+            "Content-Disposition": pdf_response.headers.get(
+                "content-disposition",
+                'inline; filename="alma-timetable.pdf"',
+            )
+        },
+    )
+
+
 @router.get("/api/alma/study-planner")
 def alma_study_planner() -> dict[str, object]:
     try:
@@ -72,6 +152,17 @@ def alma_course_search(
 ) -> dict[str, object]:
     try:
         return serialize(search_courses(_alma_client(), query=query, term=term.strip() or None, limit=limit))
+    except AlmaError as error:
+        raise _translate_error(error) from error
+
+
+@router.get("/api/alma/catalog/page")
+def alma_catalog_page(
+    term: str = "",
+    limit: int = Query(80, ge=1, le=400),
+) -> dict[str, object]:
+    try:
+        return serialize(fetch_course_catalog_page(_alma_client(), term=term.strip() or None, limit=limit))
     except AlmaError as error:
         raise _translate_error(error) from error
 

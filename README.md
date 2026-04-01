@@ -19,7 +19,13 @@ The goal is to keep Alma, ILIAS, and Moodle as the source of truth while buildin
 
 ## Preview
 
-![Study Hub overview preview](docs/assets/overview-screenshot.png)
+Current web dashboard preview:
+
+![Study Hub overview preview](docs/assets/previews/study-hub-overview-preview.png)
+
+Agenda timetable preview:
+
+![Agenda timetable preview](docs/assets/previews/agenda-timetable-grid-preview.png)
 
 ## Why this repo exists
 

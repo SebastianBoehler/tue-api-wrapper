@@ -1,30 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, ExternalLink, Printer, RefreshCcw } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 import type { AlmaTimetableView } from "../lib/discovery-types";
+import { formatTimetableDateLabel } from "../lib/alma-timetable-ui";
 import { buildPortalApiUrl } from "../lib/portal-api";
-import { AlmaTimetableFeedActions } from "./alma-timetable-feed-actions";
-
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("de-DE", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(value));
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("de-DE", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short"
-  }).format(new Date(value));
-}
+import { AlmaTimetableActions } from "./alma-timetable-actions";
+import { AlmaTimetableGrid } from "./alma-timetable-grid";
 
 export function AlmaTimetablePanel({
   view,
@@ -50,7 +33,7 @@ export function AlmaTimetablePanel({
     pdfParams.set("single_day", filters.singleDay);
   }
   const canRenderPdf = view.can_print_pdf && !filters.fromDate && !filters.toDate;
-  const pdfUrl = buildPortalApiUrl(`/api/alma/timetable/pdf?${pdfParams.toString()}`);
+  const pdfUrl = canRenderPdf ? buildPortalApiUrl(`/api/alma/timetable/pdf?${pdfParams.toString()}`) : null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -60,24 +43,15 @@ export function AlmaTimetablePanel({
             <CardDescription>Alma timetable controls</CardDescription>
             <CardTitle>Filter schedule by term, week, or date</CardTitle>
           </div>
-          <CardAction className="flex gap-2">
-            {canRenderPdf ? (
-              <Button variant="outline" size="xs" asChild>
-                <a href={pdfUrl}>
-                  <Printer className="size-3.5" />
-                  PDF
-                </a>
-              </Button>
-            ) : view.can_print_pdf ? (
-              <Badge variant="outline"><Printer className="size-3" /> PDF</Badge>
-            ) : null}
-            {view.can_refresh_export_url ? <Badge variant="secondary"><RefreshCcw className="size-3" /> Feed refresh</Badge> : null}
-            <Button variant="outline" size="xs" asChild>
-              <a href={view.page_url}>
-                <ExternalLink className="size-3.5" />
-                Alma
-              </a>
-            </Button>
+          <CardAction className="col-start-1 row-start-3 w-full justify-self-stretch sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:w-auto sm:justify-self-end">
+            <AlmaTimetableActions
+              almaUrl={view.page_url}
+              initialFeedUrl={view.calendar_feed_url}
+              termValue={view.selected_term_value ?? ""}
+              canRefreshFeed={view.can_refresh_export_url}
+              supportsPdf={view.can_print_pdf}
+              pdfUrl={pdfUrl}
+            />
           </CardAction>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -116,9 +90,12 @@ export function AlmaTimetablePanel({
               <div className="flex gap-2">
                 <input id="agenda_to" name="to_date" type="date" defaultValue={filters.toDate} className="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm" disabled={!view.supports_custom_range} />
                 <Button type="submit">Apply</Button>
-                <Button variant="outline" asChild>
-                  <a href="/agenda">Reset</a>
-                </Button>
+                <a
+                  href="/agenda"
+                  className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-4xl border border-border bg-background px-3 text-sm font-medium transition-all hover:bg-muted hover:text-foreground"
+                >
+                  Reset
+                </a>
               </div>
             </div>
           </form>
@@ -126,27 +103,9 @@ export function AlmaTimetablePanel({
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {view.selected_term_label ? <Badge variant="secondary">{view.selected_term_label}</Badge> : null}
             {view.selected_week_label ? <Badge variant="outline">{view.selected_week_label}</Badge> : null}
-            {view.visible_range_start ? <span>{formatDate(view.visible_range_start)} to {formatDate(view.visible_range_end ?? view.visible_range_start)}</span> : null}
+            {view.visible_range_start ? <span>{formatTimetableDateLabel(view.visible_range_start)} to {formatTimetableDateLabel(view.visible_range_end ?? view.visible_range_start)}</span> : null}
             <span>· {view.occurrences.length} items</span>
           </div>
-
-          {view.calendar_feed_url ? (
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">Calendar feed</p>
-                  <p className="text-xs text-muted-foreground mt-1">Use the live Alma ICS URL directly in your calendar client and renew it here when Alma rotates the token.</p>
-                </div>
-                <div className="w-full md:w-auto md:min-w-[24rem]">
-                  <AlmaTimetableFeedActions
-                    initialUrl={view.calendar_feed_url}
-                    termValue={view.selected_term_value ?? ""}
-                    canRefresh={view.can_refresh_export_url}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : null}
         </CardContent>
       </Card>
 
@@ -156,39 +115,10 @@ export function AlmaTimetablePanel({
             <CalendarDays className="size-4 text-primary" />
             Schedule view
           </CardTitle>
+          <CardDescription>Weekly blocks arranged by day and time instead of a plain agenda list.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {view.days.length ? (
-            <div className="flex flex-wrap gap-2">
-              {view.days.map((day) => (
-                <Badge key={`${day.iso_date ?? day.label}-${day.label}`} variant="outline">
-                  {day.iso_date ? formatDate(day.iso_date) : day.label}
-                  {day.note ? ` · ${day.note}` : ""}
-                </Badge>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="flex flex-col gap-2">
-            {view.occurrences.map((item) => (
-              <Card key={`${item.summary}-${item.start}`} size="sm">
-                <CardContent className="grid grid-cols-[180px_minmax(0,1fr)_auto] items-center gap-4">
-                  <time className="font-mono text-xs text-muted-foreground">
-                    {formatDateTime(item.start)}
-                  </time>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{item.summary}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{item.description ?? "No description provided."}</p>
-                  </div>
-                  <Badge variant="outline">{item.location ?? "TBD"}</Badge>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {!view.occurrences.length ? (
-            <p className="text-sm text-muted-foreground">No Alma timetable items matched the selected filters.</p>
-          ) : null}
+        <CardContent>
+          <AlmaTimetableGrid days={view.days} occurrences={view.occurrences} />
         </CardContent>
       </Card>
     </div>

@@ -38,6 +38,8 @@ The API starts on `http://127.0.0.1:8000` and exposes:
 New discovery-backed additions:
 
 - `GET /api/alma/current-lectures`
+- `GET /api/alma/portal-messages/feed`
+- `POST /api/alma/portal-messages/feed/refresh`
 - `GET /api/alma/study-planner`
 - `GET /api/alma/course-search`
 - `GET /api/ilias/search`

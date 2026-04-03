@@ -40,6 +40,7 @@ University systems often expose useful workflows only through brittle browser fl
 ## What works today
 
 - Alma timetable exports without browser automation
+- Alma portal-messages RSS feed discovery and token refresh
 - Alma study-service document discovery
 - Alma authenticated current-lectures listing
 - Alma study-planner parsing

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "../components/app-shell";
 import { DashboardMailCard } from "../components/dashboard-mail-card";
+import { DashboardNotificationsFeedCard } from "../components/dashboard-notifications-feed-card";
 import { ErrorPanel } from "../components/error-panel";
 import { Card, CardContent, CardHeader, CardTitle, CardAction, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -191,6 +192,8 @@ export default async function HomePage() {
                 ) : null}
               </CardContent>
             </Card>
+
+            <DashboardNotificationsFeedCard />
           </div>
         </div>
       </AppShell>

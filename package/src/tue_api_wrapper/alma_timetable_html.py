@@ -13,6 +13,7 @@ from .alma_timetable_models import (
     AlmaTimetableOption,
 )
 from .config import AlmaParseError
+from .html_forms import extract_form_payload
 
 
 def _clean_text(value: str) -> str:
@@ -51,29 +52,6 @@ def _parse_day_date(value: str) -> str | None:
         except ValueError:
             continue
     return None
-
-
-def _extract_form_payload(form) -> dict[str, str]:
-    payload: dict[str, str] = {}
-    for field in form.find_all(["input", "select", "textarea"]):
-        name = field.get("name")
-        if not name:
-            continue
-
-        if field.name == "select":
-            selected = field.find("option", selected=True)
-            payload[name] = selected.get("value", "") if selected is not None else ""
-            continue
-
-        if field.name == "textarea":
-            payload[name] = field.get_text()
-            continue
-
-        field_type = field.get("type", "").lower()
-        if field_type in {"button", "file", "image", "password", "reset", "submit"}:
-            continue
-        payload[name] = field.get("value", "")
-    return payload
 
 
 def _extract_days(soup: BeautifulSoup) -> tuple[AlmaTimetableDay, ...]:
@@ -138,7 +116,7 @@ def build_timetable_action_request(
     if trigger is None:
         raise AlmaParseError(f"Could not find Alma timetable trigger '{trigger_name}'.")
 
-    payload = _extract_form_payload(form)
+    payload = extract_form_payload(form)
     if field_overrides:
         payload.update(field_overrides)
 

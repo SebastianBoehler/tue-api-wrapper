@@ -28,6 +28,7 @@ import type {
 import type {
   AlmaCourseCatalogPage,
   AlmaCourseSearchResponse,
+  AlmaPortalMessagesFeed,
   AlmaStudyPlannerResponse,
   AlmaTimetableExportLink,
   AlmaTimetableView,
@@ -161,6 +162,16 @@ export function refreshAlmaTimetableExportUrl(term = ""): Promise<AlmaTimetableE
     params.set("term", term.trim());
   }
   return fetchJson(`/api/alma/timetable/export-url/refresh?${params.toString()}`, {
+    method: "POST"
+  });
+}
+
+export function getAlmaPortalMessagesFeed(): Promise<AlmaPortalMessagesFeed> {
+  return fetchJson("/api/alma/portal-messages/feed");
+}
+
+export function refreshAlmaPortalMessagesFeed(): Promise<AlmaPortalMessagesFeed> {
+  return fetchJson("/api/alma/portal-messages/feed/refresh", {
     method: "POST"
   });
 }

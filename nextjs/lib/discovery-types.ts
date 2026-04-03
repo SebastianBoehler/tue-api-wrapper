@@ -100,6 +100,12 @@ export interface AlmaTimetableExportLink {
   can_refresh_export_url: boolean;
 }
 
+export interface AlmaPortalMessagesFeed {
+  page_url: string;
+  feed_url: string | null;
+  can_refresh_feed: boolean;
+}
+
 export interface AlmaCourseCatalogTermOption {
   value: string;
   label: string;

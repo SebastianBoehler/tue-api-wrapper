@@ -176,6 +176,12 @@ Note for the current macOS toolchain in this repo: plain `go build` or `go run` 
 
 The desktop workspace lives in [`desktop/`](./desktop/). It wraps the existing Python backend in Electron, stores credentials with operating-system-backed encryption through Electron `safeStorage`, and exposes build plus release workflows for packaged installers.
 
+Desktop release support now includes:
+
+- macOS signing and notarization when the Apple certificate and notarization secrets are configured
+- Windows code signing when a `.pfx` signing certificate is configured
+- explicit unsigned fallback behavior for CI and for release builds that are missing signing secrets
+
 Local development:
 
 ```bash
@@ -238,6 +244,7 @@ npm run dev:chatgpt
 npm run build:chatgpt
 npm run dev:desktop
 npm run build:desktop
+npm run package:desktop
 ```
 
 GitHub Actions runs the same main checks on pushes to `main` and on pull requests:
@@ -246,8 +253,14 @@ GitHub Actions runs the same main checks on pushes to `main` and on pull request
 - Go tests and CLI build
 - Next.js typecheck and production build
 - ChatGPT app typecheck and production build
+- Desktop renderer and Electron build in `desktop/`
 
 Workflow file: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
+
+Additional desktop workflows:
+
+- [`.github/workflows/desktop-build.yml`](./.github/workflows/desktop-build.yml): cross-platform desktop artifact builds for macOS, Windows, and Linux
+- [`.github/workflows/desktop-release.yml`](./.github/workflows/desktop-release.yml): tagged desktop releases for `desktop-v*`, with macOS signing/notarization and Windows signing when secrets are available
 
 ## Related documentation
 

@@ -44,10 +44,108 @@ jobs:
       - name: Install desktop dependencies
         run: npm ci --prefix desktop
 
+      - name: Prepare macOS signing inputs
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_SIGNING_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_SIGNING_CERTIFICATE_P12_BASE64 }}
+          APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${APPLE_SIGNING_CERTIFICATE_P12_BASE64:-}" && -n "${APPLE_SIGNING_CERTIFICATE_PASSWORD:-}" ]]; then
+            CERT_PATH="$RUNNER_TEMP/apple-signing-cert.p12"
+            CERT_PATH="$CERT_PATH" APPLE_SIGNING_CERTIFICATE_P12_BASE64="$APPLE_SIGNING_CERTIFICATE_P12_BASE64" python - <<'PY'
+import base64
+import os
+from pathlib import Path
+
+Path(os.environ["CERT_PATH"]).write_bytes(
+    base64.b64decode(os.environ["APPLE_SIGNING_CERTIFICATE_P12_BASE64"])
+)
+PY
+
+            {
+              echo "CSC_LINK=$CERT_PATH"
+              echo "CSC_KEY_PASSWORD=$APPLE_SIGNING_CERTIFICATE_PASSWORD"
+            } >> "$GITHUB_ENV"
+
+            if [[ -n "${APPLE_ID:-}" && -n "${APPLE_APP_SPECIFIC_PASSWORD:-}" && -n "${APPLE_TEAM_ID:-}" ]]; then
+              {
+                echo "APPLE_ID=$APPLE_ID"
+                echo "APPLE_APP_SPECIFIC_PASSWORD=$APPLE_APP_SPECIFIC_PASSWORD"
+                echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+                echo "MAC_SIGNING_MODE=signed-and-notarized"
+              } >> "$GITHUB_ENV"
+            else
+              echo "::warning::macOS signing certificate found, but notarization secrets are incomplete. The DMG will be signed but not notarized."
+              echo "MAC_SIGNING_MODE=signed-only" >> "$GITHUB_ENV"
+            fi
+          else
+            echo "::warning::Apple signing certificate secrets are missing. The macOS release artifact will be unsigned."
+            {
+              echo "CSC_IDENTITY_AUTO_DISCOVERY=false"
+              echo "MAC_SIGNING_MODE=unsigned"
+            } >> "$GITHUB_ENV"
+          fi
+
+      - name: Prepare Windows signing inputs
+        if: runner.os == 'Windows'
+        shell: bash
+        env:
+          WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64 }}
+          WINDOWS_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64:-}" && -n "${WINDOWS_SIGNING_CERTIFICATE_PASSWORD:-}" ]]; then
+            CERT_PATH="$RUNNER_TEMP/windows-signing-cert.pfx"
+            CERT_PATH="$CERT_PATH" WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64="$WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64" python - <<'PY'
+import base64
+import os
+from pathlib import Path
+
+Path(os.environ["CERT_PATH"]).write_bytes(
+    base64.b64decode(os.environ["WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64"])
+)
+PY
+
+            {
+              echo "WIN_CSC_LINK=$CERT_PATH"
+              echo "WIN_CSC_KEY_PASSWORD=$WINDOWS_SIGNING_CERTIFICATE_PASSWORD"
+              echo "WINDOWS_SIGNING_MODE=signed"
+            } >> "$GITHUB_ENV"
+          else
+            echo "::warning::Windows signing certificate secrets are missing. The Windows installer will be unsigned."
+            echo "WINDOWS_SIGNING_MODE=unsigned" >> "$GITHUB_ENV"
+          fi
+
       - name: Build desktop distributables
         run: npm run dist --prefix desktop
         env:
           PYTHON: python
+
+      - name: Summarize signing mode
+        shell: bash
+        run: |
+          {
+            echo "### Desktop release signing"
+            echo ""
+            case "${RUNNER_OS}" in
+              macOS)
+                echo "- macOS: ${MAC_SIGNING_MODE:-unsigned}"
+                ;;
+              Windows)
+                echo "- Windows: ${WINDOWS_SIGNING_MODE:-unsigned}"
+                ;;
+              Linux)
+                echo "- Linux: unsigned (not applicable)"
+                ;;
+            esac
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4

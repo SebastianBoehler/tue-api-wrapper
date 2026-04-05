@@ -26,6 +26,8 @@ desktop/dist-renderer/
 desktop/release/
 desktop/resources/backend/
 desktop/.pyinstaller/
+!desktop/build/
+!desktop/build/entitlements.mac.plist
 tmp-*.pdf
 output/
 go/*.test

@@ -55,6 +55,7 @@ jobs:
         run: npm run dist --prefix desktop
         env:
           PYTHON: python
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
       - name: Upload desktop artifacts
         uses: actions/upload-artifact@v4

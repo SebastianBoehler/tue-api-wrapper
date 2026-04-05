@@ -65,4 +65,32 @@ Two GitHub workflows are included:
 - `desktop-build.yml` builds installer artifacts for macOS, Windows, and Linux on pushes to `main` and pull requests that touch `desktop/` or `package/`
 - `desktop-release.yml` publishes a GitHub Release when you push a tag matching `desktop-v*`
 
-Current release artifacts are unsigned. If you want notarization or code signing later, extend the workflows with the appropriate platform secrets.
+`desktop-build.yml` disables signing on CI intentionally so pull request and branch builds stay deterministic.
+
+`desktop-release.yml` now supports:
+
+- macOS signing when `APPLE_SIGNING_CERTIFICATE_P12_BASE64` and `APPLE_SIGNING_CERTIFICATE_PASSWORD` are set
+- macOS notarization when the signing certificate secrets are present and `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID` are also set
+- Windows code signing when `WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64` and `WINDOWS_SIGNING_CERTIFICATE_PASSWORD` are set
+
+If those secrets are missing, the workflow still builds release artifacts but emits an explicit warning and the resulting installers remain unsigned.
+
+### Recommended GitHub secrets
+
+macOS:
+
+- `APPLE_SIGNING_CERTIFICATE_P12_BASE64`: base64-encoded `Developer ID Application` certificate export
+- `APPLE_SIGNING_CERTIFICATE_PASSWORD`: password for the `.p12` export
+- `APPLE_ID`: Apple account email used for notarization
+- `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for notarization
+- `APPLE_TEAM_ID`: Apple Developer team identifier
+
+Windows:
+
+- `WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64`: base64-encoded Authenticode `.pfx` certificate export
+- `WINDOWS_SIGNING_CERTIFICATE_PASSWORD`: password for the `.pfx` export
+
+Notes:
+
+- The current workflow covers standard macOS signing plus notarization and standard Windows `.pfx` signing.
+- EV Windows certificates bound to hardware tokens are a different setup. For that case, switch to Azure Trusted Signing or a dedicated Windows signing runner.

@@ -6,6 +6,9 @@
     "dev:web": "npm --workspace nextjs run dev",
     "build:web": "npm --workspace nextjs run build",
     "dev:chatgpt": "npm --workspace chatgpt run dev",
-    "build:chatgpt": "npm --workspace chatgpt run build"
+    "build:chatgpt": "npm --workspace chatgpt run build",
+    "dev:desktop": "npm --prefix desktop run dev",
+    "build:desktop": "npm --prefix desktop run build",
+    "package:desktop": "npm --prefix desktop run package"
   }
 }

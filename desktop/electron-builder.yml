@@ -1,0 +1,26 @@
+appId: de.sebastianboehler.tuestudyhub.desktop
+productName: TUE Study Hub
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist-renderer/**/*
+  - dist-electron/**/*
+  - package.json
+extraResources:
+  - from: resources/backend
+    to: backend
+    filter:
+      - '**/*'
+asar: true
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+mac:
+  category: public.app-category.education
+  target:
+    - dmg
+win:
+  target:
+    - nsis
+linux:
+  target:
+    - AppImage

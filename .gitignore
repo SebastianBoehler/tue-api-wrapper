@@ -21,6 +21,11 @@ nextjs/.next/
 nextjs/.turbo/
 package/.venv/
 package/fixtures/
+desktop/dist-electron/
+desktop/dist-renderer/
+desktop/release/
+desktop/resources/backend/
+desktop/.pyinstaller/
 tmp-*.pdf
 output/
 go/*.test

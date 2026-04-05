@@ -30,6 +30,8 @@ desktop/.pyinstaller/
 !desktop/build/entitlements.mac.plist
 tmp-*.pdf
 output/
+!go/internal/output/
+!go/internal/output/output.go
 go/*.test
 go/tue
 go/tue-external

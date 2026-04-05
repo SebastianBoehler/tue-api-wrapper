@@ -58,15 +58,7 @@ jobs:
 
           if [[ -n "${APPLE_SIGNING_CERTIFICATE_P12_BASE64:-}" && -n "${APPLE_SIGNING_CERTIFICATE_PASSWORD:-}" ]]; then
             CERT_PATH="$RUNNER_TEMP/apple-signing-cert.p12"
-            CERT_PATH="$CERT_PATH" APPLE_SIGNING_CERTIFICATE_P12_BASE64="$APPLE_SIGNING_CERTIFICATE_P12_BASE64" python - <<'PY'
-import base64
-import os
-from pathlib import Path
-
-Path(os.environ["CERT_PATH"]).write_bytes(
-    base64.b64decode(os.environ["APPLE_SIGNING_CERTIFICATE_P12_BASE64"])
-)
-PY
+            CERT_PATH="$CERT_PATH" APPLE_SIGNING_CERTIFICATE_P12_BASE64="$APPLE_SIGNING_CERTIFICATE_P12_BASE64" python -c "import base64, os, pathlib; pathlib.Path(os.environ['CERT_PATH']).write_bytes(base64.b64decode(os.environ['APPLE_SIGNING_CERTIFICATE_P12_BASE64']))"
 
             {
               echo "CSC_LINK=$CERT_PATH"
@@ -103,15 +95,7 @@ PY
 
           if [[ -n "${WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64:-}" && -n "${WINDOWS_SIGNING_CERTIFICATE_PASSWORD:-}" ]]; then
             CERT_PATH="$RUNNER_TEMP/windows-signing-cert.pfx"
-            CERT_PATH="$CERT_PATH" WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64="$WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64" python - <<'PY'
-import base64
-import os
-from pathlib import Path
-
-Path(os.environ["CERT_PATH"]).write_bytes(
-    base64.b64decode(os.environ["WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64"])
-)
-PY
+            CERT_PATH="$CERT_PATH" WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64="$WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64" python -c "import base64, os, pathlib; pathlib.Path(os.environ['CERT_PATH']).write_bytes(base64.b64decode(os.environ['WINDOWS_SIGNING_CERTIFICATE_PFX_BASE64']))"
 
             {
               echo "WIN_CSC_LINK=$CERT_PATH"

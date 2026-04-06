@@ -3,6 +3,7 @@
   font-family: Inter, "Segoe UI", sans-serif;
   background: #07111f;
   color: #e7edf7;
+  --tue-red: #A11E3B;
   --panel: rgba(10, 20, 37, 0.88);
   --panel-border: rgba(128, 153, 191, 0.18);
   --accent: #7dd3fc;

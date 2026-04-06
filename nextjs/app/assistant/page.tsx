@@ -1,5 +1,6 @@
 import { AppShell } from "../../components/app-shell";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CopyPromptButton } from "../../components/copy-prompt-button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lightbulb, Sparkles } from "lucide-react";
 
 const prompts = [
@@ -30,9 +31,7 @@ export default function AssistantPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {prompts.map((prompt) => (
-              <div key={prompt} className="text-sm font-mono p-2.5 rounded-md bg-muted text-muted-foreground break-words">
-                {prompt}
-              </div>
+              <CopyPromptButton key={prompt} prompt={prompt} />
             ))}
           </CardContent>
         </Card>

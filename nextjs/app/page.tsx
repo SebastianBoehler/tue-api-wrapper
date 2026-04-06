@@ -34,21 +34,21 @@ export default async function HomePage() {
             <div>
               <CardDescription>{dashboard.termLabel}</CardDescription>
               <CardTitle className="text-2xl">{dashboard.hero.title}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1 max-w-3xl">{dashboard.hero.subtitle}</p>
             </div>
             <CardAction>
-              <Badge variant="secondary">{new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(dashboard.generatedAt))}</Badge>
+              <p className="text-xs text-muted-foreground">
+                as of {new Intl.DateTimeFormat("de-DE", { timeStyle: "short" }).format(new Date(dashboard.generatedAt))}
+              </p>
             </CardAction>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <p className="text-sm text-muted-foreground max-w-3xl">{dashboard.hero.subtitle}</p>
+          <CardContent>
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
               {dashboard.metrics.map((metric) => (
-                <Card key={metric.label} size="sm">
-                  <CardContent>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{metric.label}</p>
-                    <p className="text-2xl font-semibold tracking-tight mt-1">{metric.value}</p>
-                  </CardContent>
-                </Card>
+                <div key={metric.label} className="rounded-lg border border-primary/15 bg-background/60 px-4 py-3">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{metric.label}</p>
+                  <p className="text-3xl font-semibold tracking-tight mt-1 text-foreground">{metric.value}</p>
+                </div>
               ))}
             </div>
           </CardContent>

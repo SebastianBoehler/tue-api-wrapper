@@ -1,7 +1,7 @@
 import { AppShell } from "../../components/app-shell";
 import { ErrorPanel } from "../../components/error-panel";
+import { ExamRecordsTabs } from "../../components/exam-records-tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { getAlmaEnrollment, getAlmaExams, PortalApiError } from "../../lib/portal-api";
 import type { ExamItem } from "../../lib/types";
 
@@ -39,19 +39,19 @@ export default async function ProgressPage() {
           <Card size="sm">
             <CardContent>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Selected term</p>
-              <p className="text-xl font-semibold tracking-tight mt-1">{enrollment.selected_term ?? "Unknown"}</p>
+              <p className="text-3xl font-semibold tracking-tight mt-1">{enrollment.selected_term ?? "—"}</p>
             </CardContent>
           </Card>
           <Card size="sm">
             <CardContent>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Passed exams</p>
-              <p className="text-xl font-semibold tracking-tight mt-1">{passedExamCount}</p>
+              <p className="text-3xl font-semibold tracking-tight mt-1">{passedExamCount}</p>
             </CardContent>
           </Card>
           <Card size="sm">
             <CardContent>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tracked credits</p>
-              <p className="text-xl font-semibold tracking-tight mt-1">{trackedCredits}</p>
+              <p className="text-3xl font-semibold tracking-tight mt-1">{trackedCredits}</p>
             </CardContent>
           </Card>
         </div>
@@ -59,79 +59,18 @@ export default async function ProgressPage() {
         <Card>
           <CardHeader>
             <CardTitle>Exam records</CardTitle>
-            <CardDescription>Directly extracted from Alma&apos;s authenticated exam overview, without relying on a PDF transcript export.</CardDescription>
+            <CardDescription>
+              Directly extracted from Alma&apos;s authenticated exam overview, without relying on a PDF transcript export.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="divide-y divide-border">
-              {actionableExams.map((exam) => (
-                <div key={`${exam.number}-${exam.title}`} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{exam.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {[exam.number, exam.cp ? `${exam.cp} CP` : null, exam.attempt ? `Attempt ${exam.attempt}` : null]
-                        .filter(Boolean)
-                        .join(" · ") || "No structured metadata"}
-                    </p>
-                  </div>
-                  <div className="flex gap-1.5">
-                    {exam.status ? <Badge variant="secondary">{exam.status}</Badge> : null}
-                    {exam.grade ? <Badge variant="outline">{exam.grade}</Badge> : null}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ExamRecordsTabs
+              all={actionableExams}
+              graded={gradedExams}
+              pending={openOrPending}
+            />
           </CardContent>
         </Card>
-
-        <div className="grid gap-3 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Graded items</CardTitle>
-              <CardDescription>Rows where Alma already exposes a grade.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="divide-y divide-border">
-                {gradedExams.length ? gradedExams.map((exam) => (
-                  <div key={`graded-${exam.number}-${exam.title}`} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{exam.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {[exam.number, exam.cp ? `${exam.cp} CP` : null, exam.attempt ? `Attempt ${exam.attempt}` : null]
-                          .filter(Boolean)
-                          .join(" · ") || "No structured metadata"}
-                      </p>
-                    </div>
-                    <Badge variant="outline">{exam.grade}</Badge>
-                  </div>
-                )) : <p className="text-sm text-muted-foreground">No graded items are currently exposed.</p>}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Pending items</CardTitle>
-              <CardDescription>Rows that look active but do not yet expose a final grade.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="divide-y divide-border">
-                {openOrPending.length ? openOrPending.map((exam) => (
-                  <div key={`pending-${exam.number}-${exam.title}`} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{exam.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {[exam.number, exam.cp ? `${exam.cp} CP` : null, exam.attempt ? `Attempt ${exam.attempt}` : null]
-                          .filter(Boolean)
-                          .join(" · ") || "No structured metadata"}
-                      </p>
-                    </div>
-                    {exam.status ? <Badge variant="secondary">{exam.status}</Badge> : <Badge variant="secondary">Open</Badge>}
-                  </div>
-                )) : <p className="text-sm text-muted-foreground">No pending exam rows are currently exposed.</p>}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         <Card>
           <CardHeader>

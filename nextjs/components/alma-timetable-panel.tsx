@@ -118,7 +118,11 @@ export function AlmaTimetablePanel({
           <CardDescription>Weekly blocks arranged by day and time instead of a plain agenda list.</CardDescription>
         </CardHeader>
         <CardContent>
-          <AlmaTimetableGrid days={view.days} occurrences={view.occurrences} />
+          <AlmaTimetableGrid
+            days={view.days}
+            occurrences={view.occurrences}
+            selectedTermValue={view.selected_term_value}
+          />
         </CardContent>
       </Card>
     </div>

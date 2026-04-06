@@ -1,5 +1,8 @@
+import type { Route } from "next";
+import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 
+import { buildAgendaCourseDetailHref } from "../lib/alma-course-detail";
 import type { AlmaTimetableDay } from "../lib/discovery-types";
 import { formatTimetableDateLabel, formatTimetableTimeLabel, getTimetableDateKey } from "../lib/alma-timetable-ui";
 import type { AgendaItem } from "../lib/types";
@@ -149,10 +152,12 @@ function getEventTimeLabel(item: AgendaItem) {
 
 export function AlmaTimetableGrid({
   days,
-  occurrences
+  occurrences,
+  selectedTermValue
 }: {
   days: AlmaTimetableDay[];
   occurrences: AgendaItem[];
+  selectedTermValue: string | null;
 }) {
   if (!occurrences.length) {
     return <p className="text-sm text-muted-foreground">No Alma timetable items matched the selected filters.</p>;
@@ -226,10 +231,12 @@ export function AlmaTimetableGrid({
                   };
 
                   return (
-                    <article
+                    <Link
                       key={`${entry.item.summary}-${entry.item.start}`}
-                      className="absolute flex flex-col gap-1 rounded-[1.5rem] border border-primary/20 bg-primary/8 px-3 py-2 text-left ring-1 ring-primary/5"
+                      href={buildAgendaCourseDetailHref(entry.item, selectedTermValue) as Route}
+                      className="absolute flex flex-col gap-1 rounded-[1.5rem] border border-primary/20 bg-primary/8 px-3 py-2 text-left ring-1 ring-primary/5 transition-colors hover:border-primary/40 hover:bg-primary/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       style={style}
+                      title={`Open details for ${entry.item.summary}`}
                     >
                       <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-primary">
                         {getEventTimeLabel(entry.item)}
@@ -242,7 +249,7 @@ export function AlmaTimetableGrid({
                           {entry.item.location}
                         </p>
                       ) : null}
-                    </article>
+                    </Link>
                   );
                 })}
               </div>

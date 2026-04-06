@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import type { MailInboxFilters, MailMessageSummary } from "../lib/types";
@@ -62,9 +63,9 @@ export function MailMessageList({
     <div className={cn(variant === "full" ? "grid gap-3" : "flex flex-col gap-0.5")}>
       {messages.map((message) => {
         const isSelected = selectedUid === message.uid;
-        const href = useInlineLinks
+        const href = (useInlineLinks
           ? buildInlineHref(message.uid, inboxFilters)
-          : `/mail/${encodeURIComponent(message.uid)}${buildMailInboxQuery(inboxFilters)}`;
+          : `/mail/${encodeURIComponent(message.uid)}${buildMailInboxQuery(inboxFilters)}`) as Route;
 
         return (
           <Link

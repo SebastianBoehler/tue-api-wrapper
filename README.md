@@ -272,6 +272,8 @@ Additional desktop workflows:
 - [`docs/alma-ilias-discovery.md`](./docs/alma-ilias-discovery.md)
 - [`docs/moodle-discovery.md`](./docs/moodle-discovery.md)
 - [`docs/mail-discovery.md`](./docs/mail-discovery.md)
+- [`docs/timms-discovery.md`](./docs/timms-discovery.md)
+- [`docs/campus-logistics-discovery.md`](./docs/campus-logistics-discovery.md)
 
 ## Contributing
 

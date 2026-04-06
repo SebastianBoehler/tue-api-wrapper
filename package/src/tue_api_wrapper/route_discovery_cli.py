@@ -25,6 +25,11 @@ DEFAULT_ILIAS_START_URLS = (
 
 
 def _build_session(site: str, authenticated: bool) -> tuple[requests.Session, tuple[str, ...]]:
+    if site == "generic":
+        if authenticated:
+            raise ValueError("site 'generic' does not support --auth. Use public start URLs or --har.")
+        return requests.Session(), ()
+
     if site == "alma":
         client = AlmaClient()
         if authenticated:
@@ -100,7 +105,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Crawl Alma or ILIAS, or import a HAR, and report discovered routes, form actions, and field names.",
     )
-    parser.add_argument("site", choices=("alma", "ilias"), help="Target site to crawl.")
+    parser.add_argument(
+        "site",
+        choices=("alma", "ilias", "generic"),
+        help="Target site to crawl. Use 'generic' for HAR imports or public non-Alma/ILIAS crawls.",
+    )
     parser.add_argument("--auth", action="store_true", help="Use local credentials and crawl an authenticated session.")
     parser.add_argument("--har", help="Analyze a saved HAR file instead of making live requests.")
     parser.add_argument("--depth", type=int, default=1, help="Maximum follow depth for discovered same-origin pages.")
@@ -127,6 +136,8 @@ def main(argv: list[str] | None = None) -> int:
         else:
             session, default_start_urls = _build_session(args.site, args.auth)
             start_urls = list(tuple(args.start_url) or default_start_urls)
+            if not start_urls:
+                raise ValueError("No start URLs configured. Pass --start-url or use --har.")
             allowed_hosts = {urlparse(url).netloc for url in start_urls if urlparse(url).netloc}
             report = discover_routes(
                 session=session,

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import io
 import sys
 import tempfile
 from pathlib import Path
 import unittest
+from contextlib import redirect_stdout
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -14,6 +16,7 @@ from tue_api_wrapper.alma_documents_html import extract_studyservice_page
 from tue_api_wrapper.alma_planner_html import parse_study_planner_page
 from tue_api_wrapper.ilias_feature_html import extract_ilias_search_form
 from tue_api_wrapper.route_discovery import discover_routes_from_har
+from tue_api_wrapper.route_discovery_cli import main as route_discovery_main
 
 
 class DiscoveredContractTests(unittest.TestCase):
@@ -251,6 +254,42 @@ class DiscoveredContractTests(unittest.TestCase):
         synthetic_form = next(form for form in report["forms"] if form["action_url"] == "https://alma.example/alma/search")
         self.assertIn("query", synthetic_form["field_names"])
         self.assertIn("genericSearchMask:buttonsBottom:search", synthetic_form["button_names"])
+
+    def test_route_discovery_cli_supports_generic_har_imports(self) -> None:
+        har_payload = {
+            "log": {
+                "entries": [
+                    {
+                        "request": {
+                            "method": "GET",
+                            "url": "https://example.test/library",
+                            "headers": [],
+                        },
+                        "response": {
+                            "status": 200,
+                            "content": {
+                                "mimeType": "text/html",
+                                "text": "<html><body><a href='/library/item/1'>Item</a></body></html>",
+                            },
+                        },
+                    }
+                ]
+            }
+        }
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            har_path = Path(tmpdir) / "generic.har"
+            har_path.write_text(json.dumps(har_payload), encoding="utf-8")
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = route_discovery_main(["generic", "--har", str(har_path), "--format", "json"])
+
+        self.assertEqual(exit_code, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["site"], "generic")
+        route = next(route for route in payload["routes"] if route["path"] == "/library/item/1")
+        self.assertEqual(route["methods"], ["GET"])
 
 
 if __name__ == "__main__":

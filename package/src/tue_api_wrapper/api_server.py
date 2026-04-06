@@ -12,6 +12,7 @@ from .alma_catalog_client import fetch_course_catalog_page
 from .api_routes_extended import router as extended_router
 from .api_routes_mail import router as mail_router
 from .api_routes_moodle import router as moodle_router
+from .api_routes_products import router as products_router
 from .client import AlmaClient
 from .config import AlmaError
 from .portal_service import DEFAULT_DASHBOARD_TERM, PortalService, serialize
@@ -30,6 +31,7 @@ app.add_middleware(
 app.include_router(extended_router)
 app.include_router(mail_router)
 app.include_router(moodle_router)
+app.include_router(products_router)
 
 portal_service = PortalService()
 

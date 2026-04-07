@@ -12,9 +12,7 @@ import (
 
 func runIlias(args []string) int {
 	if len(args) == 0 {
-		fmt.Println("Usage:")
-		fmt.Println("  tue ilias search --term QUERY [--page N] [--json]")
-		fmt.Println("  tue ilias info --target REF_ID_OR_URL [--json]")
+		printIliasUsage()
 		return 1
 	}
 
@@ -23,9 +21,37 @@ func runIlias(args []string) int {
 		return runIliasSearch(args[1:])
 	case "info":
 		return runIliasInfo(args[1:])
+	case "-h", "--help", "help":
+		printIliasUsage()
+		return 0
 	default:
+		if _, ok := iliasRoutes[args[0]]; ok {
+			return runBackendRoute("ilias "+args[0], iliasRoutes[args[0]], args[1:])
+		}
 		return output.PrintError(fmt.Errorf("unknown ilias command %q", args[0]))
 	}
+}
+
+var iliasRoutes = map[string]backendRoute{
+	"root":           {Path: "/api/ilias/root", Description: "Authenticated root page payload."},
+	"memberships":    {Path: "/api/ilias/memberships", Description: "Membership overview. Optional query: limit."},
+	"tasks":          {Path: "/api/ilias/tasks", Description: "Derived task overview. Optional query: limit."},
+	"content":        {Path: "/api/ilias/content", Description: "Content page. Use --query target=grp/...."},
+	"forum":          {Path: "/api/ilias/forum", Description: "Forum topics. Use --query target=frm/...."},
+	"exercise":       {Path: "/api/ilias/exercise", Description: "Exercise assignments. Use --query target=exc/...."},
+	"search-api":     {Path: "/api/ilias/search", Description: "Backend ILIAS search. Use --query term=... and optional page/search_mode/content_type/created_* queries."},
+	"search-options": {Path: "/api/ilias/search/options", Description: "Available ILIAS search filters."},
+	"info-api":       {Path: "/api/ilias/info", Description: "Backend info screen. Use --query target=...."},
+}
+
+func printIliasUsage() {
+	fmt.Println("Usage:")
+	fmt.Println("  tue ilias search --term QUERY [--page N] [--json]")
+	fmt.Println("  tue ilias info --target REF_ID_OR_URL [--json]")
+	fmt.Println("  tue ilias <backend-command> [--query key=value ...] [--output PATH] [--raw]")
+	fmt.Println()
+	fmt.Println("Backend-backed read commands:")
+	printBackendGroupUsage("ilias", iliasRoutes)
 }
 
 func runIliasSearch(args []string) int {

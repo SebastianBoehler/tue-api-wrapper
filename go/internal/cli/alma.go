@@ -12,16 +12,55 @@ import (
 
 func runAlma(args []string) int {
 	if len(args) == 0 {
-		fmt.Println("Usage: tue alma current-lectures [--date DD.MM.YYYY] [--limit N] [--json]")
+		printAlmaUsage()
 		return 1
 	}
 
 	switch args[0] {
 	case "current-lectures":
 		return runAlmaCurrentLectures(args[1:])
+	case "-h", "--help", "help":
+		printAlmaUsage()
+		return 0
 	default:
+		if _, ok := almaRoutes[args[0]]; ok {
+			return runBackendRoute("alma "+args[0], almaRoutes[args[0]], args[1:])
+		}
 		return output.PrintError(fmt.Errorf("unknown alma command %q", args[0]))
 	}
+}
+
+var almaRoutes = map[string]backendRoute{
+	"timetable":             {Path: "/api/alma/timetable", Description: "Term timetable. Use --query term=...."},
+	"enrollments":           {Path: "/api/alma/enrollments", Description: "Enrollment page payload."},
+	"exams":                 {Path: "/api/alma/exams", Description: "Exam overview. Optional query: limit."},
+	"catalog":               {Path: "/api/alma/catalog", Description: "Authenticated Alma catalog nodes. Optional queries: term, limit."},
+	"module-search":         {Path: "/api/alma/module-search", Description: "Public module search. Pass filters through repeated --query flags."},
+	"module-search-filters": {Path: "/api/alma/module-search/filters", Description: "Valid public module-search filter values."},
+	"module-detail":         {Path: "/api/alma/module-detail", Description: "Public module detail. Use --query url=...."},
+	"documents":             {Path: "/api/alma/documents", Description: "Study-service report list."},
+	"studyservice":          {Path: "/api/alma/studyservice", Description: "Legacy study-service summary contract."},
+	"current-document":      {Path: "/api/alma/documents/current", Description: "Current study-service PDF. Use --output file.pdf."},
+	"document":              {Path: "/api/alma/documents/{doc_id}", PathArgs: []string{"doc_id"}, Description: "Study-service PDF by document id. Use --output file.pdf."},
+	"document-download-url": {Path: "/api/alma/documents/{doc_id}/download-url", PathArgs: []string{"doc_id"}, Description: "Relative download URL for a study-service PDF."},
+	"current-lectures-api":  {Path: "/api/alma/current-lectures", Description: "Backend current-lectures view. Optional queries: date, limit."},
+	"timetable-controls":    {Path: "/api/alma/timetable/controls", Description: "Timetable controls and term options."},
+	"timetable-view":        {Path: "/api/alma/timetable/view", Description: "Rendered timetable view. Optional queries: term, week, from_date, to_date, single_day, limit."},
+	"timetable-pdf":         {Path: "/api/alma/timetable/pdf", Description: "Timetable PDF. Use --output timetable.pdf and optional term/week/date queries."},
+	"portal-messages-feed":  {Path: "/api/alma/portal-messages/feed", Description: "Portal messages feed."},
+	"study-planner":         {Path: "/api/alma/study-planner", Description: "Study planner grid and modules."},
+	"course-search":         {Path: "/api/alma/course-search", Description: "Authenticated course search. Optional queries: query, term, limit."},
+	"catalog-page":          {Path: "/api/alma/catalog/page", Description: "Authenticated catalog page with section structure. Optional queries: term, limit."},
+	"studyservice-summary":  {Path: "/api/alma/studyservice/summary", Description: "Expanded study-service summary with tabs and output requests."},
+}
+
+func printAlmaUsage() {
+	fmt.Println("Usage:")
+	fmt.Println("  tue alma current-lectures [--date DD.MM.YYYY] [--limit N] [--json]")
+	fmt.Println("  tue alma <backend-command> [--query key=value ...] [--output PATH] [--raw]")
+	fmt.Println()
+	fmt.Println("Backend-backed read commands:")
+	printBackendGroupUsage("alma", almaRoutes)
 }
 
 func runAlmaCurrentLectures(args []string) int {

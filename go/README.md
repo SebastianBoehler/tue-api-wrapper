@@ -8,7 +8,19 @@ Current commands:
 tue alma current-lectures --date 14.03.2026 --json
 tue ilias search --term graphics --page 1 --json
 tue ilias info --target 5289871 --json
+tue api get /api/dashboard --query term="Sommer 2026"
+tue alma study-planner
+tue mail inbox --query unread_only=true
+tue moodle dashboard
+tue timms search --query query=machine+learning
 ```
+
+The Go CLI now has full backend read coverage in two layers:
+
+- native Go flows for `alma current-lectures`, `ilias search`, and `ilias info`
+- backend-backed read commands for the rest of the FastAPI surface, plus the generic `tue api get ...` escape hatch for any new read endpoint
+
+The backend-backed commands use `PORTAL_API_BASE_URL` and default to `http://127.0.0.1:8000`.
 
 The CLI automatically loads `.env.local` and `.env` from the current directory or any parent directory. Canonical credentials:
 

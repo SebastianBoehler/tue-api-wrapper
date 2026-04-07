@@ -6,7 +6,11 @@ import { ErrorPanel } from "../components/error-panel";
 import { Card, CardContent, CardHeader, CardTitle, CardAction, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ListRow, ListRows } from "../components/list-row";
+import { buildAgendaCourseDetailHref } from "../lib/alma-course-detail";
 import { buildPortalApiUrl, getDashboard, PortalApiError } from "../lib/portal-api";
+import { spaceKindColor } from "../lib/space-kind";
+import { cn } from "../lib/utils";
 import { Calendar, ArrowRight, Download, GraduationCap, FolderOpen, ClipboardList } from "lucide-react";
 
 function formatDate(value: string) {
@@ -65,16 +69,20 @@ export default async function HomePage() {
                   </Button>
                 </CardAction>
               </CardHeader>
-              <CardContent className="divide-y divide-border">
-                {dashboard.agenda.items.slice(0, 6).map((item) => (
-                  <div key={`${item.summary}-${item.start}`} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{item.summary}</p>
-                      <p className="text-xs text-muted-foreground">{item.location ?? "Location pending"}</p>
-                    </div>
-                    <time className="text-xs text-muted-foreground shrink-0">{formatDate(item.start)}</time>
-                  </div>
-                ))}
+              <CardContent>
+                <ListRows>
+                  {dashboard.agenda.items.slice(0, 6).map((item) => (
+                    <ListRow key={`${item.summary}-${item.start}`} href={buildAgendaCourseDetailHref(item, undefined)}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{item.summary}</p>
+                          <p className="text-xs text-muted-foreground">{item.location ?? "Location pending"}</p>
+                        </div>
+                        <time className="text-xs text-muted-foreground shrink-0">{formatDate(item.start)}</time>
+                      </div>
+                    </ListRow>
+                  ))}
+                </ListRows>
               </CardContent>
             </Card>
 
@@ -87,21 +95,26 @@ export default async function HomePage() {
                   </Button>
                 </CardAction>
               </CardHeader>
-              <CardContent className="divide-y divide-border">
-                {dashboard.ilias.memberships.slice(0, 6).map((space) => (
-                  <a key={`${space.title}-${space.url}`} href={buildSpaceHref(space.url)} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0 hover:bg-muted/50 -mx-1 px-1 rounded-sm transition-colors">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium truncate">{space.title}</p>
-                        {space.kind ? <Badge variant="secondary">{space.kind}</Badge> : null}
+              <CardContent>
+                <ListRows>
+                  {dashboard.ilias.memberships.slice(0, 6).map((space) => (
+                    <ListRow key={`${space.title}-${space.url}`} href={buildSpaceHref(space.url)}>
+                      <div className="flex items-start gap-3">
+                        <div className={cn("mt-1 h-4 w-1 shrink-0 rounded-full", spaceKindColor(space.kind))} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium truncate">{space.title}</p>
+                            {space.kind ? <Badge variant="secondary">{space.kind}</Badge> : null}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                            {space.description ?? space.properties[0] ?? "Open learning space"}
+                          </p>
+                        </div>
+                        <span className="text-xs text-muted-foreground shrink-0 self-center">Open →</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {space.description ?? space.properties[0] ?? "Open learning space"}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0">Open →</span>
-                  </a>
-                ))}
+                    </ListRow>
+                  ))}
+                </ListRows>
               </CardContent>
             </Card>
             <DashboardMailCard mail={dashboard.mail} />
@@ -154,20 +167,22 @@ export default async function HomePage() {
                     <p className="text-sm font-medium mt-1">{dashboard.study.trackedCredits}</p>
                   </div>
                 </div>
-                <div className="divide-y divide-border">
+                <ListRows>
                   {dashboard.exams.slice(0, 4).map((exam) => (
-                    <div key={`${exam.number}-${exam.title}`} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{exam.title}</p>
-                        <p className="text-xs text-muted-foreground">{exam.number ?? "No number"}{exam.cp ? ` · ${exam.cp} CP` : ""}</p>
+                    <ListRow key={`${exam.number}-${exam.title}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{exam.title}</p>
+                          <p className="text-xs text-muted-foreground">{exam.number ?? "No number"}{exam.cp ? ` · ${exam.cp} CP` : ""}</p>
+                        </div>
+                        <div className="flex gap-1.5">
+                          {exam.status ? <Badge variant="secondary">{exam.status}</Badge> : null}
+                          {exam.grade ? <Badge variant="outline">{exam.grade}</Badge> : null}
+                        </div>
                       </div>
-                      <div className="flex gap-1.5">
-                        {exam.status ? <Badge variant="secondary">{exam.status}</Badge> : null}
-                        {exam.grade ? <Badge variant="outline">{exam.grade}</Badge> : null}
-                      </div>
-                    </div>
+                    </ListRow>
                   ))}
-                </div>
+                </ListRows>
               </CardContent>
             </Card>
 
@@ -176,15 +191,19 @@ export default async function HomePage() {
                 <CardTitle className="flex items-center gap-2"><Download className="size-4 text-primary" />Quick actions</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
-                {dashboard.quickLinks.map((link) => (
-                  <a key={link.href} href={link.href} className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 hover:bg-muted/40 transition-colors">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{link.label}</p>
-                      <p className="text-xs text-muted-foreground">{link.description}</p>
-                    </div>
-                    <ArrowRight className="size-4 text-muted-foreground shrink-0" />
-                  </a>
-                ))}
+                <ListRows>
+                  {dashboard.quickLinks.map((link) => (
+                    <ListRow key={link.href} href={link.href}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{link.label}</p>
+                          <p className="text-xs text-muted-foreground">{link.description}</p>
+                        </div>
+                        <ArrowRight className="size-4 text-muted-foreground shrink-0" />
+                      </div>
+                    </ListRow>
+                  ))}
+                </ListRows>
                 {dashboard.documents.currentDownloadUrl ? (
                   <Button variant="secondary" asChild>
                     <a href={buildPortalApiUrl(dashboard.documents.currentDownloadUrl)}>Download current Alma PDF</a>

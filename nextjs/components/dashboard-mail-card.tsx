@@ -4,13 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail } from "lucide-react";
 import type { MailPanel } from "../lib/types";
+import { EmptyState } from "./empty-state";
 import { MailMessageList } from "./mail-message-list";
 
 export function DashboardMailCard({ mail }: { mail: MailPanel }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Mail className="size-4 text-primary" />Inbox</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Mail className="size-4 text-primary" />Inbox
+        </CardTitle>
         <CardAction>
           <Button variant="outline" size="xs" asChild>
             <Link href="/mail">Open inbox</Link>
@@ -28,10 +31,19 @@ export function DashboardMailCard({ mail }: { mail: MailPanel }) {
                 <span className="text-xs text-muted-foreground truncate">{mail.account}</span>
               ) : null}
             </div>
-            <MailMessageList messages={mail.items.slice(0, 4)} variant="compact" />
-            {!mail.items.length ? (
-              <p className="text-sm text-muted-foreground">No messages were returned from the inbox.</p>
-            ) : null}
+            {mail.items.length ? (
+              <MailMessageList
+                messages={mail.items.slice(0, 4)}
+                variant="compact"
+                useInlineLinks
+              />
+            ) : (
+              <EmptyState
+                icon={Mail}
+                title="No messages"
+                description="No messages were returned from the inbox."
+              />
+            )}
           </>
         ) : (
           <p className="text-sm text-muted-foreground">

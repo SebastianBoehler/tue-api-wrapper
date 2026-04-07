@@ -1,4 +1,5 @@
 import { AppShell } from "../../components/app-shell";
+import { ListRow, ListRows } from "../../components/list-row";
 import { AlmaCourseCatalogCard } from "../../components/alma-course-catalog-card";
 import { AlmaCourseSearchPanel } from "../../components/alma-course-search-panel";
 import { CourseDiscovery } from "../../components/course-discovery";
@@ -15,6 +16,8 @@ import {
   getModuleSearchFilters,
   PortalApiError
 } from "../../lib/portal-api";
+import { spaceKindColor } from "../../lib/space-kind";
+import { cn } from "@/lib/utils";
 import { parseCourseDiscoveryParams } from "../../lib/discovery-query";
 
 export default async function CoursesPage({
@@ -58,20 +61,25 @@ export default async function CoursesPage({
               <CardTitle>Current learning spaces</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="divide-y divide-border">
+              <ListRows>
                 {memberships.map((space) => (
-                  <a key={`${space.title}-${space.url}`} href={`/spaces?target=${encodeURIComponent(space.url)}`} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0 hover:bg-muted/50 -mx-1 px-1 rounded-sm transition-colors">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{space.title}</span>
-                        {space.kind ? <Badge variant="secondary">{space.kind}</Badge> : null}
+                  <ListRow key={`${space.title}-${space.url}`} href={`/spaces?target=${encodeURIComponent(space.url)}`}>
+                    <div className="flex items-start gap-3">
+                      <div className={cn("mt-1 h-4 w-1 shrink-0 rounded-full", spaceKindColor(space.kind))} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate">{space.title}</span>
+                          {space.kind ? <Badge variant="secondary">{space.kind}</Badge> : null}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                          {space.description ?? space.properties[0] ?? "Open learning space"}
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">{space.description ?? space.properties[0] ?? "Open learning space"}</p>
+                      <span className="text-xs text-muted-foreground shrink-0 self-center">Open →</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Open →</span>
-                  </a>
+                  </ListRow>
                 ))}
-              </div>
+              </ListRows>
             </CardContent>
           </Card>
         ) : null}

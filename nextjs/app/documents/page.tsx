@@ -1,5 +1,6 @@
 import { AppShell } from "../../components/app-shell";
 import { ErrorPanel } from "../../components/error-panel";
+import { ListRow, ListRows } from "../../components/list-row";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -101,17 +102,19 @@ export default async function DocumentsPage() {
           </CardHeader>
           <CardContent>
             {documents.outputRequests.length ? (
-              <div className="divide-y divide-border">
+              <ListRows>
                 {documents.outputRequests.map((request) => (
-                  <div key={request.trigger_name} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-                    <div>
-                      <p className="text-sm font-medium">{request.label}</p>
-                      <p className="text-xs text-muted-foreground">{request.message ?? "No additional Alma status message."}</p>
+                  <ListRow key={request.trigger_name}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">{request.label}</p>
+                        <p className="text-xs text-muted-foreground">{request.message ?? "No additional Alma status message."}</p>
+                      </div>
+                      <Badge variant="secondary">{request.count ?? 0}</Badge>
                     </div>
-                    <Badge variant="secondary">{request.count ?? 0}</Badge>
-                  </div>
+                  </ListRow>
                 ))}
-              </div>
+              </ListRows>
             ) : (
               <p className="text-sm text-muted-foreground">
                 Alma did not expose any output-request groups on the current study-service page.
@@ -127,31 +130,35 @@ export default async function DocumentsPage() {
           </CardHeader>
           <CardContent>
             {transcriptReports.length ? (
-              <div className="divide-y divide-border mb-4">
+              <ListRows className="mb-4">
                 {transcriptReports.map((doc) => (
-                  <div key={`transcript-${doc.trigger_name}`} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-                    <div>
-                      <p className="text-sm font-medium">{doc.label}</p>
-                      <p className="text-xs text-muted-foreground">JSF trigger: {doc.trigger_name}</p>
+                  <ListRow key={`transcript-${doc.trigger_name}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">{doc.label}</p>
+                        <p className="text-xs text-muted-foreground">JSF trigger: {doc.trigger_name}</p>
+                      </div>
+                      <Badge variant="secondary">Transcript-like</Badge>
                     </div>
-                    <Badge variant="secondary">Transcript-like</Badge>
-                  </div>
+                  </ListRow>
                 ))}
-              </div>
+              </ListRows>
             ) : null}
 
             {otherReports.length ? (
-              <div className="divide-y divide-border">
+              <ListRows>
                 {otherReports.map((doc) => (
-                  <div key={doc.trigger_name} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-                    <div>
-                      <span className="text-sm font-medium">{doc.label}</span>
-                      <p className="text-xs text-muted-foreground">JSF trigger: {doc.trigger_name}</p>
+                  <ListRow key={doc.trigger_name}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <span className="text-sm font-medium">{doc.label}</span>
+                        <p className="text-xs text-muted-foreground">JSF trigger: {doc.trigger_name}</p>
+                      </div>
+                      <Badge variant="outline" className="font-mono text-xs">{doc.trigger_name}</Badge>
                     </div>
-                    <Badge variant="outline" className="font-mono text-xs">{doc.trigger_name}</Badge>
-                  </div>
+                  </ListRow>
                 ))}
-              </div>
+              </ListRows>
             ) : (
               <p className="text-sm text-muted-foreground">
                 Alma did not expose any named certificate jobs on the study-service page during this fetch.

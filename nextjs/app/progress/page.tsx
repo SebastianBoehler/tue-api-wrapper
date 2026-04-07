@@ -1,6 +1,7 @@
 import { AppShell } from "../../components/app-shell";
 import { ErrorPanel } from "../../components/error-panel";
 import { ExamRecordsTabs } from "../../components/exam-records-tabs";
+import { ListRow, ListRows } from "../../components/list-row";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { getAlmaEnrollment, getAlmaExams, PortalApiError } from "../../lib/portal-api";
 import type { ExamItem } from "../../lib/types";

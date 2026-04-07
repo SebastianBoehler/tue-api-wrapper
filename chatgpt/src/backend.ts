@@ -2,13 +2,23 @@ import type {
   AlmaCourseSearchFiltersPayload,
   AlmaCourseSearchResponse,
   AlmaExamRecord,
+  AlmaStudyPlannerPayload,
+  AuthenticatedCourseSearchResponse,
   AlmaTimetablePayload,
   DashboardPayload,
+  DocumentsSummaryPayload,
+  IliasContentPage,
+  IliasExerciseAssignment,
+  IliasForumTopic,
+  IliasSearchResponse,
   IliasMembershipItem,
+  LearningSpaceInspection,
+  MailInboxResponse,
+  MailMessageDetailResponse,
   IliasTaskItem,
+  ModuleDetail,
   SearchItem
 } from "./types.js";
-
 const apiBaseUrl = process.env.PORTAL_API_BASE_URL;
 const defaultTerm = "Sommer 2026";
 
@@ -30,7 +40,6 @@ export class PortalBackendError extends Error {
     this.name = "PortalBackendError";
   }
 }
-
 async function fetchJson<T>(path: string): Promise<T> {
   if (!apiBaseUrl) {
     throw new PortalBackendError(
@@ -54,7 +63,6 @@ async function fetchJson<T>(path: string): Promise<T> {
 
   return (await response.json()) as T;
 }
-
 function buildQueryString(params: Record<string, string | number | readonly string[] | undefined>): string {
   const query = new URLSearchParams();
 
@@ -78,7 +86,6 @@ function buildQueryString(params: Record<string, string | number | readonly stri
   const suffix = query.toString();
   return suffix ? `?${suffix}` : "";
 }
-
 function normalizeDashboard(dashboard: DashboardPayload): DashboardPayload {
   return {
     ...dashboard,
@@ -88,6 +95,14 @@ function normalizeDashboard(dashboard: DashboardPayload): DashboardPayload {
         ? buildPortalApiUrl(dashboard.documents.currentDownloadUrl)
         : null
     }
+  };
+}
+function normalizeDocumentsSummary(documents: DocumentsSummaryPayload): DocumentsSummaryPayload {
+  return {
+    ...documents,
+    currentDownloadUrl: documents.currentDownloadUrl
+      ? buildPortalApiUrl(documents.currentDownloadUrl)
+      : null,
   };
 }
 
@@ -103,6 +118,29 @@ export interface CourseCatalogSearchParams {
   maxResults?: number;
 }
 
+export interface CourseOfferingSearchParams {
+  query?: string;
+  term?: string;
+  limit?: number;
+}
+
+export interface MailInboxParams {
+  mailbox?: string;
+  limit?: number;
+  query?: string;
+  sender?: string;
+  unreadOnly?: boolean;
+}
+
+export interface LearningSpaceSearchParams {
+  term: string;
+  page?: number;
+  searchMode?: string;
+  contentType?: readonly string[];
+  createdEnabled?: boolean;
+  createdMode?: string;
+  createdDate?: string;
+}
 export async function loadDashboard(term = defaultTerm): Promise<DashboardPayload> {
   const dashboard = await fetchJson<DashboardPayload>(
     `/api/dashboard?term=${encodeURIComponent(term)}`
@@ -130,6 +168,15 @@ export async function loadEnrollments(): Promise<DashboardPayload["enrollment"]>
   return fetchJson<DashboardPayload["enrollment"]>("/api/alma/enrollments");
 }
 
+export async function loadDocumentsSummary(): Promise<DocumentsSummaryPayload> {
+  const documents = await fetchJson<DocumentsSummaryPayload>("/api/alma/studyservice/summary");
+  return normalizeDocumentsSummary(documents);
+}
+
+export async function loadStudyPlanner(): Promise<AlmaStudyPlannerPayload> {
+  return fetchJson<AlmaStudyPlannerPayload>("/api/alma/study-planner");
+}
+
 export async function loadCourseCatalogFilters(): Promise<AlmaCourseSearchFiltersPayload> {
   return fetchJson<AlmaCourseSearchFiltersPayload>("/api/alma/module-search/filters");
 }
@@ -150,6 +197,93 @@ export async function searchCourseCatalog(
   });
 
   return fetchJson<AlmaCourseSearchResponse>(`/api/alma/module-search${query}`);
+}
+
+export async function searchCourseOfferings(
+  params: CourseOfferingSearchParams
+): Promise<AuthenticatedCourseSearchResponse> {
+  const query = buildQueryString({
+    query: params.query?.trim(),
+    term: params.term?.trim(),
+    limit: params.limit ?? 12,
+  });
+
+  return fetchJson<AuthenticatedCourseSearchResponse>(`/api/alma/course-search${query}`);
+}
+
+export async function loadCourseDetail(url: string): Promise<ModuleDetail> {
+  return fetchJson<ModuleDetail>(`/api/alma/module-detail?url=${encodeURIComponent(url)}`);
+}
+
+export async function loadMailInbox(params: MailInboxParams = {}): Promise<MailInboxResponse> {
+  const query = buildQueryString({
+    mailbox: params.mailbox?.trim(),
+    limit: params.limit ?? 8,
+    query: params.query?.trim(),
+    sender: params.sender?.trim(),
+    unread_only: params.unreadOnly ? "true" : undefined,
+  });
+
+  return fetchJson<MailInboxResponse>(`/api/mail/inbox${query}`);
+}
+
+export async function loadMailMessage(
+  uid: string,
+  mailbox = "INBOX",
+): Promise<MailMessageDetailResponse> {
+  return fetchJson<MailMessageDetailResponse>(
+    `/api/mail/messages/${encodeURIComponent(uid)}?mailbox=${encodeURIComponent(mailbox)}`,
+  );
+}
+
+export async function searchLearningSpaces(
+  params: LearningSpaceSearchParams
+): Promise<IliasSearchResponse> {
+  const query = buildQueryString({
+    term: params.term.trim(),
+    page: params.page ?? 1,
+    search_mode: params.searchMode?.trim(),
+    content_type: params.contentType,
+    created_enabled: params.createdEnabled ? "true" : undefined,
+    created_mode: params.createdMode?.trim(),
+    created_date: params.createdDate?.trim(),
+  });
+
+  return fetchJson<IliasSearchResponse>(`/api/ilias/search${query}`);
+}
+
+export async function inspectLearningSpace(target: string): Promise<LearningSpaceInspection> {
+  const encodedTarget = encodeURIComponent(target);
+  const [contentResult, forumResult, exerciseResult] = await Promise.allSettled([
+    fetchJson<IliasContentPage>(`/api/ilias/content?target=${encodedTarget}`),
+    fetchJson<IliasForumTopic[]>(`/api/ilias/forum?target=${encodedTarget}`),
+    fetchJson<IliasExerciseAssignment[]>(`/api/ilias/exercise?target=${encodedTarget}`),
+  ]);
+
+  const content = contentResult.status === "fulfilled" ? contentResult.value : null;
+  const forum = forumResult.status === "fulfilled" ? forumResult.value : [];
+  const exercise = exerciseResult.status === "fulfilled" ? exerciseResult.value : [];
+
+  if (!content && !forum.length && !exercise.length) {
+    const primaryError = contentResult.status === "rejected"
+      ? contentResult.reason
+      : forumResult.status === "rejected"
+        ? forumResult.reason
+        : exerciseResult.status === "rejected"
+          ? exerciseResult.reason
+          : null;
+
+    if (primaryError instanceof PortalBackendError) {
+      throw primaryError;
+    }
+    throw new PortalBackendError("No learning-space data was returned for the requested target.");
+  }
+
+  return {
+    content,
+    forum,
+    exercise,
+  };
 }
 
 export async function searchItems(query: string): Promise<SearchItem[]> {

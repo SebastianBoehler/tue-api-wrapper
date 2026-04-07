@@ -11,8 +11,16 @@ This folder contains a ChatGPT Apps SDK scaffold for the unified Alma + ILIAS st
 - `get_current_tasks`: ILIAS derived task overview
 - `get_current_grades`: Alma exam rows plus tracked credits and passed exam count
 - `get_learning_spaces`: authenticated ILIAS memberships
-- `get_course_catalog_filters`: valid Alma module-search filters for degree, subject, faculty, language, and element type
-- `search_courses`: Alma module-description search for course discovery and next-semester planning
+- `get_documents_summary`: Alma study-service summary with tabs, output requests, and current PDF availability
+- `get_mail_inbox`: inbox triage and filtering inside ChatGPT
+- `get_mail_message`: full plaintext mail message detail by UID
+- `get_course_catalog_filters`: valid Alma public module-search filters for degree, subject, faculty, language, and element type
+- `search_courses`: public Alma module-description search
+- `search_course_offerings`: authenticated Alma course search for term-specific offerings
+- `get_course_detail`: structured Alma course or module detail for a known detail URL
+- `get_study_planner`: Alma semester grid and visible planner modules
+- `search_learning_spaces`: authenticated ILIAS search
+- `inspect_learning_space`: content, forum, and exercise summary for a specific ILIAS space
 - `show_dashboard`: widget-backed study overview
 - `list_documents`: widget-backed Alma study-service document list
 
@@ -23,6 +31,9 @@ The widget uses the MCP Apps bridge for tool-result updates and only falls back 
 - "What are my current grades and credits?"
 - "Which learning spaces am I enrolled in?"
 - "What courses fit my degree or subject next semester?"
+- "What mail needs my attention today?"
+- "What document job do I need for my enrollment certificate?"
+- "What does this ILIAS space currently contain?"
 
 The widget also uses ChatGPT host capabilities when available:
 
@@ -43,6 +54,20 @@ npm run dev
 The server listens on `http://localhost:8080/mcp` by default.
 
 Set `PORTAL_API_BASE_URL` to point at the Python backend in `../package`. The app is live-data only and returns explicit backend errors when that API is not reachable.
+
+## Auth and deployment
+
+This app does not implement Apps SDK OAuth yet.
+
+For now, the intended deployment model is private use:
+
+- deploy the Python backend with `UNI_USERNAME` and `UNI_PASSWORD` set in the backend environment
+- point `PORTAL_API_BASE_URL` at that private backend
+- keep the ChatGPT app deployment private to your own setup rather than exposing it as a broadly shared public app
+
+That keeps the system simple while still making the ChatGPT app useful for personal study management.
+
+If you later want real user auth in ChatGPT, treat that as a separate project. The Apps SDK auth flow requires OAuth resource metadata and per-tool auth policy declarations, so it is meaningfully more involved than the current env-backed backend setup.
 
 Typical local setup:
 
@@ -85,6 +110,8 @@ gcloud run deploy tue-study-hub-chatgpt \
   --allow-unauthenticated \
   --set-env-vars PORTAL_API_BASE_URL=https://your-backend.example.com
 ```
+
+`--allow-unauthenticated` keeps the MCP endpoint reachable by ChatGPT. Without Apps SDK OAuth, "private" here means a private ChatGPT app configuration and a backend that uses your own env-backed university credentials, not a connector endpoint that is network-inaccessible to OpenAI.
 
 Then update the service so `APP_BASE_URL` matches the Cloud Run URL that was assigned:
 

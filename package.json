@@ -9,6 +9,8 @@
     "build:chatgpt": "npm --workspace chatgpt run build",
     "dev:desktop": "npm --prefix desktop run dev",
     "build:desktop": "npm --prefix desktop run build",
-    "package:desktop": "npm --prefix desktop run package"
+    "package:desktop": "npm --prefix desktop run package",
+    "generate:ios": "xcodegen generate --spec ios/project.yml",
+    "build:ios": "npm run generate:ios && xcodebuild -project ios/TueAPI.xcodeproj -scheme TueAPI -destination 'generic/platform=iOS Simulator' build"
   }
 }

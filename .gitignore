@@ -1,4 +1,5 @@
 .DS_Store
+.learnings/
 .env
 .env.*
 .next
@@ -36,3 +37,6 @@ go/*.test
 go/tue
 go/tue-external
 go/tue-*
+ios/TueAPI.xcodeproj/
+ios/build/
+ios/DerivedData/

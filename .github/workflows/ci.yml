@@ -102,3 +102,21 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+  ios:
+    name: iOS app
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build simulator app
+        run: npm run build:ios

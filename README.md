@@ -7,7 +7,7 @@
 <p align="center">
   Unified Alma, ILIAS, Moodle, and mail access for the University of Tuebingen.
   <br />
-  One contract layer, multiple surfaces: Python API, Go CLI, Next.js dashboard, ChatGPT app, and Electron desktop.
+  One contract layer, multiple surfaces: Python API, Go CLI, Next.js dashboard, ChatGPT app, Electron desktop, and native iOS.
 </p>
 
 <p align="center">
@@ -57,7 +57,7 @@ The upstream systems remain the source of truth. This repo focuses on cleaner ac
 - ILIAS: root navigation, memberships, task overview, content parsing, forum topics, exercise assignments, authenticated search, and info-page resolution
 - Moodle: dashboard, calendar, courses, categories, grades, messages, and notifications
 - Mail: read-only mailbox, inbox, and message access over IMAP
-- Shared delivery surfaces: Python package, FastAPI backend, Go CLI, Next.js dashboard, ChatGPT MCP app, and Electron desktop shell
+- Shared delivery surfaces: Python package, FastAPI backend, Go CLI, Next.js dashboard, ChatGPT MCP app, Electron desktop shell, and native iOS app
 
 The repo is live-data oriented. When upstream authentication or university systems fail, the tools return explicit errors instead of mock data.
 
@@ -75,6 +75,7 @@ flowchart LR
     Python --> PyCLI["Python CLI entry points"]
     Alma --> Go["Go CLI for stable authenticated flows"]
     ILIAS --> Go
+    Alma --> iOS["Native iOS app and widgets"]
 ```
 
 Typical development flow:
@@ -94,6 +95,7 @@ Typical development flow:
 | Next.js app | Student-facing dashboard UI | `cd nextjs && npm run dev` |
 | ChatGPT app | MCP server plus widget-based study assistant | `cd chatgpt && npm run dev` |
 | Electron desktop app | Local desktop shell with encrypted credential storage and managed backend | `cd desktop && npm run dev` |
+| iOS app | Native Alma timetable client with Keychain credentials, WidgetKit widgets, and Live Activities | `npm run generate:ios` |
 
 ## Preview
 
@@ -172,6 +174,15 @@ GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o tue-linux-arm64 ./cmd/tue
 
 Note for the current macOS toolchain in this repo: plain `go build` or `go run` can fail with a missing `LC_UUID`. If you hit that locally, use the workaround documented in [`go/README.md`](./go/README.md).
 
+### 5. Generate the iOS app
+
+The iOS workspace lives in [`ios/`](./ios/). It does not call the Next.js or FastAPI surfaces; it logs in to Alma directly, stores credentials in Keychain from Settings, parses the Alma timetable iCalendar feed in Swift, browses public current lectures, and caches upcoming lectures for WidgetKit widgets and Live Activities.
+
+```bash
+npm run generate:ios
+npm run build:ios
+```
+
 ## Desktop app
 
 The desktop workspace lives in [`desktop/`](./desktop/). It wraps the existing Python backend in Electron, stores credentials with operating-system-backed encryption through Electron `safeStorage`, and exposes build plus release workflows for packaged installers.
@@ -221,6 +232,7 @@ Legacy `ALMA_*` and `ILIAS_*` credential variables are still accepted for compat
 | [`nextjs/`](./nextjs/) | Student dashboard built with Next.js |
 | [`chatgpt/`](./chatgpt/) | ChatGPT app, MCP server, and widget UI |
 | [`desktop/`](./desktop/) | Electron desktop app with onboarding, encrypted local credential storage, and sidecar backend packaging |
+| [`ios/`](./ios/) | Native SwiftUI app plus WidgetKit extension for direct Alma timetable access |
 | [`docs/`](./docs/) | Discovery notes, screenshots, and supporting documentation |
 
 ## Development
@@ -233,6 +245,7 @@ cd go && go test ./... && go build ./cmd/tue
 cd nextjs && npm ci --workspaces=false && npm run check && npm run build
 cd chatgpt && npm ci --workspaces=false && npm run check && npm run build
 cd desktop && npm ci && npm run build
+npm run generate:ios && npm run build:ios
 ```
 
 If you install workspace dependencies from the repository root, these convenience scripts are available:
@@ -245,6 +258,8 @@ npm run build:chatgpt
 npm run dev:desktop
 npm run build:desktop
 npm run package:desktop
+npm run generate:ios
+npm run build:ios
 ```
 
 GitHub Actions runs the same main checks on pushes to `main` and on pull requests:
@@ -254,6 +269,7 @@ GitHub Actions runs the same main checks on pushes to `main` and on pull request
 - Next.js typecheck and production build
 - ChatGPT app typecheck and production build
 - Desktop renderer and Electron build in `desktop/`
+- iOS project generation and simulator build
 
 Workflow file: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
 

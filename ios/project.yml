@@ -1,0 +1,55 @@
+name: TueAPI
+options:
+  bundleIdPrefix: dev.sebastianboehler
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    DEVELOPMENT_TEAM: ""
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+targets:
+  TueAPI:
+    type: application
+    platform: iOS
+    sources:
+      - path: TueAPI
+      - path: Shared
+    dependencies:
+      - target: TueAPIWidgetExtension
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.sebastianboehler.tueapi
+        PRODUCT_NAME: TueAPI
+        CODE_SIGN_ENTITLEMENTS: TueAPI/TueAPI.entitlements
+    info:
+      path: TueAPI/Info.plist
+      properties:
+        CFBundleDisplayName: TUE API
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSRequiresIPhoneOS: true
+        NSSupportsLiveActivities: true
+        UIApplicationSupportsIndirectInputEvents: true
+        UILaunchScreen: {}
+  TueAPIWidgetExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.sebastianboehler.tueapi.widget
+        PRODUCT_NAME: TueAPIWidgetExtension
+        CODE_SIGN_ENTITLEMENTS: Widgets/TueAPIWidgetExtension.entitlements
+        APPLICATION_EXTENSION_API_ONLY: true
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: TUE API Widgets
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

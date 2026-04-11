@@ -54,7 +54,53 @@ struct SettingsView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+
+            Section {
+                Toggle("Notify before lectures", isOn: reminderToggle)
+
+                Picker("Reminder time", selection: reminderLeadTimeSelection) {
+                    ForEach(AppModel.reminderLeadTimeOptions, id: \.self) { minutes in
+                        Text("\(minutes) minutes before")
+                            .tag(minutes)
+                    }
+                }
+                .disabled(!model.remindersEnabled)
+
+                if let message = model.reminderMessage {
+                    Text(message)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Lecture reminders")
+            } footer: {
+                Text("The app schedules local notifications from cached Alma timetable entries. No backend, remote push token, or push notification server is used.")
+            }
         }
         .navigationTitle("Settings")
+    }
+
+    private var reminderToggle: Binding<Bool> {
+        Binding {
+            model.remindersEnabled
+        } set: { isEnabled in
+            Task {
+                if isEnabled {
+                    await model.enableLectureReminders()
+                } else {
+                    await model.disableLectureReminders()
+                }
+            }
+        }
+    }
+
+    private var reminderLeadTimeSelection: Binding<Int> {
+        Binding {
+            model.reminderLeadTimeMinutes
+        } set: { minutes in
+            Task {
+                await model.setReminderLeadTime(minutes: minutes)
+            }
+        }
     }
 }

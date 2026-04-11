@@ -33,5 +33,8 @@ struct AppView: View {
                 Label("Settings", systemImage: "gear")
             }
         }
+        .task {
+            await model.refreshReminderStatus()
+        }
     }
 }

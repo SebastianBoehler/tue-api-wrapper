@@ -53,8 +53,8 @@ The upstream systems remain the source of truth. This repo focuses on cleaner ac
 
 ## What works today
 
-- Alma: timetable export, current lectures, exam overview, portal messages feed refresh, study-service documents, study planner parsing, public module search, and module detail fetching
-- ILIAS: root navigation, memberships, task overview, content parsing, forum topics, exercise assignments, authenticated search, and info-page resolution
+- Alma: timetable export, current lectures, exam overview, portal messages feed refresh, study-service documents, study planner parsing, public module search, module detail fetching, and combined course detail bundles
+- ILIAS: root navigation, memberships, task overview, content parsing, forum topics, exercise assignments, authenticated search, info-page resolution, and related learning-space matching for course detail pages
 - Moodle: dashboard, calendar, courses, categories, grades, messages, and notifications
 - Mail: read-only mailbox, inbox, and message access over IMAP
 - Shared delivery surfaces: Python package, FastAPI backend, Go CLI, Next.js dashboard, ChatGPT MCP app, Electron desktop shell, and native iOS app

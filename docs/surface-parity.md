@@ -22,6 +22,7 @@ Status legend:
 | Alma authenticated course search | full | full | full | none | none | none |
 | Alma public module catalog search | full | full | full | none | partial | none |
 | Alma module detail | full | full | full | none | none | none |
+| Combined Alma course detail + ILIAS matches | full | full | full | none | none | full |
 | ILIAS memberships / tasks | full | full | full | partial | none | none |
 | ILIAS search | full | full | full | none | none | full |
 | ILIAS learning-space detail | full | full | full | none | partial | none |

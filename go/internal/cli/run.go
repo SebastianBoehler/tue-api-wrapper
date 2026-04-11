@@ -47,7 +47,7 @@ func Run(args []string) int {
 func printRootUsage() {
 	fmt.Println("Usage:")
 	fmt.Println("  tue api get /api/dashboard [--query key=value ...] [--output PATH] [--raw]")
-	fmt.Println("  tue portal <dashboard|search|item|health> ...")
+	fmt.Println("  tue portal <dashboard|search|item|course-detail|health> ...")
 	fmt.Println("  tue alma current-lectures [--date DD.MM.YYYY] [--limit N] [--json]")
 	fmt.Println("  tue alma <timetable|enrollments|exams|catalog|module-search|module-search-filters|module-detail|documents|studyservice|current-document|document|document-download-url|current-lectures-api|timetable-controls|timetable-view|timetable-pdf|portal-messages-feed|study-planner|course-search|catalog-page|studyservice-summary> ...")
 	fmt.Println("  tue ilias search --term QUERY [--page N] [--json]")

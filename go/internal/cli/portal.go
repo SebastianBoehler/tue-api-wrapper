@@ -14,6 +14,10 @@ var portalRoutes = map[string]backendRoute{
 		PathArgs:    []string{"item_id"},
 		Description: "Fetch a concrete item from the unified search index.",
 	},
+	"course-detail": {
+		Path:        "/api/course-detail",
+		Description: "Combined Alma course detail with related ILIAS matches. Use --query url=... or --query title=....",
+	},
 	"health": {
 		Path:        "/api/health",
 		Description: "Backend health check.",

@@ -426,6 +426,15 @@ class AlmaContractTests(unittest.TestCase):
             </div>
           </div>
         </div>
+        <div class="boxStandard" id="detailViewData:moduleStudyPrograms:fieldset">
+          <div class="box_title"><h2>Module / Studiengänge</h2></div>
+          <div class="box_content">
+            <table>
+              <tr><th>Studiengang</th><th>Abschluss</th><th>Modul</th></tr>
+              <tr><td>Informatik</td><td>Master</td><td>INFO-ML</td></tr>
+            </table>
+          </div>
+        </div>
         """
         detail = parse_module_detail_page(html, "https://alma.example/detail/1")
 
@@ -435,6 +444,9 @@ class AlmaContractTests(unittest.TestCase):
         self.assertEqual(detail.active_tab, "Modulbeschreibung")
         self.assertEqual(detail.available_tabs, ("Modulbeschreibung", "Studiengänge"))
         self.assertEqual(detail.sections[0].title, "Grunddaten")
+        self.assertEqual(detail.module_study_program_tables[0].title, "Module / Studiengänge")
+        self.assertEqual(detail.module_study_program_tables[0].headers, ("Studiengang", "Abschluss", "Modul"))
+        self.assertEqual(detail.module_study_program_tables[0].rows[0], ("Informatik", "Master", "INFO-ML"))
 
     def test_ilias_login_parsers(self) -> None:
         login_html = """

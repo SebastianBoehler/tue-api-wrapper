@@ -16,6 +16,7 @@ from .alma_timetable_client import (
 )
 from .client import AlmaClient
 from .config import AlmaError
+from .course_detail_linking import build_unified_course_detail, resolve_alma_course_detail
 from .ilias_feature_client import fetch_ilias_info_page, fetch_ilias_search_filters, search_ilias
 from .portal_service import PortalService, serialize
 
@@ -50,6 +51,40 @@ def _studyservice_summary(client: AlmaClient) -> dict[str, object]:
         "currentDownloadUrl": "/api/alma/documents/current" if contract.latest_download_url is not None else None,
         "sourcePageUrl": client.studyservice_url,
     }
+
+
+@router.get("/api/course-detail")
+def unified_course_detail(
+    url: str = "",
+    title: str = "",
+    term: str = "",
+    ilias_limit: int = Query(8, ge=1, le=20),
+) -> dict[str, object]:
+    try:
+        detail = resolve_alma_course_detail(
+            AlmaClient(),
+            detail_url=url,
+            title=title,
+            term=term.strip() or None,
+            search_client=_alma_client() if not url.strip() else None,
+        )
+        ilias_client = None
+        ilias_error = None
+        try:
+            ilias_client = _ilias_client()
+        except AlmaError as error:
+            ilias_error = str(error)
+
+        return serialize(
+            build_unified_course_detail(
+                detail,
+                ilias_client=ilias_client,
+                ilias_error=ilias_error,
+                ilias_limit=ilias_limit,
+            )
+        )
+    except AlmaError as error:
+        raise _translate_error(error) from error
 
 
 @router.get("/api/alma/current-lectures")

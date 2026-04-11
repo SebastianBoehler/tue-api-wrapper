@@ -5,15 +5,13 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
+from .alma_detail_html import parse_module_detail_page
 from .config import AlmaParseError
 from .models import (
     AlmaCourseCatalogNode,
-    AlmaDetailField,
-    AlmaDetailSection,
     AlmaEnrollmentPage,
     AlmaExamNode,
     AlmaAdvancedModuleSearchForm,
-    AlmaModuleDetail,
     AlmaModuleSearchForm,
     AlmaModuleSearchPage,
     AlmaModuleSearchFieldMap,
@@ -361,61 +359,4 @@ def parse_module_search_results_page(html: str, page_url: str) -> AlmaModuleSear
         total_pages=total_pages,
         rows_input_name=rows_input_name,
         rows_refresh_name=rows_refresh_name,
-    )
-
-
-def parse_module_detail_page(html: str, page_url: str) -> AlmaModuleDetail:
-    soup = BeautifulSoup(html, "html.parser")
-    title = None
-    permalink = None
-    number = None
-
-    permalink_input = soup.find("input", attrs={"id": "autologinRequestUrl"})
-    if permalink_input is not None:
-        permalink = permalink_input.get("value")
-
-    available_tabs: list[str] = []
-    active_tab = None
-    for button in soup.select("button.tabButton"):
-        label = _normalize_text(button.get_text(" ", strip=True).replace("Aktive Registerkarte", ""))
-        if not label:
-            continue
-        available_tabs.append(label)
-        classes = set(button.get("class", []))
-        if "active" in classes:
-            active_tab = label
-
-    sections: list[AlmaDetailSection] = []
-    for panel in soup.select(".boxStandard"):
-        heading = panel.select_one(".box_title h2")
-        if heading is None:
-            continue
-        section_title = _normalize_text(heading.get_text(" ", strip=True))
-        fields: list[AlmaDetailField] = []
-        for row in panel.select(".box_content .labelItemLine"):
-            label_node = row.select_one("label")
-            value_node = row.select_one(".answer")
-            label = _normalize_text(label_node.get_text(" ", strip=True)) if label_node is not None else ""
-            value = _normalize_text(value_node.get_text(" ", strip=True)) if value_node is not None else ""
-            if label and value:
-                fields.append(AlmaDetailField(label=label, value=value))
-                if section_title == "Grunddaten":
-                    if label == "Titel":
-                        title = value
-                    elif label == "Nummer":
-                        number = value
-        if fields:
-            sections.append(AlmaDetailSection(title=section_title, fields=tuple(fields)))
-
-    if title is None:
-        raise AlmaParseError("Could not extract Alma module details from the public detail page.")
-
-    return AlmaModuleDetail(
-        title=title,
-        number=number,
-        permalink=permalink,
-        source_url=page_url,
-        active_tab=active_tab,
-        available_tabs=tuple(available_tabs),
-        sections=tuple(sections),
     )

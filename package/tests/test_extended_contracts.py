@@ -2,16 +2,86 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tue_api_wrapper.alma_feature_html import extract_current_lectures_form, parse_current_lectures_page
+from tue_api_wrapper.course_detail_linking import build_unified_course_detail
 from tue_api_wrapper.ilias_feature_html import extract_ilias_search_form, parse_ilias_info_page, parse_ilias_search_page
+from tue_api_wrapper.ilias_feature_models import IliasSearchResult
+from tue_api_wrapper.models import AlmaDetailField, AlmaDetailSection, AlmaModuleDetail
 
 
 class ExtendedContractTests(unittest.TestCase):
+    def test_course_detail_bundle_ranks_ilias_result_by_shared_number(self) -> None:
+        detail = AlmaModuleDetail(
+            title="Computer Graphics",
+            number="INF-4201",
+            permalink="https://alma.example/detail/1",
+            source_url="https://alma.example/source",
+            active_tab="Modulbeschreibung",
+            available_tabs=("Modulbeschreibung",),
+            sections=(
+                AlmaDetailSection(
+                    title="Kommentar",
+                    fields=(
+                        AlmaDetailField(
+                            label="Anmeldung",
+                            value="Bitte melden Sie sich zusaetzlich ueber ILIAS an.",
+                        ),
+                    ),
+                ),
+            ),
+            module_study_program_tables=(),
+        )
+        ilias_result = IliasSearchResult(
+            title="INF-4201 Computer Graphics",
+            url="https://ovidius.example/goto.php/crs/42",
+            description="Course registration and materials",
+            info_url="https://ovidius.example/ilias.php?cmd=infoScreen&ref_id=42",
+            add_to_favorites_url=None,
+            breadcrumbs=("Sommersemester 2026",),
+            properties=("Online",),
+            item_type="crs",
+        )
+
+        with patch(
+            "tue_api_wrapper.course_detail_linking.search_ilias",
+            return_value=SimpleNamespace(results=(ilias_result,)),
+        ):
+            bundle = build_unified_course_detail(detail, ilias_client=object())
+
+        self.assertEqual(bundle.lookup_queries[0].query, "INF-4201")
+        self.assertEqual(bundle.ilias_results[0].matched_identifier, "INF-4201")
+        self.assertIn("shared Alma number", bundle.ilias_results[0].match_reason)
+        self.assertEqual(bundle.registration_hints[0].source, "alma")
+
+    def test_course_detail_bundle_keeps_alma_when_ilias_is_unavailable(self) -> None:
+        detail = AlmaModuleDetail(
+            title="Computer Graphics",
+            number=None,
+            permalink=None,
+            source_url="https://alma.example/source",
+            active_tab=None,
+            available_tabs=(),
+            sections=(),
+            module_study_program_tables=(),
+        )
+
+        bundle = build_unified_course_detail(
+            detail,
+            ilias_client=None,
+            ilias_error="Set UNI_USERNAME and UNI_PASSWORD before using authenticated endpoints.",
+        )
+
+        self.assertEqual(bundle.alma.title, "Computer Graphics")
+        self.assertEqual(bundle.ilias_results, ())
+        self.assertIsNotNone(bundle.lookup_queries[0].error)
+
     def test_extract_ilias_search_form(self) -> None:
         html = """
         <form action="/ilias.php?baseClass=ilsearchcontrollergui&amp;cmd=post&amp;fallbackCmd=performSearch&amp;rtoken=abc" method="post">

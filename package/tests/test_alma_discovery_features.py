@@ -88,6 +88,57 @@ COURSE_CATALOG_SUMMER_HTML = COURSE_CATALOG_HTML.replace(
     '<option value="236">Wintersemester 2025/26</option>\n    <option value="229" selected="selected">Sommersemester 2026</option>',
 ).replace("Current catalog", "Summer catalog")
 
+MODULE_DETAIL_HTML = """
+<form id="detailViewData" action="/alma/pages/startFlow.xhtml?_flowId=detailView-flow&amp;_flowExecutionKey=e1s1">
+  <input type="hidden" name="javax.faces.ViewState" value="e1s1" />
+  <input type="hidden" name="detailViewData_SUBMIT" value="1" />
+  <button
+    id="detailViewData:tabContainer:tabs:moduleDescriptionTab"
+    name="detailViewData:tabContainer:tabs:moduleDescriptionTab"
+    class="active tabButton immediate"
+    type="submit"
+    value="Modulbeschreibung"
+  >
+    <span>Modulbeschreibung</span><span>Aktive Registerkarte</span>
+  </button>
+  <button
+    id="detailViewData:tabContainer:tabs:moduleStudyProgramsTab"
+    name="detailViewData:tabContainer:tabs:moduleStudyProgramsTab"
+    class="inactive tabButton immediate"
+    type="submit"
+    value="Module / Studiengänge"
+  >
+    <span>Module / Studiengänge</span>
+  </button>
+  <input id="autologinRequestUrl" value="https://alma.example/detail/1" />
+  <div class="boxStandard" id="detailViewData:basicData:fieldset">
+    <div class="box_title"><h2>Grunddaten</h2></div>
+    <div class="box_content">
+      <div class="labelItemLine"><label>Titel</label><div class="answer">Computer Vision</div></div>
+      <div class="labelItemLine"><label>Nummer</label><div class="answer">INF-4201</div></div>
+    </div>
+  </div>
+</form>
+"""
+
+MODULE_DETAIL_STUDY_PROGRAMS_HTML = MODULE_DETAIL_HTML.replace(
+    'class="active tabButton immediate"\n    type="submit"\n    value="Modulbeschreibung"',
+    'class="inactive tabButton immediate"\n    type="submit"\n    value="Modulbeschreibung"',
+).replace(
+    'class="inactive tabButton immediate"\n    type="submit"\n    value="Module / Studiengänge"',
+    'class="active tabButton immediate"\n    type="submit"\n    value="Module / Studiengänge"',
+) + """
+<div class="boxStandard" id="detailViewData:moduleStudyPrograms:fieldset">
+  <div class="box_title"><h2>Module / Studiengänge</h2></div>
+  <div class="box_content">
+    <table>
+      <tr><th>Studiengang</th><th>Abschluss</th><th>Modul</th></tr>
+      <tr><td>Informatik</td><td>Master</td><td>INFO-VIS</td></tr>
+    </table>
+  </div>
+</div>
+"""
+
 
 class _FakeResponse:
     def __init__(
@@ -232,6 +283,30 @@ class AlmaDiscoveryFeatureTests(unittest.TestCase):
         self.assertEqual(
             session.posts[0][1]["detailViewData:_idcl"],
             "detailViewData:tabContainer:term-planning-container:tabs:parallelGroupsTab",
+        )
+
+    def test_fetch_public_module_detail_opens_module_study_program_tab(self) -> None:
+        session = _RecordingSession(
+            get_responses=[_FakeResponse(url="https://alma.example/detail/1", text=MODULE_DETAIL_HTML)],
+            post_responses=[
+                _FakeResponse(url="https://alma.example/detail/1", text=MODULE_DETAIL_STUDY_PROGRAMS_HTML)
+            ],
+        )
+        client = _FakeAlmaClient(session=session)
+
+        detail = client.fetch_public_module_detail("https://alma.example/detail/1")
+
+        self.assertEqual(detail.title, "Computer Vision")
+        self.assertEqual(detail.module_study_program_tables[0].rows[0], ("Informatik", "Master", "INFO-VIS"))
+        self.assertEqual(session.posts[0][1]["DISABLE_VALIDATION"], "true")
+        self.assertEqual(session.posts[0][1]["DISABLE_AUTOSCROLL"], "true")
+        self.assertEqual(
+            session.posts[0][1]["detailViewData:_idcl"],
+            "detailViewData:tabContainer:tabs:moduleStudyProgramsTab",
+        )
+        self.assertEqual(
+            session.posts[0][1]["activePageElementId"],
+            "detailViewData:tabContainer:tabs:moduleStudyProgramsTab",
         )
 
     def test_fetch_timetable_pdf_switches_week_before_printing(self) -> None:

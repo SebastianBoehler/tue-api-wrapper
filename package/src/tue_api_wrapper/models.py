@@ -174,6 +174,13 @@ class AlmaDetailSection:
 
 
 @dataclass(frozen=True)
+class AlmaDetailTable:
+    title: str
+    headers: tuple[str, ...]
+    rows: tuple[tuple[str, ...], ...]
+
+
+@dataclass(frozen=True)
 class AlmaModuleDetail:
     title: str
     number: str | None
@@ -182,6 +189,7 @@ class AlmaModuleDetail:
     active_tab: str | None
     available_tabs: tuple[str, ...]
     sections: tuple[AlmaDetailSection, ...]
+    module_study_program_tables: tuple[AlmaDetailTable, ...]
 
 
 @dataclass(frozen=True)

@@ -13,7 +13,6 @@ from .alma_studyservice_models import AlmaStudyServicePage
 from .alma_academics_html import (
     extract_advanced_module_search_form,
     extract_module_search_form,
-    parse_module_detail_page,
     parse_course_catalog_page,
     parse_enrollment_page,
     parse_exam_overview,
@@ -21,6 +20,7 @@ from .alma_academics_html import (
     parse_module_search_results,
     parse_module_search_results_page,
 )
+from .alma_detail_client import fetch_public_module_detail
 from .config import (
     AlmaLoginError,
     AlmaParseError,
@@ -214,13 +214,7 @@ class AlmaClient:
         return contract.filters
 
     def fetch_public_module_detail(self, detail_url: str) -> AlmaModuleDetail:
-        detail_url = detail_url.strip()
-        if not detail_url:
-            raise AlmaParseError("A non-empty Alma detail URL is required.")
-
-        response = self.session.get(detail_url, timeout=self.timeout_seconds, allow_redirects=True)
-        response.raise_for_status()
-        return parse_module_detail_page(response.text, response.url)
+        return fetch_public_module_detail(self, detail_url)
 
     def search_public_module_descriptions(
         self,

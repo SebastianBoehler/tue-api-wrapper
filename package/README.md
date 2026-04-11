@@ -42,6 +42,7 @@ New discovery-backed additions:
 - `POST /api/alma/portal-messages/feed/refresh`
 - `GET /api/alma/study-planner`
 - `GET /api/alma/course-search`
+- `GET /api/course-detail`
 - `GET /api/ilias/search`
 - `GET /api/ilias/search/options`
 - `GET /api/ilias/info`

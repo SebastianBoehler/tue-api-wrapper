@@ -1,17 +1,13 @@
-import type { Route } from "next";
-import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
-
 import { AppShell } from "../../../components/app-shell";
+import { CourseDetailChooser } from "../../../components/course-detail-chooser";
+import { CourseDetailContent } from "../../../components/course-detail-content";
 import { ErrorPanel } from "../../../components/error-panel";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   dedupeCourseSearchResults,
   normalizeCourseTitle
 } from "../../../lib/alma-course-detail";
-import { getAlmaCourseSearch, getModuleDetail, PortalApiError } from "../../../lib/portal-api";
+import { getUnifiedCourseDetail } from "../../../lib/course-detail-api";
+import { getAlmaCourseSearch, PortalApiError } from "../../../lib/portal-api";
 
 type SearchParamValue = string | string[] | undefined;
 
@@ -73,52 +69,12 @@ export default async function CourseDetailPage({
       } else if (candidates.length > 0) {
         return (
           <AppShell title="Course Detail">
-            <Card>
-              <CardHeader>
-                <div>
-                  <CardDescription>Alma search results</CardDescription>
-                  <CardTitle className="text-lg">Choose the matching course for “{title}”</CardTitle>
-                </div>
-                <CardAction className="flex gap-2">
-                  <Button variant="secondary" size="sm" asChild>
-                    <Link href={buildCourseSearchHref(title, term) as Route}>
-                      <ArrowLeft className="size-3.5" />
-                      Courses
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={searchResponse.page_url}>
-                      <ExternalLink className="size-3.5" />
-                      Alma
-                    </a>
-                  </Button>
-                </CardAction>
-              </CardHeader>
-              <CardContent className="grid gap-3">
-                {candidates.map((result) => (
-                  <Link
-                    key={`${result.detail_url ?? result.title}-${result.number ?? ""}`}
-                    href={`/courses/detail?url=${encodeURIComponent(result.detail_url ?? "")}` as Route}
-                    className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-muted/30"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        {result.number ? (
-                          <p className="text-[0.7rem] uppercase tracking-wide text-muted-foreground">{result.number}</p>
-                        ) : null}
-                        <p className="text-sm font-medium">{result.title}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {[result.event_type, result.responsible_lecturer || result.lecturer, result.organization]
-                            .filter(Boolean)
-                            .join(" · ") || "Alma course"}
-                        </p>
-                      </div>
-                      <span className="text-xs text-muted-foreground">Details →</span>
-                    </div>
-                  </Link>
-                ))}
-              </CardContent>
-            </Card>
+            <CourseDetailChooser
+              title={title}
+              candidates={candidates}
+              coursesHref={buildCourseSearchHref(title, term)}
+              almaHref={searchResponse.page_url}
+            />
           </AppShell>
         );
       } else {
@@ -133,58 +89,15 @@ export default async function CourseDetailPage({
       }
     }
 
-    const detail = await getModuleDetail(resolvedDetailUrl);
+    const bundle = await getUnifiedCourseDetail({
+      url: resolvedDetailUrl,
+      title,
+      term
+    });
 
     return (
       <AppShell title="Course Detail">
-        <Card>
-          <CardHeader>
-            <div>
-              <CardDescription>{detail.number}</CardDescription>
-              <CardTitle className="text-lg">{detail.title}</CardTitle>
-            </div>
-            <CardAction className="flex gap-2">
-              <Button variant="secondary" size="sm" asChild>
-                <Link href={(title ? buildCourseSearchHref(title, term) : "/courses") as Route}>
-                  <ArrowLeft className="size-3.5" />
-                  Back
-                </Link>
-              </Button>
-              {detail.permalink ? (
-                <Button variant="outline" size="sm" asChild>
-                  <a href={detail.permalink}>
-                    <ExternalLink className="size-3.5" />
-                    Source
-                  </a>
-                </Button>
-              ) : null}
-            </CardAction>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4 flex flex-wrap gap-1.5">
-              {detail.available_tabs.map((tab) => (
-                <Badge key={tab} variant={tab === detail.active_tab ? "default" : "outline"}>
-                  {tab}
-                </Badge>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {detail.sections.map((section) => (
-                <div key={section.title} className="rounded-lg border border-border bg-muted/30 p-3">
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{section.title}</p>
-                  <div className="flex flex-col gap-2">
-                    {section.fields.map((field) => (
-                      <div key={`${section.title}-${field.label}`}>
-                        <span className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">{field.label}</span>
-                        <p className="text-sm font-medium leading-snug">{field.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <CourseDetailContent bundle={bundle} backHref={title ? buildCourseSearchHref(title, term) : "/courses"} />
       </AppShell>
     );
   } catch (error: unknown) {

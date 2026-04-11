@@ -82,7 +82,7 @@ export function AlmaCourseSearchPanel({
                   </div>
                   {result.detail_url ? (
                     <Button variant="outline" size="sm" asChild>
-                      <a href={result.detail_url}>Open in Alma</a>
+                      <a href={`/courses/detail?url=${encodeURIComponent(result.detail_url)}`}>Details</a>
                     </Button>
                   ) : null}
                 </div>

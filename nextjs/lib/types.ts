@@ -176,6 +176,12 @@ export interface AlmaDetailSection {
   fields: AlmaDetailField[];
 }
 
+export interface AlmaDetailTable {
+  title: string;
+  headers: string[];
+  rows: string[][];
+}
+
 export interface ModuleDetail {
   title: string;
   number: string | null;
@@ -184,6 +190,7 @@ export interface ModuleDetail {
   active_tab: string | null;
   available_tabs: string[];
   sections: AlmaDetailSection[];
+  module_study_program_tables: AlmaDetailTable[];
 }
 
 export interface IliasContentItem {

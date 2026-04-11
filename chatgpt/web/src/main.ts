@@ -1,11 +1,13 @@
 import "./styles.css";
+import { isModuleDetail, renderModuleDetailTemplate } from "./module-detail-render.js";
 import type {
   AgendaItem,
   AlmaCourseSearchResponse,
   AlmaExamRecord,
   DashboardPayload,
   IliasMembershipItem,
-  IliasTaskItem
+  IliasTaskItem,
+  ModuleDetail
 } from "../../src/types.js";
 
 type WidgetResult =
@@ -18,10 +20,16 @@ type WidgetResult =
       documents: DashboardPayload["documents"];
     }
   | {
+      view: "course-detail";
+      detail: ModuleDetail;
+    }
+  | {
       view: "error";
       message: string;
     }
+  | ModuleDetail
   | null;
+type WidgetViewResult = Exclude<WidgetResult, ModuleDetail | null>;
 
 type PanelName = "overview" | "schedule" | "tasks" | "grades" | "spaces" | "courses";
 
@@ -157,6 +165,21 @@ function decodeData<T>(value: string | undefined): T | null {
   }
 }
 
+function getRenderedModuleDetail(): ModuleDetail | null {
+  const result = state.result;
+  if (isModuleDetail(result)) {
+    return result;
+  }
+  if (isWidgetViewResult(result) && result.view === "course-detail") {
+    return result.detail;
+  }
+  return null;
+}
+
+function isWidgetViewResult(value: WidgetResult): value is WidgetViewResult {
+  return Boolean(value && typeof value === "object" && "view" in value);
+}
+
 function postFollowUp(prompt: string) {
   if (window.openai?.sendFollowUpMessage) {
     void window.openai.sendFollowUpMessage({ prompt });
@@ -275,7 +298,8 @@ function buildCourseDetail(result: NonNullable<PanelCache["courses"]>["results"]
 }
 
 function getDashboard(): DashboardPayload | null {
-  return state.result?.view === "dashboard" ? state.result.dashboard : null;
+  const result = state.result;
+  return isWidgetViewResult(result) && result.view === "dashboard" ? result.dashboard : null;
 }
 
 function getGradesPanelData(): NonNullable<PanelCache["grades"]> {
@@ -849,6 +873,11 @@ function renderError(message: string): string {
 }
 
 function renderDetailTemplate(): string {
+  const moduleDetail = getRenderedModuleDetail();
+  if (moduleDetail) {
+    return renderModuleDetailTemplate(moduleDetail, escapeHtml);
+  }
+
   const detail = state.detailModal;
   if (!detail) {
     return `
@@ -982,12 +1011,20 @@ function render(result: WidgetResult) {
     return;
   }
 
-  root.innerHTML =
-    result.view === "documents"
-      ? renderDocuments(result.documents)
-      : result.view === "error"
-        ? renderError(result.message)
-        : renderAppShell(renderPanel());
+  if (isModuleDetail(result)) {
+    root.innerHTML = renderModuleDetailTemplate(result, escapeHtml);
+  } else if (!isWidgetViewResult(result)) {
+    root.innerHTML = renderError("The widget received an unsupported Alma detail payload.");
+  } else {
+    root.innerHTML =
+      result.view === "documents"
+        ? renderDocuments(result.documents)
+        : result.view === "error"
+          ? renderError(result.message)
+          : result.view === "course-detail"
+            ? renderModuleDetailTemplate(result.detail, escapeHtml)
+            : renderAppShell(renderPanel());
+  }
 
   bindActions(root);
   window.openai?.notifyIntrinsicHeight?.();

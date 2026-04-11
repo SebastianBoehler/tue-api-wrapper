@@ -9,12 +9,14 @@ import {
   searchCourseCatalog,
   searchCourseOfferings,
 } from "../backend.js";
+import { loadUnifiedCourseDetail } from "../course-detail-backend.js";
 import {
   asStructured,
   courseFilterListSchema,
   readOnlyAnnotations,
   runReadTool,
 } from "../tool-runtime.js";
+import { detailWidgetUri } from "../widget-resources.js";
 
 export function registerCourseTools(server: McpServer) {
   registerAppTool(
@@ -124,12 +126,19 @@ export function registerCourseTools(server: McpServer) {
     {
       title: "Get Alma course detail",
       description:
-        "Use this when the user already has an Alma detail URL and wants the structured sections for that course or module page.",
+        "Use this when the user already has an Alma detail URL and wants structured detail sections, including module/study-program assignments when Alma exposes them.",
       inputSchema: {
         url: z.string().url(),
       },
       annotations: readOnlyAnnotations(),
-      _meta: {},
+      _meta: {
+        ui: {
+          resourceUri: detailWidgetUri,
+        },
+        "openai/outputTemplate": detailWidgetUri,
+        "openai/toolInvocation/invoking": "Loading Alma detail…",
+        "openai/toolInvocation/invoked": "Alma detail ready",
+      },
     },
     async ({ url }) =>
       runReadTool(async () => {
@@ -139,11 +148,49 @@ export function registerCourseTools(server: McpServer) {
           content: [
             {
               type: "text" as const,
-              text: `Loaded Alma course detail for ${detail.title}.`,
+              text: `Loaded Alma course detail for ${detail.title} with ${detail.module_study_program_tables.length} module/study-program assignment table(s).`,
             },
           ],
           _meta: {
             detail,
+          },
+        };
+      }),
+  );
+
+  registerAppTool(
+    server,
+    "get_combined_course_detail",
+    {
+      title: "Get combined course detail",
+      description:
+        "Use this when the user wants one course page that combines Alma module/course details with related ILIAS learning spaces or registration hints.",
+      inputSchema: {
+        url: z.string().url().optional(),
+        title: z.string().optional(),
+        term: z.string().optional(),
+        iliasLimit: z.number().int().min(1).max(12).optional(),
+      },
+      annotations: readOnlyAnnotations(),
+      _meta: {},
+    },
+    async ({ url, title, term, iliasLimit }) =>
+      runReadTool(async () => {
+        if (!url?.trim() && !title?.trim()) {
+          throw new Error("Provide an Alma detail URL or a course title.");
+        }
+
+        const bundle = await loadUnifiedCourseDetail({ url, title, term, iliasLimit });
+        return {
+          structuredContent: asStructured(bundle),
+          content: [
+            {
+              type: "text" as const,
+              text: `Loaded ${bundle.alma.title} with ${bundle.ilias_results.length} related ILIAS result(s) and ${bundle.registration_hints.length} registration hint(s).`,
+            },
+          ],
+          _meta: {
+            bundle,
           },
         };
       }),

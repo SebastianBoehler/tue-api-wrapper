@@ -1,3 +1,5 @@
+import type { IliasSearchResult } from "./ilias.js";
+
 export interface AlmaSearchOption {
   value: string;
   label: string;
@@ -65,6 +67,12 @@ export interface AlmaDetailSection {
   fields: AlmaDetailField[];
 }
 
+export interface AlmaDetailTable {
+  title: string;
+  headers: string[];
+  rows: string[][];
+}
+
 export interface ModuleDetail {
   title: string;
   number: string | null;
@@ -73,6 +81,37 @@ export interface ModuleDetail {
   active_tab: string | null;
   available_tabs: string[];
   sections: AlmaDetailSection[];
+  module_study_program_tables: AlmaDetailTable[];
+}
+
+export interface CourseDetailLookupQuery {
+  portal: string;
+  query: string;
+  reason: string;
+  result_count: number;
+  error: string | null;
+}
+
+export interface CourseRegistrationHint {
+  source: string;
+  label: string;
+  text: string;
+}
+
+export interface RelatedIliasResult {
+  result: IliasSearchResult;
+  match_query: string;
+  match_reason: string;
+  score: number;
+  matched_identifier: string | null;
+}
+
+export interface UnifiedCourseDetail {
+  alma: ModuleDetail;
+  ilias_results: RelatedIliasResult[];
+  lookup_queries: CourseDetailLookupQuery[];
+  registration_hints: CourseRegistrationHint[];
+  ilias_error: string | null;
 }
 
 export interface AlmaStudyPlannerSemester {

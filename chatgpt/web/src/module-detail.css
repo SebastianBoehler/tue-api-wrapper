@@ -1,0 +1,18 @@
+.widget-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.widget-tags span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.widget-table-wrap { overflow-x: auto; }
+.widget-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.widget-table th,
+.widget-table td {
+  border-top: 1px solid var(--line);
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+.widget-table th { color: var(--muted); font-weight: 700; }

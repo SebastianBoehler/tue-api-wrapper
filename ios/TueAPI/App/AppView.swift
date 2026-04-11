@@ -13,6 +13,13 @@ struct AppView: View {
             }
 
             NavigationStack {
+                CalendarScheduleView(model: model)
+            }
+            .tabItem {
+                Label("Calendar", systemImage: "calendar.day.timeline.left")
+            }
+
+            NavigationStack {
                 BrowseLecturesView(model: model)
             }
             .tabItem {

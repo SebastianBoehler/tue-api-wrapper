@@ -34,12 +34,17 @@ struct UpcomingLecturesView: View {
                     )
                 } else {
                     ForEach(model.events) { event in
-                        LectureEventRow(event: event)
+                        NavigationLink(value: event) {
+                            LectureEventRow(event: event)
+                        }
                     }
                 }
             }
         }
         .navigationTitle("TUE API")
+        .navigationDestination(for: LectureEvent.self) { event in
+            CourseDetailView(event: event)
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {

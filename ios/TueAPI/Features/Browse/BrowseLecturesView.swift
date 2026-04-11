@@ -32,12 +32,17 @@ struct BrowseLecturesView: View {
                     ContentUnavailableView.search(text: query)
                 } else {
                     ForEach(filteredLectures) { lecture in
-                        AlmaCurrentLectureRow(lecture: lecture)
+                        NavigationLink(value: lecture) {
+                            AlmaCurrentLectureRow(lecture: lecture)
+                        }
                     }
                 }
             }
         }
         .navigationTitle("Browse")
+        .navigationDestination(for: AlmaCurrentLecture.self) { lecture in
+            CourseDetailView(lecture: lecture)
+        }
         .searchable(text: $query, prompt: "Filter title, room, lecturer")
         .refreshable {
             await model.browseCurrentLectures(on: selectedDate)
@@ -111,8 +116,8 @@ private struct AlmaCurrentLectureRow: View {
             if let semester = lecture.semester {
                 Text(semester)
             }
-            if let detailURL = lecture.detailURL {
-                Link("Details", destination: detailURL)
+            if lecture.detailURL != nil {
+                Text("Alma detail")
             }
         }
         .font(.caption)
@@ -127,24 +132,6 @@ private struct AlmaCurrentLectureRow: View {
 }
 
 private extension AlmaCurrentLecture {
-    var timeRange: String? {
-        switch (start, end) {
-        case (.some(let start), .some(let end)):
-            "\(start)-\(end)"
-        case (.some(let start), .none):
-            start
-        default:
-            nil
-        }
-    }
-
-    var location: String? {
-        [building, room]
-            .compactMap { $0?.nilIfEmpty }
-            .joined(separator: ", ")
-            .nilIfEmpty
-    }
-
     var searchText: String {
         [
             title,

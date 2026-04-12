@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tue_api_wrapper.alma_feature_html import extract_current_lectures_form, parse_current_lectures_page
+from tue_api_wrapper.course_identifier import extract_course_identifiers, identifier_search_terms
 from tue_api_wrapper.course_detail_linking import build_unified_course_detail
 from tue_api_wrapper.ilias_feature_html import extract_ilias_search_form, parse_ilias_info_page, parse_ilias_search_page
 from tue_api_wrapper.ilias_feature_models import IliasSearchResult
@@ -52,13 +53,60 @@ class ExtendedContractTests(unittest.TestCase):
         with patch(
             "tue_api_wrapper.course_detail_linking.search_ilias",
             return_value=SimpleNamespace(results=(ilias_result,)),
-        ):
+        ) as search_mock:
             bundle = build_unified_course_detail(detail, ilias_client=object())
 
         self.assertEqual(bundle.lookup_queries[0].query, "INF-4201")
+        self.assertEqual(search_mock.call_count, 1)
+        self.assertEqual(search_mock.call_args.kwargs["term"], "INF-4201")
+        self.assertEqual(search_mock.call_args.kwargs["content_types"], ("crs", "grp", "cat"))
         self.assertEqual(bundle.ilias_results[0].matched_identifier, "INF-4201")
         self.assertIn("shared Alma number", bundle.ilias_results[0].match_reason)
         self.assertEqual(bundle.registration_hints[0].source, "alma")
+
+    def test_course_detail_bundle_uses_title_fallback_after_identifier_miss(self) -> None:
+        detail = AlmaModuleDetail(
+            title="Statistical Machine Learning",
+            number="ML-4420",
+            permalink="https://alma.example/detail/1",
+            source_url="https://alma.example/source",
+            active_tab="Modulbeschreibung",
+            available_tabs=("Modulbeschreibung",),
+            sections=(),
+            module_study_program_tables=(),
+        )
+        ilias_result = IliasSearchResult(
+            title="Statistical Machine Learning",
+            url="https://ovidius.example/goto.php/crs/42",
+            description=None,
+            info_url=None,
+            add_to_favorites_url=None,
+            breadcrumbs=(),
+            properties=(),
+            item_type="crs",
+        )
+
+        with patch(
+            "tue_api_wrapper.course_detail_linking.search_ilias",
+            side_effect=(
+                SimpleNamespace(results=()),
+                SimpleNamespace(results=()),
+                SimpleNamespace(results=()),
+                SimpleNamespace(results=(ilias_result,)),
+            ),
+        ) as search_mock:
+            bundle = build_unified_course_detail(detail, ilias_client=object())
+
+        self.assertEqual(
+            [call.kwargs["term"] for call in search_mock.call_args_list],
+            ["ML-4420", "ML4420", "ML 4420", "Statistical Machine Learning"],
+        )
+        self.assertEqual(bundle.lookup_queries[-1].reason, "Alma title")
+        self.assertEqual(bundle.ilias_results[0].match_query, "Statistical Machine Learning")
+
+    def test_course_identifier_variants_cover_common_alma_and_ilias_formats(self) -> None:
+        self.assertEqual(extract_course_identifiers("Data Literacy (ML 4102)"), ("ML 4102",))
+        self.assertEqual(identifier_search_terms("ML 4102"), ("ML 4102", "ML4102", "ML-4102"))
 
     def test_course_detail_bundle_keeps_alma_when_ilias_is_unavailable(self) -> None:
         detail = AlmaModuleDetail(

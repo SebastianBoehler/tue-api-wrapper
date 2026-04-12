@@ -8,6 +8,7 @@ from .alma_course_search_client import search_courses
 from .alma_course_search_models import AlmaCourseSearchResult
 from .alma_detail_client import fetch_public_module_detail
 from .config import AlmaError, AlmaParseError
+from .course_identifier import extract_course_identifiers, identifier_search_terms, normalize_course_identifier
 from .course_detail_models import (
     CourseDetailLookupQuery,
     CourseRegistrationHint,
@@ -27,19 +28,8 @@ REGISTRATION_SIGNAL_RE = re.compile(
     r"\b(ilias|anmeld\w*|registr\w*|einschreib\w*|beleg\w*|enrol\w*|sign\s*up)\b",
     re.IGNORECASE,
 )
-STOPWORDS = {
-    "and",
-    "das",
-    "der",
-    "die",
-    "ein",
-    "eine",
-    "for",
-    "mit",
-    "the",
-    "und",
-    "von",
-}
+STOPWORDS = {"and", "das", "der", "die", "ein", "eine", "for", "mit", "the", "und", "von"}
+ILIAS_COURSE_CONTENT_TYPES = ("crs", "grp", "cat")
 
 
 def resolve_alma_course_detail(
@@ -87,49 +77,44 @@ def build_unified_course_detail(
 ) -> UnifiedCourseDetail:
     lookup_queries: list[CourseDetailLookupQuery] = []
     related: dict[str, RelatedIliasResult] = {}
-    query_specs = _build_ilias_query_specs(detail)
+    identifier_specs = _build_identifier_query_specs(detail)
+    title_specs = _build_title_query_specs(detail)
 
     if ilias_client is None:
-        if query_specs or ilias_error:
+        if identifier_specs or title_specs or ilias_error:
             lookup_queries.append(
                 CourseDetailLookupQuery(
                     portal="ilias",
-                    query=query_specs[0][0] if query_specs else detail.title,
+                    query=(identifier_specs or title_specs)[0][0] if (identifier_specs or title_specs) else detail.title,
                     reason="related course lookup",
                     result_count=0,
                     error=ilias_error or "ILIAS lookup was not available.",
                 )
             )
     else:
-        for query, reason in query_specs:
-            try:
-                page = search_ilias(ilias_client, term=query)
-            except AlmaError as error:
-                lookup_queries.append(
-                    CourseDetailLookupQuery(
-                        portal="ilias",
-                        query=query,
-                        reason=reason,
-                        result_count=0,
-                        error=str(error),
-                    )
-                )
-                continue
+        identifier_matched = False
+        for query, reason in identifier_specs:
+            identifier_matched = _collect_ilias_query(
+                detail,
+                ilias_client,
+                query=query,
+                reason=reason,
+                lookup_queries=lookup_queries,
+                related=related,
+            )
+            if identifier_matched:
+                break
 
-            lookup_queries.append(
-                CourseDetailLookupQuery(
-                    portal="ilias",
+        if not identifier_matched:
+            for query, reason in title_specs:
+                _collect_ilias_query(
+                    detail,
+                    ilias_client,
                     query=query,
                     reason=reason,
-                    result_count=len(page.results),
+                    lookup_queries=lookup_queries,
+                    related=related,
                 )
-            )
-            for result in page.results:
-                scored = _score_ilias_result(detail, result, query)
-                key = _dedupe_key(result)
-                current = related.get(key)
-                if current is None or scored.score > current.score:
-                    related[key] = scored
 
     ranked = tuple(
         sorted(related.values(), key=lambda item: (-item.score, item.result.title.casefold()))[
@@ -145,13 +130,62 @@ def build_unified_course_detail(
     )
 
 
-def _build_ilias_query_specs(detail: AlmaModuleDetail) -> tuple[tuple[str, str], ...]:
-    specs: list[tuple[str, str]] = []
-    if detail.number and len(_normalize_identifier(detail.number)) >= 3:
-        specs.append((detail.number, "Alma module or event number"))
-    if detail.title:
-        specs.append((detail.title, "Alma title"))
+def _collect_ilias_query(
+    detail: AlmaModuleDetail,
+    ilias_client: "IliasClient",
+    *,
+    query: str,
+    reason: str,
+    lookup_queries: list[CourseDetailLookupQuery],
+    related: dict[str, RelatedIliasResult],
+) -> bool:
+    try:
+        page = search_ilias(ilias_client, term=query, content_types=ILIAS_COURSE_CONTENT_TYPES)
+    except AlmaError as error:
+        lookup_queries.append(
+            CourseDetailLookupQuery(
+                portal="ilias",
+                query=query,
+                reason=reason,
+                result_count=0,
+                error=str(error),
+            )
+        )
+        return False
 
+    lookup_queries.append(
+        CourseDetailLookupQuery(
+            portal="ilias",
+            query=query,
+            reason=reason,
+            result_count=len(page.results),
+        )
+    )
+    identifier_matched = False
+    for result in page.results:
+        scored = _score_ilias_result(detail, result, query)
+        identifier_matched = identifier_matched or scored.matched_identifier is not None
+        key = _dedupe_key(result)
+        current = related.get(key)
+        if current is None or scored.score > current.score:
+            related[key] = scored
+    return identifier_matched
+
+
+def _build_identifier_query_specs(detail: AlmaModuleDetail) -> tuple[tuple[str, str], ...]:
+    specs: list[tuple[str, str]] = []
+    identifiers = extract_course_identifiers(detail.number, detail.title)
+    for identifier in identifiers:
+        for term in identifier_search_terms(identifier):
+            specs.append((term, "Alma module or event number"))
+    return _dedupe_query_specs(specs)
+
+
+def _build_title_query_specs(detail: AlmaModuleDetail) -> tuple[tuple[str, str], ...]:
+    return _dedupe_query_specs([(detail.title, "Alma title")] if detail.title else [])
+
+
+def _dedupe_query_specs(specs: list[tuple[str, str]]) -> tuple[tuple[str, str], ...]:
     unique: dict[str, tuple[str, str]] = {}
     for query, reason in specs:
         normalized = _normalize_text(query)
@@ -178,16 +212,19 @@ def _score_ilias_result(
     )
     title = _normalize_text(detail.title)
     number = detail.number or ""
-    normalized_number = _normalize_identifier(number)
-    identifier_text = _normalize_identifier(haystack)
+    detail_identifiers = extract_course_identifiers(number, detail.title)
+    normalized_numbers = tuple(normalize_course_identifier(identifier) for identifier in detail_identifiers)
+    identifier_text = normalize_course_identifier(haystack)
     score = 0
     reasons: list[str] = []
     matched_identifier = None
 
-    if normalized_number and normalized_number in identifier_text:
+    if match := next((identifier for identifier in normalized_numbers if identifier and identifier in identifier_text), None):
         score += 100
-        matched_identifier = number
-        reasons.append(f"shared Alma number {number}")
+        matched_identifier = next(
+            identifier for identifier in detail_identifiers if normalize_course_identifier(identifier) == match
+        )
+        reasons.append(f"shared Alma number {matched_identifier}")
 
     result_title = _normalize_text(result.title)
     if title and title == result_title:
@@ -241,10 +278,6 @@ def _dedupe_key(result: IliasSearchResult) -> str:
 
 def _normalize_text(value: str) -> str:
     return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
-
-
-def _normalize_identifier(value: str) -> str:
-    return "".join(character for character in _normalize_text(value) if character.isalnum())
 
 
 def _tokens(value: str) -> set[str]:

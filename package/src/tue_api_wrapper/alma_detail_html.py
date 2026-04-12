@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from html import unescape
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
 from .config import AlmaParseError
 from .models import AlmaDetailField, AlmaDetailSection, AlmaDetailTable, AlmaModuleDetail
-
 
 MODULE_STUDY_PROGRAM_LABELS = (
     "Module / Studiengänge",
@@ -18,7 +18,6 @@ MODULE_STUDY_PROGRAM_LABELS = (
     "Studiengaenge",
 )
 
-
 @dataclass(frozen=True)
 class AlmaDetailTabControl:
     label: str
@@ -26,7 +25,6 @@ class AlmaDetailTabControl:
     value: str | None
     element_id: str | None
     is_active: bool
-
 
 @dataclass(frozen=True)
 class AlmaDetailPageContract:
@@ -36,10 +34,19 @@ class AlmaDetailPageContract:
     submit_marker_name: str | None
     tabs: tuple[AlmaDetailTabControl, ...]
 
-
 def _normalize_text(value: str) -> str:
     return " ".join(value.split())
 
+def _unwrap_partial_response(html: str) -> str:
+    if "<partial-response" not in html:
+        return html
+    soup = BeautifulSoup(html, "xml")
+    fragments: list[str] = []
+    for update in soup.find_all("update"):
+        update_id = update.get("id", "")
+        if update_id == "detailViewData" or "term-planning-container" in update_id:
+            fragments.append(unescape(update.decode_contents()))
+    return "\n".join(fragments) or html
 
 def _extract_form_payload(form) -> dict[str, str]:
     payload: dict[str, str] = {}
@@ -54,7 +61,6 @@ def _extract_form_payload(form) -> dict[str, str]:
         if field.name == "textarea":
             payload[name] = field.get_text("", strip=False)
             continue
-
         field_type = field.get("type", "")
         if field_type in {"button", "checkbox", "file", "image", "password", "radio", "reset", "submit"}:
             continue
@@ -63,6 +69,7 @@ def _extract_form_payload(form) -> dict[str, str]:
 
 
 def extract_module_detail_contract(html: str, page_url: str) -> AlmaDetailPageContract:
+    html = _unwrap_partial_response(html)
     soup = BeautifulSoup(html, "html.parser")
     form = soup.find("form", id="detailViewData") or soup.find("form", attrs={"name": "detailViewData"})
     form_id = (form.get("id") or form.get("name")) if form is not None else "detailViewData"
@@ -97,8 +104,8 @@ def extract_module_detail_contract(html: str, page_url: str) -> AlmaDetailPageCo
 def find_module_study_program_tab(contract: AlmaDetailPageContract) -> AlmaDetailTabControl | None:
     return next((tab for tab in contract.tabs if _is_module_study_program_label(tab.label)), None)
 
-
 def parse_module_detail_page(html: str, page_url: str) -> AlmaModuleDetail:
+    html = _unwrap_partial_response(html)
     soup = BeautifulSoup(html, "html.parser")
     title = None
     permalink = None
@@ -123,6 +130,10 @@ def parse_module_detail_page(html: str, page_url: str) -> AlmaModuleDetail:
                     number = field.value
 
     if title is None:
+        title, number = _extract_dialog_header_identity(soup, number=number)
+
+    tables = tuple(_extract_module_study_program_tables(soup, active_tab))
+    if title is None:
         raise AlmaParseError("Could not extract Alma module details from the public detail page.")
 
     return AlmaModuleDetail(
@@ -133,7 +144,7 @@ def parse_module_detail_page(html: str, page_url: str) -> AlmaModuleDetail:
         active_tab=active_tab,
         available_tabs=available_tabs,
         sections=tuple(sections),
-        module_study_program_tables=tuple(_extract_module_study_program_tables(soup, active_tab)),
+        module_study_program_tables=tables,
     )
 
 
@@ -170,6 +181,25 @@ def _is_module_study_program_label(label: str) -> bool:
     return any(normalized == item.casefold().replace(" ", "") for item in MODULE_STUDY_PROGRAM_LABELS)
 
 
+def _extract_dialog_header_identity(soup: BeautifulSoup, *, number: str | None) -> tuple[str | None, str | None]:
+    node = soup.find(id="form:dialogHeader:dataBox") or soup.select_one(".dialogHeaderDataBox")
+    if node is None:
+        return None, number
+    parts = [part.strip() for part in _normalize_text(node.get_text(" ", strip=True)).split("|")]
+    title = parts[0] if parts and parts[0] else None
+    parsed_number = parts[1] if len(parts) > 1 and parts[1] else number
+    return title, parsed_number
+
+
+def find_show_all_modules_trigger(html: str) -> tuple[str, str] | None:
+    soup = BeautifulSoup(_unwrap_partial_response(html), "html.parser")
+    trigger = soup.find(attrs={"name": lambda value: bool(value and value.endswith(":buttons:showAllModules"))})
+    if trigger is None:
+        return None
+    name = trigger.get("name") or trigger.get("id")
+    return (name, trigger.get("value", "")) if name else None
+
+
 def _extract_detail_sections(soup: BeautifulSoup) -> tuple[AlmaDetailSection, ...]:
     sections: list[AlmaDetailSection] = []
     for panel in soup.select(".boxStandard"):
@@ -199,6 +229,8 @@ def _extract_module_study_program_tables(soup: BeautifulSoup, active_tab: str | 
         if section_title and not active_module_study_tab and not _is_module_study_program_label(section_title):
             continue
         for table in panel.find_all("table"):
+            if table.find("table") is not None:
+                continue
             parsed = _parse_table(table, section_title or _nearest_table_title(table))
             if parsed is not None:
                 tables.append(parsed)
@@ -253,11 +285,16 @@ def _merge_tables(
     first: tuple[AlmaDetailTable, ...],
     second: tuple[AlmaDetailTable, ...],
 ) -> tuple[AlmaDetailTable, ...]:
-    seen = {(table.title, table.headers, table.rows) for table in first}
-    merged = list(first)
-    for table in second:
-        key = (table.title, table.headers, table.rows)
-        if key not in seen:
-            seen.add(key)
-            merged.append(table)
-    return tuple(merged)
+    table_order: list[tuple[str, tuple[str, ...]]] = []
+    rows_by_table: dict[tuple[str, tuple[str, ...]], list[tuple[str, ...]]] = {}
+    for table in (*first, *second):
+        key = (table.title, table.headers)
+        if key not in rows_by_table:
+            table_order.append(key)
+            rows_by_table[key] = []
+        seen_rows = set(rows_by_table[key])
+        for row in table.rows:
+            if row not in seen_rows:
+                rows_by_table[key].append(row)
+                seen_rows.add(row)
+    return tuple(AlmaDetailTable(title=key[0], headers=key[1], rows=tuple(rows_by_table[key])) for key in table_order)

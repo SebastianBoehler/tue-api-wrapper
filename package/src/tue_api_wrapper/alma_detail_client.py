@@ -5,9 +5,11 @@ from typing import TYPE_CHECKING
 from .alma_detail_html import (
     extract_module_detail_contract,
     find_module_study_program_tab,
+    find_show_all_modules_trigger,
     merge_module_detail_tabs,
     parse_module_detail_page,
 )
+from .alma_detail_forms import set_assignment_row_limits
 from .config import AlmaParseError
 from .models import AlmaModuleDetail
 
@@ -27,9 +29,10 @@ def fetch_public_module_detail(client: "AlmaClient", detail_url: str) -> AlmaMod
     contract = extract_module_detail_contract(response.text, response.url)
     tab = find_module_study_program_tab(contract)
     if tab is None or tab.is_active or contract.action_url is None:
-        return base_detail
+        return _fetch_expanded_assignment_tables(client, base_detail, response.text, response.url)
 
     payload = dict(contract.payload)
+    set_assignment_row_limits(payload)
     if contract.submit_marker_name is not None:
         payload[contract.submit_marker_name] = "1"
     if tab.name is not None:
@@ -51,7 +54,43 @@ def fetch_public_module_detail(client: "AlmaClient", detail_url: str) -> AlmaMod
     )
     tab_response.raise_for_status()
 
-    return merge_module_detail_tabs(
+    tab_detail = merge_module_detail_tabs(
         base_detail,
         parse_module_detail_page(tab_response.text, tab_response.url),
     )
+    return _fetch_expanded_assignment_tables(client, tab_detail, tab_response.text, tab_response.url)
+
+
+def _fetch_expanded_assignment_tables(
+    client: "AlmaClient",
+    detail: AlmaModuleDetail,
+    html: str,
+    page_url: str,
+) -> AlmaModuleDetail:
+    trigger = find_show_all_modules_trigger(html)
+    if trigger is None:
+        return detail
+
+    contract = extract_module_detail_contract(html, page_url)
+    if contract.action_url is None:
+        return detail
+
+    trigger_name, trigger_value = trigger
+    payload = dict(contract.payload)
+    set_assignment_row_limits(payload)
+    if contract.submit_marker_name is not None:
+        payload[contract.submit_marker_name] = "1"
+    payload["activePageElementId"] = trigger_name
+    payload[trigger_name] = trigger_value
+    payload[f"{contract.form_id}:_idcl"] = trigger_name
+    payload.setdefault("DISABLE_VALIDATION", "true")
+    payload.setdefault("DISABLE_AUTOSCROLL", "true")
+
+    response = client.session.post(
+        contract.action_url,
+        data=payload,
+        timeout=client.timeout_seconds,
+        allow_redirects=True,
+    )
+    response.raise_for_status()
+    return merge_module_detail_tabs(detail, parse_module_detail_page(response.text, response.url))

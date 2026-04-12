@@ -75,10 +75,46 @@ final class AppModel {
             }
 
             let dateString = Self.almaDateString(from: date)
-            let page = try await AlmaClient(baseURL: baseURL).fetchCurrentLectures(date: dateString, limit: 200)
-            browseLectures = page.results
-            browseSelectedDate = page.selectedDate ?? dateString
-            browsePhase = .loaded(browseSelectedDate, page.results.count)
+            let publicPage = try await AlmaClient(baseURL: baseURL).fetchCurrentLectures(date: dateString, limit: 200)
+
+            guard let credentials = try keychain.load() else {
+                browseLectures = publicPage.results
+                browseSelectedDate = publicPage.selectedDate ?? dateString
+                browsePhase = .loaded(browseSelectedDate, publicPage.results.count, .publicOnly)
+                return
+            }
+
+            do {
+                let authenticatedPage = try await AlmaClient(baseURL: baseURL).fetchCurrentLectures(
+                    date: dateString,
+                    limit: 200,
+                    credentials: credentials
+                )
+                let merged = BrowseLectureMerger.merged(
+                    publicPage.results,
+                    authenticatedPage.results
+                )
+                browseLectures = merged
+                browseSelectedDate = authenticatedPage.selectedDate ?? publicPage.selectedDate ?? dateString
+                browsePhase = .loaded(
+                    browseSelectedDate,
+                    merged.count,
+                    .publicAndAuthenticated(
+                        authenticatedOnlyCount: BrowseLectureMerger.authenticatedOnlyCount(
+                            publicPage.results,
+                            authenticatedPage.results
+                        )
+                    )
+                )
+            } catch {
+                browseLectures = publicPage.results
+                browseSelectedDate = publicPage.selectedDate ?? dateString
+                browsePhase = .loaded(
+                    browseSelectedDate,
+                    publicPage.results.count,
+                    .publicOnlyAuthenticatedFailed(error.localizedDescription)
+                )
+            }
         } catch {
             browsePhase = .failed(error.localizedDescription)
         }
@@ -226,12 +262,5 @@ enum LoadPhase: Equatable {
     case idle
     case loading
     case loaded(Date, String)
-    case failed(String)
-}
-
-enum BrowsePhase: Equatable {
-    case idle
-    case loading
-    case loaded(String?, Int)
     case failed(String)
 }

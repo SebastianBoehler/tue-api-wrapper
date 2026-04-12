@@ -47,7 +47,15 @@ struct AlmaClient {
         )
     }
 
-    func fetchCurrentLectures(date: String? = nil, limit: Int = 100) async throws -> AlmaCurrentLecturesPage {
+    func fetchCurrentLectures(
+        date: String? = nil,
+        limit: Int = 100,
+        credentials: AlmaCredentials? = nil
+    ) async throws -> AlmaCurrentLecturesPage {
+        if let credentials {
+            try await login(credentials: credentials)
+        }
+
         var response = try await loadHTMLResponse(currentLecturesURL())
 
         if let date, !date.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

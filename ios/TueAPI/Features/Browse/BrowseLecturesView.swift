@@ -12,7 +12,7 @@ struct BrowseLecturesView: View {
                 Button {
                     Task { await model.browseCurrentLectures(on: selectedDate) }
                 } label: {
-                    Label("Load lectures", systemImage: "magnifyingglass")
+                    Label("Load Alma lectures", systemImage: "magnifyingglass")
                 }
                 .disabled(model.browsePhase == .loading)
             }
@@ -63,19 +63,51 @@ struct BrowseLecturesView: View {
         case .idle:
             StatusBanner(
                 title: "Ready",
-                message: "Browse public Alma lectures directly from the university endpoint.",
+                message: idleMessage,
                 systemImage: "network"
             )
         case .loading:
             ProgressView("Loading Alma lectures")
-        case .loaded(let date, let count):
+        case .loaded(let date, let count, let scope):
             StatusBanner(
                 title: "\(count) lectures",
-                message: date.map { "Alma returned results for \($0)." } ?? "Alma returned current lecture results.",
-                systemImage: "checkmark.circle"
+                message: loadedMessage(date: date, scope: scope),
+                systemImage: loadedSystemImage(scope: scope)
             )
         case .failed(let message):
             StatusBanner(title: "Browse failed", message: message, systemImage: "exclamationmark.triangle")
+        }
+    }
+
+    private var idleMessage: String {
+        if model.hasCredentials {
+            return "Load Alma lectures with public and authenticated results when Alma exposes both."
+        }
+        return "Load public Alma lectures. Save credentials in Settings to include authenticated results."
+    }
+
+    private func loadedMessage(date: String?, scope: BrowseResultScope) -> String {
+        let dateText = date.map { " for \($0)" } ?? ""
+        switch scope {
+        case .publicOnly:
+            return "Alma returned public results\(dateText)."
+        case .publicAndAuthenticated(let count):
+            if count == 0 {
+                return "Authenticated browse ran\(dateText); no additional private rows were found."
+            }
+            let label = count == 1 ? "1 authenticated-only row" : "\(count) authenticated-only rows"
+            return "Merged public and authenticated Alma results\(dateText), including \(label)."
+        case .publicOnlyAuthenticatedFailed(let message):
+            return "Public results loaded\(dateText). Authenticated browse failed: \(message)"
+        }
+    }
+
+    private func loadedSystemImage(scope: BrowseResultScope) -> String {
+        switch scope {
+        case .publicOnlyAuthenticatedFailed:
+            "exclamationmark.triangle"
+        default:
+            "checkmark.circle"
         }
     }
 }

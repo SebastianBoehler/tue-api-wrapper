@@ -16,7 +16,10 @@ struct CourseDetailReference: Hashable {
     init(lecture: AlmaCurrentLecture) {
         self.id = lecture.id
         self.title = lecture.title
-        self.number = lecture.number
+        self.number = lecture.number?.nilIfBlank ?? CourseIdentifierFinder.firstIdentifier(in: [
+            lecture.title,
+            lecture.remark
+        ])
         self.detailURL = lecture.detailURL
         self.timeRange = lecture.timeRange
         self.eventType = lecture.eventType
@@ -30,7 +33,10 @@ struct CourseDetailReference: Hashable {
     init(event: LectureEvent) {
         self.id = event.id
         self.title = event.title
-        self.number = nil
+        self.number = CourseIdentifierFinder.firstIdentifier(in: [
+            event.title,
+            event.detail
+        ])
         self.detailURL = event.detailURL
         self.timeRange = event.timeRangeText
         self.eventType = nil
@@ -40,6 +46,24 @@ struct CourseDetailReference: Hashable {
         self.remark = nil
         self.sourceDetail = event.detail?.nilIfBlank
     }
+}
+
+private enum CourseIdentifierFinder {
+    static func firstIdentifier(in values: [String?]) -> String? {
+        for value in values.compactMap({ $0 }) {
+            let range = NSRange(value.startIndex..<value.endIndex, in: value)
+            guard let match = expression.firstMatch(in: value, range: range),
+                  let matchRange = Range(match.range, in: value) else {
+                continue
+            }
+            return String(value[matchRange]).normalizedIdentifierSpacing
+        }
+        return nil
+    }
+
+    private static let expression = try! NSRegularExpression(
+        pattern: #"\b[A-Z]{2,12}[-\s]?\d{2,5}[A-Z]?\b"#
+    )
 }
 
 extension AlmaCurrentLecture {
@@ -83,5 +107,10 @@ private extension String {
     var nilIfBlank: String? {
         let value = trimmingCharacters(in: .whitespacesAndNewlines)
         return value.isEmpty ? nil : value
+    }
+
+    var normalizedIdentifierSpacing: String {
+        replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

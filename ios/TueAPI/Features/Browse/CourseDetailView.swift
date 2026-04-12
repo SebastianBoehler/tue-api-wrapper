@@ -39,7 +39,7 @@ struct CourseDetailView: View {
                 }
                 if let searchURL = iliasSearchURL {
                     Link(destination: searchURL) {
-                        Label("Search ILIAS", systemImage: "magnifyingglass")
+                        Label(iliasSearchLabel, systemImage: "magnifyingglass")
                     }
                 }
                 if let iliasQuery {
@@ -93,6 +93,10 @@ struct CourseDetailView: View {
 
     private var iliasQuery: String? {
         (course.number ?? course.title).nilIfEmpty
+    }
+
+    private var iliasSearchLabel: String {
+        course.number == nil ? "Search ILIAS by title" : "Search ILIAS by course code"
     }
 
     private var iliasSearchURL: URL? {

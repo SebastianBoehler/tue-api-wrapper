@@ -32,12 +32,19 @@ func NewClient(timeout time.Duration, baseURL string) *Client {
 }
 
 func (c *Client) Get(path string, query url.Values) (*Response, error) {
+	return c.Request(http.MethodGet, path, query)
+}
+
+func (c *Client) Request(method string, path string, query url.Values) (*Response, error) {
 	target, err := c.resolve(path, query)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodGet, target, nil)
+	if strings.TrimSpace(method) == "" {
+		method = http.MethodGet
+	}
+	req, err := http.NewRequest(method, target, nil)
 	if err != nil {
 		return nil, err
 	}

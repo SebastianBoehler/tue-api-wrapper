@@ -15,6 +15,7 @@ import (
 
 type backendRoute struct {
 	Path        string
+	Method      string
 	PathArgs    []string
 	Description string
 }
@@ -57,12 +58,12 @@ func runBackendRoute(command string, route backendRoute, args []string) int {
 	if err != nil {
 		return output.PrintError(err)
 	}
-	return executeBackendRequest(path, options)
+	return executeBackendRequest(path, route.Method, options)
 }
 
-func executeBackendRequest(path string, options backendRequestOptions) int {
+func executeBackendRequest(path string, method string, options backendRequestOptions) int {
 	client := backend.NewClient(config.DefaultTimeout(), env.PortalAPIBaseURL())
-	response, err := client.Get(path, options.Query)
+	response, err := client.Request(method, path, options.Query)
 	if err != nil {
 		return output.PrintError(err)
 	}
@@ -107,12 +108,16 @@ func printBackendGroupUsage(group string, routes map[string]backendRoute) {
 		if len(route.PathArgs) > 0 {
 			args = " " + strings.Join(route.PathArgs, " ")
 		}
+		method := route.Method
+		if method == "" {
+			method = "GET"
+		}
 		if route.Description != "" {
-			fmt.Printf("  %s%s\n", name, args)
+			fmt.Printf("  %s%s [%s]\n", name, args, method)
 			fmt.Printf("    %s\n", route.Description)
 			continue
 		}
-		fmt.Printf("  %s%s\n", name, args)
+		fmt.Printf("  %s%s [%s]\n", name, args, method)
 	}
 }
 
@@ -123,6 +128,9 @@ func printBackendRouteUsage(command string, route backendRoute) {
 	}
 	fmt.Printf("Usage: tue %s [--query key=value ...] [--output PATH] [--raw]%s\n", command, args)
 	fmt.Printf("Backend path: %s\n", route.Path)
+	if route.Method != "" {
+		fmt.Printf("Backend method: %s\n", route.Method)
+	}
 }
 
 func (route backendRoute) resolve(positionals []string) (string, error) {

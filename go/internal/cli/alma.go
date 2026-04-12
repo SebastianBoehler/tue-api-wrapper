@@ -31,27 +31,34 @@ func runAlma(args []string) int {
 }
 
 var almaRoutes = map[string]backendRoute{
-	"timetable":             {Path: "/api/alma/timetable", Description: "Term timetable. Use --query term=...."},
-	"enrollments":           {Path: "/api/alma/enrollments", Description: "Enrollment page payload."},
-	"exams":                 {Path: "/api/alma/exams", Description: "Exam overview. Optional query: limit."},
-	"catalog":               {Path: "/api/alma/catalog", Description: "Authenticated Alma catalog nodes. Optional queries: term, limit."},
-	"module-search":         {Path: "/api/alma/module-search", Description: "Public module search. Pass filters through repeated --query flags."},
-	"module-search-filters": {Path: "/api/alma/module-search/filters", Description: "Valid public module-search filter values."},
-	"module-detail":         {Path: "/api/alma/module-detail", Description: "Public module detail. Use --query url=...."},
-	"documents":             {Path: "/api/alma/documents", Description: "Study-service report list."},
-	"studyservice":          {Path: "/api/alma/studyservice", Description: "Legacy study-service summary contract."},
-	"current-document":      {Path: "/api/alma/documents/current", Description: "Current study-service PDF. Use --output file.pdf."},
-	"document":              {Path: "/api/alma/documents/{doc_id}", PathArgs: []string{"doc_id"}, Description: "Study-service PDF by document id. Use --output file.pdf."},
-	"document-download-url": {Path: "/api/alma/documents/{doc_id}/download-url", PathArgs: []string{"doc_id"}, Description: "Relative download URL for a study-service PDF."},
-	"current-lectures-api":  {Path: "/api/alma/current-lectures", Description: "Backend current-lectures view. Optional queries: date, limit."},
-	"timetable-controls":    {Path: "/api/alma/timetable/controls", Description: "Timetable controls and term options."},
-	"timetable-view":        {Path: "/api/alma/timetable/view", Description: "Rendered timetable view. Optional queries: term, week, from_date, to_date, single_day, limit."},
-	"timetable-pdf":         {Path: "/api/alma/timetable/pdf", Description: "Timetable PDF. Use --output timetable.pdf and optional term/week/date queries."},
-	"portal-messages-feed":  {Path: "/api/alma/portal-messages/feed", Description: "Portal messages feed."},
-	"study-planner":         {Path: "/api/alma/study-planner", Description: "Study planner grid and modules."},
-	"course-search":         {Path: "/api/alma/course-search", Description: "Authenticated course search. Optional queries: query, term, limit."},
-	"catalog-page":          {Path: "/api/alma/catalog/page", Description: "Authenticated catalog page with section structure. Optional queries: term, limit."},
-	"studyservice-summary":  {Path: "/api/alma/studyservice/summary", Description: "Expanded study-service summary with tabs and output requests."},
+	"timetable":               {Path: "/api/alma/timetable", Description: "Term timetable. Use --query term=...."},
+	"enrollments":             {Path: "/api/alma/enrollments", Description: "Enrollment page payload."},
+	"exams":                   {Path: "/api/alma/exams", Description: "Exam overview. Optional query: limit."},
+	"catalog":                 {Path: "/api/alma/catalog", Description: "Authenticated Alma catalog nodes. Optional queries: term, limit."},
+	"module-search":           {Path: "/api/alma/module-search", Description: "Public module search. Pass filters through repeated --query flags."},
+	"module-search-filters":   {Path: "/api/alma/module-search/filters", Description: "Valid public module-search filter values."},
+	"module-detail":           {Path: "/api/alma/module-detail", Description: "Public module detail. Use --query url=...."},
+	"documents":               {Path: "/api/alma/documents", Description: "Study-service report list."},
+	"studyservice":            {Path: "/api/alma/studyservice", Description: "Legacy study-service summary contract."},
+	"current-document":        {Path: "/api/alma/documents/current", Description: "Current study-service PDF. Use --output file.pdf."},
+	"document":                {Path: "/api/alma/documents/{doc_id}", PathArgs: []string{"doc_id"}, Description: "Study-service PDF by document id. Use --output file.pdf."},
+	"document-download-url":   {Path: "/api/alma/documents/{doc_id}/download-url", PathArgs: []string{"doc_id"}, Description: "Relative download URL for a study-service PDF."},
+	"exam-report":             {Method: "POST", Path: "/api/alma/exams/report", Description: "Generate an official Alma exam report PDF. Use --output file.pdf and optional --query trigger_name=...."},
+	"exam-reports":            {Path: "/api/alma/exams/reports", Description: "Available official Alma exam report actions."},
+	"current-lectures-api":    {Path: "/api/alma/current-lectures", Description: "Backend current-lectures view. Optional queries: date, limit."},
+	"course-register":         {Method: "POST", Path: "/api/alma/course-registration", Description: "Register for an Alma course when the detail page supports it. Use --query url=... and optional planelement_id=...."},
+	"course-register-options": {Method: "POST", Path: "/api/alma/course-registration/options", Description: "Open Alma's registration chooser and list available registration paths. Use --query url=...."},
+	"course-register-support": {Path: "/api/alma/course-registration/support", Description: "Check whether an Alma detail page exposes a registration action. Use --query url=...."},
+	"timetable-controls":      {Path: "/api/alma/timetable/controls", Description: "Timetable controls and term options."},
+	"timetable-view":          {Path: "/api/alma/timetable/view", Description: "Rendered timetable view. Optional queries: term, week, from_date, to_date, single_day, limit."},
+	"timetable-assignments":   {Path: "/api/alma/timetable/course-assignments", Description: "Current timetable courses with Alma module and degree assignments."},
+	"timetable-pdf":           {Path: "/api/alma/timetable/pdf", Description: "Timetable PDF. Use --output timetable.pdf and optional term/week/date queries."},
+	"portal-messages-feed":    {Path: "/api/alma/portal-messages/feed", Description: "Portal messages feed."},
+	"study-planner":           {Path: "/api/alma/study-planner", Description: "Study planner grid and modules."},
+	"course-search":           {Path: "/api/alma/course-search", Description: "Authenticated course search. Optional queries: query, term, limit."},
+	"catalog-page":            {Path: "/api/alma/catalog/page", Description: "Authenticated catalog page with section structure. Optional queries: term, limit."},
+	"studyservice-report":     {Method: "POST", Path: "/api/alma/studyservice/report", Description: "Generate an official Alma study-service PDF. Use --output file.pdf and optional trigger_name/term_id queries."},
+	"studyservice-summary":    {Path: "/api/alma/studyservice/summary", Description: "Expanded study-service summary with tabs and output requests."},
 }
 
 func printAlmaUsage() {
@@ -59,7 +66,7 @@ func printAlmaUsage() {
 	fmt.Println("  tue alma current-lectures [--date DD.MM.YYYY] [--limit N] [--json]")
 	fmt.Println("  tue alma <backend-command> [--query key=value ...] [--output PATH] [--raw]")
 	fmt.Println()
-	fmt.Println("Backend-backed read commands:")
+	fmt.Println("Backend-backed commands:")
 	printBackendGroupUsage("alma", almaRoutes)
 }
 

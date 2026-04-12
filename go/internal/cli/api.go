@@ -35,7 +35,7 @@ func runAPIGet(args []string) int {
 	if len(options.Positionals) != 1 {
 		return output.PrintError(fmt.Errorf("api get expects exactly one backend path or URL"))
 	}
-	return executeBackendRequest(options.Positionals[0], options)
+	return executeBackendRequest(options.Positionals[0], "GET", options)
 }
 
 func printAPIUsage() {

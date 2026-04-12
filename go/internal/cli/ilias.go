@@ -39,9 +39,12 @@ var iliasRoutes = map[string]backendRoute{
 	"content":        {Path: "/api/ilias/content", Description: "Content page. Use --query target=grp/...."},
 	"forum":          {Path: "/api/ilias/forum", Description: "Forum topics. Use --query target=frm/...."},
 	"exercise":       {Path: "/api/ilias/exercise", Description: "Exercise assignments. Use --query target=exc/...."},
+	"favorite-add":   {Method: "POST", Path: "/api/ilias/favorites", Description: "Add an ILIAS item to favorites. Use --query url=... from search results."},
 	"search-api":     {Path: "/api/ilias/search", Description: "Backend ILIAS search. Use --query term=... and optional page/search_mode/content_type/created_* queries."},
 	"search-options": {Path: "/api/ilias/search/options", Description: "Available ILIAS search filters."},
 	"info-api":       {Path: "/api/ilias/info", Description: "Backend info screen. Use --query target=...."},
+	"waitlist-join":  {Method: "POST", Path: "/api/ilias/waitlist/join", Description: "Join an ILIAS waitlist. Use --query url=... and --query accept_agreement=true when required."},
+	"waitlist-check": {Path: "/api/ilias/waitlist/support", Description: "Check whether an ILIAS page exposes a waitlist join flow. Use --query url=...."},
 }
 
 func printIliasUsage() {

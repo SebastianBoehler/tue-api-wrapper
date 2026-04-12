@@ -28,12 +28,16 @@ import type {
 import type {
   AlmaCourseCatalogPage,
   AlmaCourseSearchResponse,
+  AlmaDocumentReport,
   AlmaPortalMessagesFeed,
   AlmaStudyPlannerResponse,
   AlmaTimetableExportLink,
   AlmaTimetableView,
+  IliasActionResult,
   IliasSearchFilters,
-  IliasSearchResponse
+  IliasSearchResponse,
+  IliasWaitlistResult,
+  IliasWaitlistSupport
 } from "./discovery-types";
 
 const apiBaseUrl = process.env.PORTAL_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -166,8 +170,35 @@ export function refreshAlmaTimetableExportUrl(term = ""): Promise<AlmaTimetableE
   });
 }
 
+export function buildAlmaTimetablePdfUrl({
+  term = "",
+  week = "",
+  fromDate = "",
+  toDate = "",
+  singleDay = ""
+}: {
+  term?: string;
+  week?: string;
+  fromDate?: string;
+  toDate?: string;
+  singleDay?: string;
+} = {}): string {
+  const params = new URLSearchParams();
+  if (term.trim()) params.set("term", term.trim());
+  if (week.trim()) params.set("week", week.trim());
+  if (fromDate.trim()) params.set("from_date", fromDate.trim());
+  if (toDate.trim()) params.set("to_date", toDate.trim());
+  if (singleDay.trim()) params.set("single_day", singleDay.trim());
+  const query = params.toString();
+  return buildPortalApiUrl(`/api/alma/timetable/pdf${query ? `?${query}` : ""}`);
+}
+
 export function getAlmaPortalMessagesFeed(): Promise<AlmaPortalMessagesFeed> {
   return fetchJson("/api/alma/portal-messages/feed");
+}
+
+export function getAlmaExamReports(): Promise<AlmaDocumentReport[]> {
+  return fetchJson("/api/alma/exams/reports");
 }
 
 export function refreshAlmaPortalMessagesFeed(): Promise<AlmaPortalMessagesFeed> {
@@ -276,6 +307,33 @@ export function searchIlias({
     params.set("created_date", createdDate.trim());
   }
   return fetchJson(`/api/ilias/search?${params.toString()}`);
+}
+
+export function addIliasFavorite(url: string): Promise<IliasActionResult> {
+  return fetchJson(`/api/ilias/favorites?url=${encodeURIComponent(url)}`, {
+    method: "POST"
+  });
+}
+
+export function getIliasWaitlistSupport(url: string): Promise<IliasWaitlistSupport> {
+  return fetchJson(`/api/ilias/waitlist/support?url=${encodeURIComponent(url)}`);
+}
+
+export function joinIliasWaitlist({
+  url,
+  acceptAgreement = false
+}: {
+  url: string;
+  acceptAgreement?: boolean;
+}): Promise<IliasWaitlistResult> {
+  const params = new URLSearchParams();
+  params.set("url", url);
+  if (acceptAgreement) {
+    params.set("accept_agreement", "true");
+  }
+  return fetchJson(`/api/ilias/waitlist/join?${params.toString()}`, {
+    method: "POST"
+  });
 }
 
 export function getIliasTasks(limit = 20): Promise<IliasTaskItem[]> {

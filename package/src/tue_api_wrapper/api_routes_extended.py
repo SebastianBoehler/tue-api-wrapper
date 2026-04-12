@@ -10,10 +10,10 @@ from .alma_portal_messages_client import fetch_portal_messages_feed, refresh_por
 from .alma_planner_client import fetch_study_planner
 from .alma_timetable_client import (
     fetch_timetable_controls,
-    fetch_timetable_pdf,
     fetch_timetable_view,
     refresh_timetable_export_url,
 )
+from .alma_timetable_pdf import render_timetable_pdf
 from .client import AlmaClient
 from .config import AlmaError
 from .course_detail_linking import build_unified_course_detail, resolve_alma_course_detail
@@ -165,7 +165,7 @@ def alma_timetable_pdf(
     single_day: str = "",
 ) -> Response:
     try:
-        pdf_response = fetch_timetable_pdf(
+        pdf = render_timetable_pdf(
             _alma_client(),
             term=term.strip() or None,
             week=week.strip() or None,
@@ -177,14 +177,9 @@ def alma_timetable_pdf(
         raise _translate_error(error) from error
 
     return Response(
-        content=pdf_response.content,
-        media_type=pdf_response.headers.get("content-type", "application/pdf"),
-        headers={
-            "Content-Disposition": pdf_response.headers.get(
-                "content-disposition",
-                'inline; filename="alma-timetable.pdf"',
-            )
-        },
+        content=pdf.data,
+        media_type=pdf.content_type,
+        headers={"Content-Disposition": f'inline; filename="{pdf.filename}"'},
     )
 
 

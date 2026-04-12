@@ -100,6 +100,11 @@ export interface AlmaTimetableExportLink {
   can_refresh_export_url: boolean;
 }
 
+export interface AlmaDocumentReport {
+  label: string;
+  trigger_name: string;
+}
+
 export interface AlmaPortalMessagesFeed {
   page_url: string;
   feed_url: string | null;
@@ -155,4 +160,25 @@ export interface IliasSearchResponse {
   next_page_url: string | null;
   filters: IliasSearchFilters;
   results: IliasSearchResult[];
+}
+
+export interface IliasActionResult {
+  status: string;
+  message: string | null;
+  final_url: string;
+}
+
+export interface IliasWaitlistSupport {
+  supported: boolean;
+  requires_agreement: boolean;
+  join_url: string | null;
+  message: string | null;
+}
+
+export interface IliasWaitlistResult {
+  status: string;
+  message: string | null;
+  final_url: string;
+  waitlist_position: number | null;
+  requires_agreement: boolean;
 }

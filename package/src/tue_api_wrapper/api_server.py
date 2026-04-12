@@ -9,6 +9,9 @@ from fastapi.responses import JSONResponse, Response
 import uvicorn
 
 from .alma_catalog_client import fetch_course_catalog_page
+from .api_routes_alma_assignments import router as alma_assignments_router
+from .api_routes_alma_registration import router as alma_registration_router
+from .api_routes_edit_actions import router as edit_actions_router
 from .api_routes_extended import router as extended_router
 from .api_routes_mail import router as mail_router
 from .api_routes_moodle import router as moodle_router
@@ -28,10 +31,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(extended_router)
-app.include_router(mail_router)
-app.include_router(moodle_router)
-app.include_router(products_router)
+for router in (alma_assignments_router, alma_registration_router, edit_actions_router, extended_router, mail_router, moodle_router, products_router):
+    app.include_router(router)
 
 portal_service = PortalService()
 
@@ -46,7 +47,6 @@ def _public_alma_client() -> AlmaClient:
 
 def _translate_error(error: AlmaError) -> HTTPException:
     return HTTPException(status_code=400, detail=str(error))
-
 
 @app.get("/")
 def root() -> dict[str, str]:
@@ -69,7 +69,6 @@ def dashboard(term: str = Query(DEFAULT_DASHBOARD_TERM)) -> dict[str, object]:
     except AlmaError as error:
         raise _translate_error(error) from error
 
-
 @app.get("/api/search")
 def search(query: str, term: str = Query(DEFAULT_DASHBOARD_TERM)) -> dict[str, object]:
     try:
@@ -77,14 +76,12 @@ def search(query: str, term: str = Query(DEFAULT_DASHBOARD_TERM)) -> dict[str, o
     except AlmaError as error:
         raise _translate_error(error) from error
 
-
 @app.get("/api/items/{item_id:path}")
 def fetch_item(item_id: str, term: str = Query(DEFAULT_DASHBOARD_TERM)) -> dict[str, object]:
     try:
         return portal_service.fetch_item(item_id, term_label=term)
     except AlmaError as error:
         raise _translate_error(error) from error
-
 
 @app.get("/api/alma/timetable")
 def alma_timetable(term: str = Query(DEFAULT_DASHBOARD_TERM)) -> dict[str, object]:
@@ -94,14 +91,12 @@ def alma_timetable(term: str = Query(DEFAULT_DASHBOARD_TERM)) -> dict[str, objec
     except AlmaError as error:
         raise _translate_error(error) from error
 
-
 @app.get("/api/alma/enrollments")
 def alma_enrollments() -> dict[str, object]:
     try:
         return serialize(_alma_client().fetch_enrollment_page())
     except AlmaError as error:
         raise _translate_error(error) from error
-
 
 @app.get("/api/alma/exams")
 def alma_exams(limit: int = Query(20, ge=1, le=100)) -> list[object]:
@@ -110,7 +105,6 @@ def alma_exams(limit: int = Query(20, ge=1, le=100)) -> list[object]:
     except AlmaError as error:
         raise _translate_error(error) from error
 
-
 @app.get("/api/alma/catalog")
 def alma_catalog(term: str = "", limit: int = Query(20, ge=1, le=100)) -> list[object]:
     try:
@@ -118,7 +112,6 @@ def alma_catalog(term: str = "", limit: int = Query(20, ge=1, le=100)) -> list[o
         return serialize(page.nodes)
     except AlmaError as error:
         raise _translate_error(error) from error
-
 
 @app.get("/api/alma/module-search")
 def alma_module_search(

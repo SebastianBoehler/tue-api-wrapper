@@ -68,7 +68,9 @@ struct CalendarScheduleView: View {
         case .loaded(let date, let term):
             StatusBanner(
                 title: "Calendar updated",
-                message: "\(term) refreshed \(date.formatted(date: .abbreviated, time: .shortened)).",
+                message: statusMessage(
+                    "\(term) refreshed \(date.formatted(date: .abbreviated, time: .shortened))."
+                ),
                 systemImage: "calendar.badge.clock"
             )
         case .failed(let message):
@@ -76,7 +78,9 @@ struct CalendarScheduleView: View {
         case .idle:
             StatusBanner(
                 title: model.events.isEmpty ? "No cached timetable" : "\(model.events.count) upcoming entries",
-                message: model.events.isEmpty ? emptyMessage : "Swipe through lecture days and inspect the day as a timeline.",
+                message: model.events.isEmpty
+                    ? emptyMessage
+                    : statusMessage("Swipe through lecture days and inspect the day as a timeline."),
                 systemImage: model.events.isEmpty ? "calendar.badge.exclamationmark" : "calendar"
             )
         }
@@ -98,6 +102,13 @@ struct CalendarScheduleView: View {
         } else {
             "Save university credentials in Settings, then refresh Alma."
         }
+    }
+
+    private func statusMessage(_ base: String) -> String {
+        guard let semesterCredits = model.semesterCredits else {
+            return base
+        }
+        return "\(base) \(semesterCredits.displayText)."
     }
 
     private func syncSelectedDay() {

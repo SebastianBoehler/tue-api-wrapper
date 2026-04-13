@@ -66,7 +66,9 @@ struct UpcomingLecturesView: View {
         case .idle:
             StatusBanner(
                 title: model.hasCredentials ? "Ready for Alma" : "Credentials needed",
-                message: model.hasCredentials ? "Refresh to fetch the current Alma timetable directly." : "Store your university login in Keychain before refreshing.",
+                message: model.hasCredentials
+                    ? statusMessage("Refresh to fetch the current Alma timetable directly.")
+                    : "Store your university login in Keychain before refreshing.",
                 systemImage: model.hasCredentials ? "checkmark.seal" : "key"
             )
         case .loading:
@@ -74,12 +76,21 @@ struct UpcomingLecturesView: View {
         case .loaded(let date, let term):
             StatusBanner(
                 title: "Updated",
-                message: "\(term) refreshed \(date.formatted(date: .abbreviated, time: .shortened)). Widgets were reloaded.",
+                message: statusMessage(
+                    "\(term) refreshed \(date.formatted(date: .abbreviated, time: .shortened)). Widgets were reloaded."
+                ),
                 systemImage: "calendar.badge.clock"
             )
         case .failed(let message):
             StatusBanner(title: "Refresh failed", message: message, systemImage: "exclamationmark.triangle")
         }
+    }
+
+    private func statusMessage(_ base: String) -> String {
+        guard let semesterCredits = model.semesterCredits else {
+            return base
+        }
+        return "\(base) \(semesterCredits.displayText)."
     }
 }
 

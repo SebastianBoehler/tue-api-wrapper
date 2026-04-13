@@ -79,6 +79,11 @@ struct WidgetLectureListView: View {
                 Text(snapshot.sourceTerm)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                if let semesterCredits = snapshot.semesterCredits, !compact {
+                    Text(semesterCredits.displayText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             } else {
                 Text("No cached lectures")
                     .font(.subheadline)

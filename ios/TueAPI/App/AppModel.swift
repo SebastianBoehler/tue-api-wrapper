@@ -8,6 +8,7 @@ final class AppModel {
     static let reminderLeadTimeOptions = [5, 10, 15, 30, 60]
 
     var events: [LectureEvent]
+    var semesterCredits: SemesterCreditSummary?
     var browseLectures: [AlmaCurrentLecture] = []
     var browseSelectedDate: String?
     var phase: LoadPhase = .idle
@@ -38,7 +39,9 @@ final class AppModel {
 
     init() {
         self.baseURLString = UserDefaults.standard.string(forKey: Self.baseURLKey) ?? "https://alma.uni-tuebingen.de"
-        self.events = Self.upcomingOnly(UpcomingLectureCache.load()?.events ?? [])
+        let cachedSnapshot = UpcomingLectureCache.load()
+        self.events = Self.upcomingOnly(cachedSnapshot?.events ?? [])
+        self.semesterCredits = cachedSnapshot?.semesterCredits
         self.hasCredentials = ((try? keychain.load()) ?? nil) != nil
         self.remindersEnabled = UserDefaults.standard.bool(forKey: Self.remindersEnabledKey)
 
@@ -144,6 +147,7 @@ final class AppModel {
             let snapshot = try await AlmaClient(baseURL: baseURL).fetchUpcomingLectures(credentials: credentials)
             try UpcomingLectureCache.save(snapshot)
             events = Self.upcomingOnly(snapshot.events)
+            semesterCredits = snapshot.semesterCredits
             phase = .loaded(snapshot.refreshedAt, snapshot.sourceTerm)
             WidgetCenter.shared.reloadAllTimelines()
             await rescheduleRemindersIfEnabled()

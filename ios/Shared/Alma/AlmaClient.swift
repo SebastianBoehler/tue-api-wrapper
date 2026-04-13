@@ -43,7 +43,8 @@ struct AlmaClient {
         return LectureSnapshot(
             refreshedAt: now,
             sourceTerm: term.label,
-            events: Array(lectures.prefix(limit))
+            events: Array(lectures.prefix(limit)),
+            semesterCredits: SemesterCreditCounter.summarize(events)
         )
     }
 

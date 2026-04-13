@@ -72,8 +72,9 @@ struct CalendarTimelineView: View {
     private func blockHeight(for event: LectureEvent) -> CGFloat {
         let startMinute = max(window.startMinute, window.minuteOfDay(event.startDate))
         let endDate = event.endDate ?? event.startDate.addingTimeInterval(50 * 60)
-        let endMinute = min(window.endMinute, max(startMinute + 30, window.minuteOfDay(endDate)))
-        return max(56, CGFloat(endMinute - startMinute) / 60 * CalendarTimelineWindow.hourHeight)
+        let endMinute = min(window.endMinute, max(startMinute, window.minuteOfDay(endDate)))
+        let durationHeight = CGFloat(endMinute - startMinute) / 60 * CalendarTimelineWindow.hourHeight
+        return durationHeight > 0 ? durationHeight : 56
     }
 }
 

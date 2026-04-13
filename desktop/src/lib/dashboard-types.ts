@@ -68,6 +68,10 @@ export interface DashboardData {
     selectedTerm?: string | null;
     trackedCredits: number;
     passedExamCount: number;
+    currentSemesterCredits?: number | null;
+    currentSemesterCreditCourses?: number;
+    currentSemesterCreditUnresolved?: string[];
+    currentSemesterCreditError?: string | null;
   };
   documents: DashboardDocumentsPanel;
   exams: DashboardExamItem[];

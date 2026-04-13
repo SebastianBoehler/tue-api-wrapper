@@ -8,7 +8,7 @@ import { formatTimetableDateLabel, formatTimetableTimeLabel, getTimetableDateKey
 import type { AgendaItem } from "../lib/types";
 
 const HOUR_HEIGHT = 72;
-const MIN_EVENT_HEIGHT = 56;
+const FALLBACK_EVENT_HEIGHT = 56;
 
 interface TimetableEventLayout {
   item: AgendaItem;
@@ -107,10 +107,8 @@ function layoutDayItems(items: AgendaItem[], timelineStartMinutes: number) {
       laneIndex += 1;
     }
 
-    const height = Math.max(
-      ((scheduledItem.endMinutes - scheduledItem.startMinutes) / 60) * HOUR_HEIGHT,
-      MIN_EVENT_HEIGHT
-    );
+    const durationHeight = ((scheduledItem.endMinutes - scheduledItem.startMinutes) / 60) * HOUR_HEIGHT;
+    const height = durationHeight > 0 ? durationHeight : FALLBACK_EVENT_HEIGHT;
 
     const entry: TimetableEventLayout = {
       item: scheduledItem.item,
@@ -224,8 +222,8 @@ export function AlmaTimetableGrid({
                 {column.items.map((entry) => {
                   const laneWidth = 100 / entry.laneCount;
                   const style = {
-                    top: entry.top + 6,
-                    height: Math.max(entry.height - 8, MIN_EVENT_HEIGHT),
+                    top: entry.top,
+                    height: entry.height,
                     left: `calc(${entry.laneIndex * laneWidth}% + 0.25rem)`,
                     width: `calc(${laneWidth}% - 0.5rem)`
                   };

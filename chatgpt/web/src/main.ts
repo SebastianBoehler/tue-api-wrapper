@@ -38,6 +38,10 @@ interface StudySummaryPanel {
   message: string | null;
   passedExamCount: number;
   trackedCredits: number;
+  currentSemesterCredits?: number | null;
+  currentSemesterCreditCourses?: number;
+  currentSemesterCreditUnresolved?: string[];
+  currentSemesterCreditError?: string | null;
 }
 
 interface DetailPayload {
@@ -59,6 +63,8 @@ interface PanelCache {
     termLabel: string;
     exportUrl: string;
     items: AgendaItem[];
+    currentSemesterCredits?: number | null;
+    currentSemesterCreditCourses?: number;
   };
   tasks?: {
     tasks: IliasTaskItem[];
@@ -215,6 +221,13 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
+function formatCredits(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "Unavailable";
+  }
+  return `${Number.isInteger(value) ? value : value.toFixed(1).replace(/\.0$/, "")} CP`;
+}
+
 function renderFallbackRow(message: string): string {
   return `
     <div class="widget-row compact">
@@ -313,7 +326,11 @@ function getGradesPanelData(): NonNullable<PanelCache["grades"]> {
       selectedTerm: null,
       message: null,
       passedExamCount: 0,
-      trackedCredits: 0
+      trackedCredits: 0,
+      currentSemesterCredits: null,
+      currentSemesterCreditCourses: 0,
+      currentSemesterCreditUnresolved: [],
+      currentSemesterCreditError: null
     },
     exams: dashboard?.exams ?? []
   };
@@ -328,7 +345,9 @@ function getSchedulePanelData(): NonNullable<PanelCache["schedule"]> {
   return {
     termLabel: dashboard?.termLabel ?? "Current term",
     exportUrl: dashboard?.agenda.exportUrl ?? "",
-    items: dashboard?.agenda.items ?? []
+    items: dashboard?.agenda.items ?? [],
+    currentSemesterCredits: dashboard?.study.currentSemesterCredits ?? null,
+    currentSemesterCreditCourses: dashboard?.study.currentSemesterCreditCourses ?? 0
   };
 }
 
@@ -454,6 +473,10 @@ function renderOverview(dashboard: DashboardPayload): string {
 
   const studySummary = `
     <div class="widget-summary">
+      <div>
+        <span>Saved semester</span>
+        <strong>${formatCredits(dashboard.study.currentSemesterCredits)}</strong>
+      </div>
       <div>
         <span>Tracked credits</span>
         <strong>${dashboard.study.trackedCredits}</strong>
@@ -590,6 +613,20 @@ function renderSchedulePanel(): string {
           <button class="widget-button small" data-action="refresh-panel" data-panel="schedule">Refresh</button>
         </div>
       </div>
+      <div class="widget-summary">
+        <div>
+          <span>Saved semester</span>
+          <strong>${formatCredits(data.currentSemesterCredits)}</strong>
+        </div>
+        <div>
+          <span>Courses counted</span>
+          <strong>${data.currentSemesterCreditCourses ?? 0}</strong>
+        </div>
+        <div>
+          <span>Visible items</span>
+          <strong>${data.items.length}</strong>
+        </div>
+      </div>
       <div class="widget-list">${rows}</div>
     </article>
   `;
@@ -658,6 +695,10 @@ function renderGradesPanel(): string {
         <button class="widget-button small" data-action="refresh-panel" data-panel="grades">Refresh</button>
       </div>
       <div class="widget-summary">
+        <div>
+          <span>Saved semester</span>
+          <strong>${formatCredits(data.study.currentSemesterCredits)}</strong>
+        </div>
         <div>
           <span>Tracked credits</span>
           <strong>${data.study.trackedCredits}</strong>
@@ -1045,9 +1086,14 @@ async function loadPanel(panel: Exclude<PanelName, "overview">) {
 
   try {
     if (panel === "schedule") {
-      const data = await callTool<{ termLabel: string; exportUrl: string; items: AgendaItem[] }>("get_upcoming_schedule", { limit: 10 });
+      const data = await callTool<NonNullable<PanelCache["schedule"]>>("get_upcoming_schedule", { limit: 10 });
       if (data) {
-        state.panelCache.schedule = data;
+        const dashboard = getDashboard();
+        state.panelCache.schedule = {
+          ...data,
+          currentSemesterCredits: data.currentSemesterCredits ?? dashboard?.study.currentSemesterCredits ?? null,
+          currentSemesterCreditCourses: data.currentSemesterCreditCourses ?? dashboard?.study.currentSemesterCreditCourses ?? 0
+        };
       }
     } else if (panel === "tasks") {
       const data = await callTool<{ tasks: IliasTaskItem[] }>("get_current_tasks", { limit: 12 });

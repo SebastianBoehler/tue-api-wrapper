@@ -243,6 +243,10 @@ export interface StudySummary {
   message: string | null;
   passedExamCount: number;
   trackedCredits: number;
+  currentSemesterCredits: number | null;
+  currentSemesterCreditCourses: number;
+  currentSemesterCreditUnresolved: string[];
+  currentSemesterCreditError: string | null;
   availableTerms: Record<string, string>;
 }
 

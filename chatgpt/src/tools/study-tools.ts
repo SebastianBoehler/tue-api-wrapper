@@ -5,7 +5,6 @@ import { z } from "zod";
 import {
   loadDashboard,
   loadDocumentsSummary,
-  loadEnrollments,
   loadExams,
   loadMemberships,
   loadTasks,
@@ -138,8 +137,8 @@ export function registerStudyTools(server: McpServer) {
     },
     async ({ limit }) =>
       runReadTool(async () => {
-        const [enrollment, exams] = await Promise.all([
-          loadEnrollments(),
+        const [dashboard, exams] = await Promise.all([
+          loadDashboard(),
           loadExams(limit ?? 8),
         ]);
         const passedExamCount = exams.filter((exam) => {
@@ -162,25 +161,33 @@ export function registerStudyTools(server: McpServer) {
         return {
           structuredContent: {
             study: {
-              selectedTerm: enrollment.selected_term,
-              message: enrollment.message,
+              selectedTerm: dashboard.study.selectedTerm ?? dashboard.enrollment.selected_term,
+              message: dashboard.study.message ?? dashboard.enrollment.message,
               passedExamCount,
               trackedCredits,
+              currentSemesterCredits: dashboard.study.currentSemesterCredits,
+              currentSemesterCreditCourses: dashboard.study.currentSemesterCreditCourses,
+              currentSemesterCreditUnresolved: dashboard.study.currentSemesterCreditUnresolved,
+              currentSemesterCreditError: dashboard.study.currentSemesterCreditError,
             },
             exams,
           },
           content: [
             {
               type: "text" as const,
-              text: `Loaded ${exams.length} exam rows with ${trackedCredits} tracked credits and ${passedExamCount} passed exams.`,
+              text: `Loaded ${exams.length} exam rows with ${trackedCredits} tracked credits, ${dashboard.study.currentSemesterCredits ?? "unknown"} saved-semester credits, and ${passedExamCount} passed exams.`,
             },
           ],
           _meta: {
             study: {
-              selectedTerm: enrollment.selected_term,
-              message: enrollment.message,
+              selectedTerm: dashboard.study.selectedTerm ?? dashboard.enrollment.selected_term,
+              message: dashboard.study.message ?? dashboard.enrollment.message,
               passedExamCount,
               trackedCredits,
+              currentSemesterCredits: dashboard.study.currentSemesterCredits,
+              currentSemesterCreditCourses: dashboard.study.currentSemesterCreditCourses,
+              currentSemesterCreditUnresolved: dashboard.study.currentSemesterCreditUnresolved,
+              currentSemesterCreditError: dashboard.study.currentSemesterCreditError,
             },
             exams,
           },

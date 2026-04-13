@@ -91,6 +91,38 @@ export interface AlmaTimetableView {
   occurrences: AgendaItem[];
 }
 
+export interface AlmaTimetableCourseSlot {
+  weekday: number;
+  weekday_label: string;
+  start_time: string;
+  end_time: string | null;
+  location: string | null;
+}
+
+export interface AlmaTimetableCourseAssignment {
+  summary: string;
+  occurrence_count: number;
+  slots: AlmaTimetableCourseSlot[];
+  number: string | null;
+  title: string | null;
+  event_type: string | null;
+  organization: string | null;
+  detail_url: string | null;
+  credits: number | null;
+  credit_source: string | null;
+  error: string | null;
+}
+
+export interface AlmaTimetableCourseAssignmentsPage {
+  term_label: string;
+  term_id: string;
+  total_credits: number;
+  resolved_credit_count: number;
+  unresolved_credit_count: number;
+  unresolved_credit_summaries: string[];
+  courses: AlmaTimetableCourseAssignment[];
+}
+
 export interface AlmaTimetableExportLink {
   page_url: string;
   selected_term_value: string | null;

@@ -1,6 +1,7 @@
 import { AppShell } from "../../components/app-shell";
 import { AlmaTimetablePanel } from "../../components/alma-timetable-panel";
 import { ErrorPanel } from "../../components/error-panel";
+import { getAlmaTimetableCourseAssignments } from "../../lib/alma-course-assignments-api";
 import { parseAgendaParams } from "../../lib/discovery-query";
 import { getAlmaTimetableView, PortalApiError } from "../../lib/portal-api";
 
@@ -13,18 +14,21 @@ export default async function AgendaPage({
   const filters = parseAgendaParams(resolvedSearchParams);
 
   try {
-    const view = await getAlmaTimetableView({
-      term: filters.term,
-      week: filters.week,
-      fromDate: filters.fromDate,
-      toDate: filters.toDate,
-      singleDay: filters.singleDay,
-      limit: 240
-    });
+    const [view, creditSummary] = await Promise.all([
+      getAlmaTimetableView({
+        term: filters.term,
+        week: filters.week,
+        fromDate: filters.fromDate,
+        toDate: filters.toDate,
+        singleDay: filters.singleDay,
+        limit: 240
+      }),
+      getAlmaTimetableCourseAssignments(filters.term, 100).catch(() => null)
+    ]);
 
     return (
       <AppShell title="Agenda">
-        <AlmaTimetablePanel view={view} filters={filters} />
+        <AlmaTimetablePanel view={view} filters={filters} creditSummary={creditSummary} />
       </AppShell>
     );
   } catch (error) {

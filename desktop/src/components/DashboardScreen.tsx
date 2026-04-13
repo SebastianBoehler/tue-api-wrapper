@@ -8,6 +8,13 @@ function formatTimestamp(value: string): string {
   }).format(new Date(value));
 }
 
+function formatCredits(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "Unavailable";
+  }
+  return `${Number.isInteger(value) ? value : value.toFixed(1).replace(/\.0$/, "")} CP`;
+}
+
 export function DashboardScreen({
   state,
   data,
@@ -129,6 +136,16 @@ export function DashboardScreen({
             <span>{data?.study.passedExamCount ?? 0} passed</span>
           </div>
           <div className="stack-list">
+            <div className="stack-row compact-row">
+              <div>
+                <strong>Saved semester credits</strong>
+                <span>
+                  {data?.study.currentSemesterCreditError
+                    ?? `${data?.study.currentSemesterCreditCourses ?? 0} saved courses counted`}
+                </span>
+              </div>
+              <span>{formatCredits(data?.study.currentSemesterCredits)}</span>
+            </div>
             <div className="stack-row compact-row">
               <div>
                 <strong>Tracked credits</strong>

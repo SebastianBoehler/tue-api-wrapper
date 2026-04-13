@@ -27,6 +27,10 @@ function buildSpaceHref(target: string) {
   return `/spaces?target=${encodeURIComponent(target)}`;
 }
 
+function formatCredits(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+}
+
 export default async function HomePage() {
   try {
     const dashboard = await getDashboard();
@@ -157,16 +161,31 @@ export default async function HomePage() {
                 </CardAction>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid gap-2 sm:grid-cols-3">
                   <div className="rounded-lg border border-border p-3">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">Selected term</p>
                     <p className="text-sm font-medium mt-1">{dashboard.study.selectedTerm ?? "Unknown"}</p>
+                  </div>
+                  <div className="rounded-lg border border-border p-3">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Saved semester</p>
+                    <p className="text-sm font-medium mt-1">
+                      {dashboard.study.currentSemesterCredits === null
+                        ? "Unavailable"
+                        : `${formatCredits(dashboard.study.currentSemesterCredits)} CP`}
+                    </p>
                   </div>
                   <div className="rounded-lg border border-border p-3">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">Tracked credits</p>
                     <p className="text-sm font-medium mt-1">{dashboard.study.trackedCredits}</p>
                   </div>
                 </div>
+                {dashboard.study.currentSemesterCreditError ? (
+                  <p className="text-xs text-muted-foreground">{dashboard.study.currentSemesterCreditError}</p>
+                ) : dashboard.study.currentSemesterCreditUnresolved.length ? (
+                  <p className="text-xs text-muted-foreground">
+                    CP missing for {dashboard.study.currentSemesterCreditUnresolved.length} saved courses.
+                  </p>
+                ) : null}
                 <ListRows>
                   {dashboard.exams.slice(0, 4).map((exam) => (
                     <ListRow key={`${exam.number}-${exam.title}`}>

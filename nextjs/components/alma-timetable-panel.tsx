@@ -3,15 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays } from "lucide-react";
 
-import type { AlmaTimetableView } from "../lib/discovery-types";
+import type { AlmaTimetableCourseAssignmentsPage, AlmaTimetableView } from "../lib/discovery-types";
 import { formatTimetableDateLabel } from "../lib/alma-timetable-ui";
 import { buildPortalApiUrl } from "../lib/portal-api";
 import { AlmaTimetableActions } from "./alma-timetable-actions";
 import { AlmaTimetableGrid } from "./alma-timetable-grid";
 
+function formatCredits(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+}
+
 export function AlmaTimetablePanel({
   view,
-  filters
+  filters,
+  creditSummary
 }: {
   view: AlmaTimetableView;
   filters: {
@@ -21,6 +26,7 @@ export function AlmaTimetablePanel({
     toDate: string;
     singleDay: string;
   };
+  creditSummary?: AlmaTimetableCourseAssignmentsPage | null;
 }) {
   const pdfParams = new URLSearchParams();
   if (view.selected_term_value) {
@@ -102,9 +108,11 @@ export function AlmaTimetablePanel({
 
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {view.selected_term_label ? <Badge variant="secondary">{view.selected_term_label}</Badge> : null}
+            {creditSummary ? <Badge variant="secondary">Saved {formatCredits(creditSummary.total_credits)} CP</Badge> : null}
             {view.selected_week_label ? <Badge variant="outline">{view.selected_week_label}</Badge> : null}
             {view.visible_range_start ? <span>{formatTimetableDateLabel(view.visible_range_start)} to {formatTimetableDateLabel(view.visible_range_end ?? view.visible_range_start)}</span> : null}
             <span>· {view.occurrences.length} items</span>
+            {creditSummary?.unresolved_credit_count ? <span>· {creditSummary.unresolved_credit_count} courses missing CP</span> : null}
           </div>
         </CardContent>
       </Card>

@@ -9,6 +9,7 @@ import {
   Calendar,
   BookOpen,
   Clapperboard,
+  Mic,
   BriefcaseBusiness,
   Map,
   FolderOpen,
@@ -33,6 +34,7 @@ const groups: Array<{
     items: [
       { href: "/agenda", label: "Agenda", icon: Calendar },
       { href: "/courses", label: "Courses", icon: BookOpen },
+      { href: "/talks", label: "Talks", icon: Mic },
       { href: "/archive", label: "Archive", icon: Clapperboard },
       { href: "/career", label: "Career", icon: BriefcaseBusiness },
       { href: "/campus", label: "Campus", icon: Map },

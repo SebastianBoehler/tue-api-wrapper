@@ -43,6 +43,27 @@ export interface DashboardMailItem {
   is_unread?: boolean;
 }
 
+export interface DashboardTalkItem {
+  id: number;
+  title: string;
+  timestamp: string;
+  location?: string | null;
+  speaker_name?: string | null;
+  source_url: string;
+  tags: Array<{
+    id: number;
+    name: string;
+  }>;
+}
+
+export interface DashboardTalksPanel {
+  available: boolean;
+  sourceUrl: string;
+  totalHits: number;
+  items: DashboardTalkItem[];
+  error?: string | null;
+}
+
 export interface DashboardDocumentsPanel {
   reports: Array<{
     label: string;
@@ -85,4 +106,5 @@ export interface DashboardData {
     items: DashboardMailItem[];
     error?: string | null;
   };
+  talks: DashboardTalksPanel;
 }

@@ -30,10 +30,11 @@ Status legend:
 | Mail inbox / message detail | full | full | full | partial | none | none |
 | Moodle dashboard and detail routes | full | full | none | partial | none | none |
 | Campus / career / archive public products | full | full | none | none | none | none |
+| Talks calendar | full | full | partial | partial | none | none |
 
 ## Notes
 
-- The desktop app currently reads only `/api/dashboard`, so it inherits overview slices but not the deeper web flows.
+- The desktop app currently reads only `/api/dashboard`, so it inherits overview slices such as talks but not the deeper web flows.
 - The Go CLI remains intentionally narrow and stable, centered on `alma current-lectures`, `ilias search`, and `ilias info`.
 - The Python CLI exposes ILIAS root, content, forum, and exercise readers, but it does not expose the memberships list, derived task overview, or authenticated ILIAS search.
 - The ChatGPT app is now focused on management flows inside ChatGPT: dashboard, schedule, tasks, grades, documents, mail, study planner, course lookup, and learning-space search/inspection.

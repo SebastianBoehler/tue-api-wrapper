@@ -8,6 +8,7 @@ from .alma_course_assignments_client import build_timetable_course_assignments
 from .client import AlmaClient
 from .config import AlmaError, AlmaParseError, MailError
 from .credentials import read_mail_credentials, read_uni_credentials
+from .dashboard_talks import build_talks_panel
 from .ilias_client import IliasClient
 from .mail_client import MailClient
 
@@ -93,6 +94,7 @@ class PortalService:
         alma = self._alma_client()
         ilias = self._ilias_client()
         mail = self._mail_panel(limit=limit)
+        talks = build_talks_panel(limit=limit)
 
         timetable = alma.fetch_timetable_for_term(term_label)
         enrollments = alma.fetch_enrollment_page()
@@ -128,6 +130,8 @@ class PortalService:
         ]
         if course_assignments is not None:
             metrics.insert(1, {"label": "Saved semester CP", "value": course_assignments.total_credits})
+        if talks["available"]:
+            metrics.insert(2, {"label": "Upcoming talks", "value": talks["totalHits"]})
 
         return {
             "generatedAt": datetime.utcnow().isoformat() + "Z",
@@ -172,7 +176,13 @@ class PortalService:
                 "tasks": serialize(tasks),
             },
             "mail": mail,
+            "talks": talks,
             "quickLinks": [
+                {
+                    "label": "Talks",
+                    "href": "/talks",
+                    "description": "Browse upcoming public talks from talks.tuebingen.ai.",
+                },
                 {
                     "label": "Inbox",
                     "href": "/mail",
@@ -266,6 +276,24 @@ class PortalService:
                     "url": f'/mail/{message["uid"]}',
                     "text": f"From: {sender}\nPreview: {message.get('preview') or '-'}",
                     "metadata": {"kind": "mail", "unread": bool(message.get("is_unread"))},
+                }
+            )
+
+        for talk in dashboard.get("talks", {}).get("items", []):
+            items.append(
+                {
+                    "id": f'talk:{talk["id"]}',
+                    "title": talk["title"],
+                    "url": talk["source_url"],
+                    "text": "\n".join(
+                        [
+                            f'Speaker: {talk.get("speaker_name") or "-"}',
+                            f'Time: {talk.get("timestamp") or "-"}',
+                            f'Location: {talk.get("location") or "-"}',
+                            talk.get("description") or "",
+                        ]
+                    ).strip(),
+                    "metadata": {"kind": "talk"},
                 }
             )
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "../components/app-shell";
 import { DashboardMailCard } from "../components/dashboard-mail-card";
+import { DashboardTalksCard } from "../components/dashboard-talks-card";
 import { DashboardNotificationsFeedCard } from "../components/dashboard-notifications-feed-card";
 import { ErrorPanel } from "../components/error-panel";
 import { Card, CardContent, CardHeader, CardTitle, CardAction, CardDescription } from "@/components/ui/card";
@@ -231,6 +232,7 @@ export default async function HomePage() {
               </CardContent>
             </Card>
 
+            <DashboardTalksCard talks={dashboard.talks} />
             <DashboardNotificationsFeedCard />
           </div>
         </div>

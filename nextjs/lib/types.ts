@@ -1,3 +1,5 @@
+import type { TalksPanel } from "./dashboard-talk-types";
+
 export interface Metric {
   label: string;
   value: number;
@@ -419,5 +421,6 @@ export interface DashboardData {
     tasks: IliasTaskItem[];
   };
   mail: MailPanel;
+  talks: TalksPanel;
   quickLinks: QuickLink[];
 }

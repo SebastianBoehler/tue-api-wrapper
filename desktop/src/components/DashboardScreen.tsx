@@ -2,10 +2,14 @@ import type { DesktopRuntimeState } from "../../shared/desktop-types";
 import type { DashboardData } from "../lib/dashboard-types";
 
 function formatTimestamp(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Time pending";
+  }
   return new Intl.DateTimeFormat("de-DE", {
     dateStyle: "medium",
     timeStyle: "short"
-  }).format(new Date(value));
+  }).format(date);
 }
 
 function formatCredits(value: number | null | undefined): string {
@@ -184,6 +188,32 @@ export function DashboardScreen({
             </div>
           ) : (
             <p className="muted">{data?.mail.error || "Mail preview unavailable."}</p>
+          )}
+        </article>
+
+        <article className="panel">
+          <div className="section-heading">
+            <h3>Talks</h3>
+            <span>{data?.talks.available ? `${data.talks.totalHits} upcoming` : "Unavailable"}</span>
+          </div>
+          {data?.talks.available ? (
+            <div className="stack-list">
+              {data.talks.items.slice(0, 6).map((talk) => (
+                <button
+                  key={talk.id}
+                  className="link-row"
+                  onClick={() => void window.desktop.openExternal(talk.source_url)}
+                >
+                  <div>
+                    <strong>{talk.title}</strong>
+                    <span>{talk.speaker_name || talk.location || "Speaker pending"}</span>
+                  </div>
+                  <span>{formatTimestamp(talk.timestamp)}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="muted">{data?.talks.error || "Talks preview unavailable."}</p>
           )}
         </article>
 

@@ -93,6 +93,32 @@ export interface QuickLink {
   description: string;
 }
 
+export interface DashboardTalkTag {
+  id: number;
+  name: string;
+}
+
+export interface DashboardTalkItem {
+  id: number;
+  title: string;
+  timestamp: string;
+  description: string | null;
+  location: string | null;
+  speaker_name: string | null;
+  speaker_bio: string | null;
+  disabled: boolean;
+  source_url: string;
+  tags: DashboardTalkTag[];
+}
+
+export interface DashboardTalksPanel {
+  available: boolean;
+  sourceUrl: string;
+  totalHits: number;
+  items: DashboardTalkItem[];
+  error: string | null;
+}
+
 export interface DashboardPayload {
   generatedAt: string;
   termLabel: string;
@@ -131,4 +157,5 @@ export interface DashboardPayload {
     tasks: IliasTaskItem[];
   };
   quickLinks: QuickLink[];
+  talks: DashboardTalksPanel;
 }

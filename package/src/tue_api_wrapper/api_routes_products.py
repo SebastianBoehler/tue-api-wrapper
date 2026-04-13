@@ -8,11 +8,13 @@ from .campus_client import CampusClient
 from .praxisportal_client import PraxisportalClient
 from .portal_service import serialize
 from .timms_client import TimmsClient
+from .talks_client import TalksClient
 
 router = APIRouter()
 timms_client = TimmsClient()
 praxisportal_client = PraxisportalClient()
 campus_client = CampusClient()
+talks_client = TalksClient()
 
 
 def _translate_public_error(error: Exception) -> HTTPException:
@@ -70,6 +72,36 @@ def timms_tree(node_id: str = "", node_path: str = "") -> dict[str, object]:
                 node_path=node_path.strip() or None,
             )
         )
+    except Exception as error:  # pragma: no cover - exercised via FastAPI surface
+        raise _translate_public_error(error) from error
+
+
+@router.get("/api/talks")
+def talks(
+    scope: str = Query("upcoming", pattern="^(upcoming|previous)$"),
+    query: str = "",
+    tag_id: list[int] = Query(default=[]),
+    include_disabled: bool = False,
+    limit: int = Query(24, ge=1, le=100),
+) -> dict[str, object]:
+    try:
+        return serialize(
+            talks_client.fetch_talks(
+                scope=scope,
+                query=query,
+                tag_ids=list(tag_id),
+                include_disabled=include_disabled,
+                limit=limit,
+            )
+        )
+    except Exception as error:  # pragma: no cover - exercised via FastAPI surface
+        raise _translate_public_error(error) from error
+
+
+@router.get("/api/talks/{talk_id}")
+def talk(talk_id: int) -> dict[str, object]:
+    try:
+        return serialize(talks_client.fetch_talk(talk_id))
     except Exception as error:  # pragma: no cover - exercised via FastAPI surface
         raise _translate_public_error(error) from error
 

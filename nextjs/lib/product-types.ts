@@ -69,6 +69,38 @@ export interface TimmsTreeResponse {
   items: TimmsTreeItem[];
 }
 
+export interface TalkTag {
+  id: number;
+  name: string;
+  description: string | null;
+  total_talks: number | null;
+  has_subscribed: boolean | null;
+}
+
+export interface Talk {
+  id: number;
+  title: string;
+  timestamp: string;
+  description: string | null;
+  location: string | null;
+  speaker_name: string | null;
+  speaker_bio: string | null;
+  disabled: boolean;
+  source_url: string;
+  tags: TalkTag[];
+}
+
+export interface TalksResponse {
+  scope: string;
+  query: string;
+  tag_ids: number[];
+  total_hits: number;
+  returned_hits: number;
+  source_url: string;
+  items: Talk[];
+  available_tags: TalkTag[];
+}
+
 export interface CareerFacetOption {
   id: number;
   label: string;

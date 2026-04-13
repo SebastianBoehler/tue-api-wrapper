@@ -9,6 +9,8 @@ import type {
   CareerProjectDetail,
   CareerSearchFilters,
   CareerSearchResponse,
+  Talk,
+  TalksResponse,
   TimmsItemDetail,
   TimmsSearchResponse,
   TimmsStreamVariant,
@@ -63,6 +65,28 @@ export function getTimmsTree(options: { nodeId?: string; nodePath?: string } = {
     params.set("node_path", options.nodePath.trim());
   }
   return fetchProductJson(`/api/timms/tree${params.size ? `?${params.toString()}` : ""}`);
+}
+
+export function getTalks(options: {
+  scope?: string;
+  query?: string;
+  tagIds?: number[];
+  limit?: number;
+} = {}): Promise<TalksResponse> {
+  const params = new URLSearchParams();
+  params.set("scope", options.scope ?? "upcoming");
+  params.set("limit", String(options.limit ?? 50));
+  if (options.query?.trim()) {
+    params.set("query", options.query.trim());
+  }
+  for (const id of options.tagIds ?? []) {
+    params.append("tag_id", String(id));
+  }
+  return fetchProductJson(`/api/talks?${params.toString()}`);
+}
+
+export function getTalk(talkId: number): Promise<Talk> {
+  return fetchProductJson(`/api/talks/${talkId}`);
 }
 
 export function getCareerFilters(): Promise<CareerSearchFilters> {

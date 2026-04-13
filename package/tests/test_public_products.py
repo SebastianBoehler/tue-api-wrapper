@@ -19,6 +19,7 @@ from tue_api_wrapper.praxisportal_client import (
     map_praxisportal_detail,
 )
 from tue_api_wrapper.timms_client import parse_timms_item_page, parse_timms_player_page
+from tue_api_wrapper.talks_client import build_talks_response, map_talk
 
 
 class PublicProductContractTests(unittest.TestCase):
@@ -152,6 +153,43 @@ class PublicProductContractTests(unittest.TestCase):
         self.assertEqual(title, "Mensa Wilhelmstraße")
         self.assertEqual(address, "Wilhelmstraße 13 72074 Tübingen")
         self.assertIn("google.com/maps/search", map_url or "")
+
+    def test_map_talks_payload_and_filter_response(self) -> None:
+        talk = map_talk(
+            {
+                "id": 958,
+                "title": "Multimodal interaction across languages",
+                "timestamp": "2026-05-05T10:15:00",
+                "description": "Abstract: tba",
+                "location": "Lecture Hall 23, Kupferbau",
+                "speaker_name": "Dr. Paula Rubio-Fernandez",
+                "speaker_bio": "",
+                "disabled": False,
+                "tags": [{"id": 42, "name": "Guest speaker"}],
+            }
+        )
+        hidden = map_talk(
+            {
+                "id": 949,
+                "title": "Hidden talk",
+                "timestamp": "2026-05-12T12:30:00",
+                "disabled": True,
+                "tags": [{"id": 41, "name": "Group meeting"}],
+            }
+        )
+
+        response = build_talks_response(
+            [talk, hidden],
+            scope="upcoming",
+            query="rubio",
+            tag_ids=[42],
+            limit=10,
+        )
+
+        self.assertEqual(response.total_hits, 1)
+        self.assertEqual(response.items[0].id, 958)
+        self.assertEqual(response.items[0].source_url, "https://talks.tuebingen.ai/talks/talk/id=958")
+        self.assertEqual([tag.name for tag in response.available_tags], ["Guest speaker"])
 
 
 if __name__ == "__main__":

@@ -213,12 +213,16 @@ function persistState() {
 }
 
 function formatDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Date pending";
+  }
   return new Intl.DateTimeFormat("de-DE", {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
     minute: "2-digit"
-  }).format(new Date(value));
+  }).format(date);
 }
 
 function formatCredits(value: number | null | undefined): string {
@@ -307,6 +311,21 @@ function buildCourseDetail(result: NonNullable<PanelCache["courses"]>["results"]
     ],
     href: result.detail_url ?? undefined,
     hrefLabel: result.detail_url ? "Open source" : undefined
+  };
+}
+
+function buildTalkDetail(item: DashboardPayload["talks"]["items"][number]): DetailPayload {
+  return {
+    title: item.title,
+    subtitle: item.speaker_name ?? item.location ?? "Talk",
+    lines: [
+      `Time: ${formatDate(item.timestamp)}`,
+      `Location: ${item.location ?? "-"}`,
+      `Speaker: ${item.speaker_name ?? "-"}`,
+      item.description ? `Abstract: ${item.description}` : "Abstract: not provided"
+    ],
+    href: item.source_url,
+    hrefLabel: "Open original talk"
   };
 }
 
@@ -471,6 +490,26 @@ function renderOverview(dashboard: DashboardPayload): string {
     )
     .join("") || renderFallbackRow("No current ILIAS memberships found.");
 
+  const talks = dashboard.talks.available
+    ? dashboard.talks.items
+      .slice(0, 4)
+      .map(
+        (item) => `
+          <div class="widget-row compact">
+            <div>
+              <strong>${escapeHtml(item.title)}</strong>
+              <p>${escapeHtml(item.speaker_name ?? item.location ?? "Speaker pending")}</p>
+            </div>
+            <div class="widget-row-actions">
+              <time>${escapeHtml(formatDate(item.timestamp))}</time>
+              ${renderDetailButton(buildTalkDetail(item))}
+            </div>
+          </div>
+        `
+      )
+      .join("") || renderFallbackRow("No upcoming talks found.")
+    : renderFallbackRow(dashboard.talks.error ?? "Talks unavailable.");
+
   const studySummary = `
     <div class="widget-summary">
       <div>
@@ -565,6 +604,17 @@ function renderOverview(dashboard: DashboardPayload): string {
           <button class="widget-button" data-follow-up="List the study-service document options from Alma.">Ask</button>
         </div>
         <div class="widget-list">${documents}</div>
+      </article>
+
+      <article class="widget-card">
+        <div class="widget-card-header">
+          <div>
+            <p class="widget-kicker">Talks</p>
+            <h2>Upcoming talks</h2>
+          </div>
+          <button class="widget-button ghost" data-follow-up="Summarize the next public talks from my study dashboard.">Ask</button>
+        </div>
+        <div class="widget-list">${talks}</div>
       </article>
 
       <article class="widget-card">

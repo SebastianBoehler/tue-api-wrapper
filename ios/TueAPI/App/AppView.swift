@@ -27,6 +27,13 @@ struct AppView: View {
             }
 
             NavigationStack {
+                TalksView()
+            }
+            .tabItem {
+                Label("Talks", systemImage: "mic")
+            }
+
+            NavigationStack {
                 SettingsView(model: model)
             }
             .tabItem {

@@ -24,6 +24,8 @@ class AlmaTimetableCourseAssignment:
     event_type: str | None
     organization: str | None
     detail_url: str | None
+    credits: float | None
+    credit_source: str | None
     detail: AlmaModuleDetail | None
     error: str | None = None
 
@@ -32,4 +34,8 @@ class AlmaTimetableCourseAssignment:
 class AlmaTimetableCourseAssignmentsPage:
     term_label: str
     term_id: str
+    total_credits: float
+    resolved_credit_count: int
+    unresolved_credit_count: int
+    unresolved_credit_summaries: tuple[str, ...]
     courses: tuple[AlmaTimetableCourseAssignment, ...]

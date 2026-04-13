@@ -4,8 +4,9 @@ from dataclasses import asdict, is_dataclass
 from datetime import date, datetime
 from typing import Any
 
+from .alma_course_assignments_client import build_timetable_course_assignments
 from .client import AlmaClient
-from .config import AlmaParseError, MailError
+from .config import AlmaError, AlmaParseError, MailError
 from .credentials import read_mail_credentials, read_uni_credentials
 from .ilias_client import IliasClient
 from .mail_client import MailClient
@@ -101,6 +102,12 @@ class PortalService:
         ilias_root = ilias.fetch_root_page()
         memberships = ilias.fetch_membership_overview()[:limit]
         tasks = ilias.fetch_task_overview()[:limit]
+        current_credit_error = None
+        try:
+            course_assignments = build_timetable_course_assignments(alma, timetable, limit=100)
+        except AlmaError as error:
+            course_assignments = None
+            current_credit_error = str(error)
 
         passed_exams = [
             exam for exam in exams
@@ -113,6 +120,15 @@ class PortalService:
             if exam.cp and exam.cp.strip() not in {"", "-"}
         ]
 
+        metrics = [
+            {"label": "Upcoming events", "value": len(timetable.occurrences)},
+            {"label": "Open tasks", "value": len(tasks)},
+            {"label": "Learning spaces", "value": len(memberships)},
+            {"label": "Passed exams", "value": len(passed_exams)},
+        ]
+        if course_assignments is not None:
+            metrics.insert(1, {"label": "Saved semester CP", "value": course_assignments.total_credits})
+
         return {
             "generatedAt": datetime.utcnow().isoformat() + "Z",
             "termLabel": timetable.term_label,
@@ -120,12 +136,7 @@ class PortalService:
                 "title": "Study Hub",
                 "subtitle": "Your next classes, open course work, study records, and learning spaces in one place.",
             },
-            "metrics": [
-                {"label": "Upcoming events", "value": len(timetable.occurrences)},
-                {"label": "Open tasks", "value": len(tasks)},
-                {"label": "Learning spaces", "value": len(memberships)},
-                {"label": "Passed exams", "value": len(passed_exams)},
-            ],
+            "metrics": metrics,
             "agenda": {
                 "exportUrl": timetable.export_url,
                 "items": serialize(timetable.occurrences[:limit]),
@@ -135,6 +146,12 @@ class PortalService:
                 "message": enrollments.message,
                 "passedExamCount": len(passed_exams),
                 "trackedCredits": round(sum(credit_values), 1),
+                "currentSemesterCredits": course_assignments.total_credits if course_assignments is not None else None,
+                "currentSemesterCreditCourses": course_assignments.resolved_credit_count if course_assignments is not None else 0,
+                "currentSemesterCreditUnresolved": (
+                    list(course_assignments.unresolved_credit_summaries) if course_assignments is not None else []
+                ),
+                "currentSemesterCreditError": current_credit_error,
                 "availableTerms": serialize(enrollments.available_terms),
             },
             "documents": {

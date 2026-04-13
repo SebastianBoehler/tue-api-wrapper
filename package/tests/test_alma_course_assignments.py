@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 import sys
 import unittest
@@ -7,8 +8,10 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from tue_api_wrapper.alma_course_credits import extract_detail_credits, extract_occurrence_credits
 from tue_api_wrapper.alma_detail_html import parse_module_detail_page
 from tue_api_wrapper.client import AlmaClient
+from tue_api_wrapper.models import CalendarOccurrence
 
 
 EVENT_DETAIL_HTML = """
@@ -34,6 +37,27 @@ EVENT_DETAIL_HTML = """
   <span><strong>Probabilistic Machine Learning (Probabilistic Inference and Learning) |</strong></span>
   <span>ML4202 |</span>
   <span>Veranstaltung</span>
+</div>
+<div class="boxStandard">
+  <div class="box_title"><h2>Grunddaten</h2></div>
+  <div class="box_content">
+    <div class="labelItemLine">
+      <label>Titel</label>
+      <div class="answer">Probabilistic Machine Learning (Probabilistic Inference and Learning)</div>
+    </div>
+    <div class="labelItemLine">
+      <label>Nummer</label>
+      <div class="answer">ML4202</div>
+    </div>
+    <div class="labelItemLine">
+      <label>Kurzkommentar</label>
+      <div class="answer">9 CP</div>
+    </div>
+    <div class="labelItemLine">
+      <label>CP</label>
+      <div class="answer">9.0</div>
+    </div>
+  </div>
 </div>
 <div class="boxStandard">
   <div class="box_title"><h2>Semesterplanung</h2></div>
@@ -96,6 +120,9 @@ class AlmaCourseAssignmentTests(unittest.TestCase):
             detail.module_study_program_tables[1].rows[0],
             ("Master Machine Learning (H-2021-7)", "Vollstudiengang", "Master", "Machine Learning"),
         )
+        credits = extract_detail_credits(detail)
+        self.assertIsNotNone(credits)
+        self.assertEqual(credits.value if credits is not None else None, 9)
 
     def test_fetch_detail_expands_assignment_row_limits(self) -> None:
         session = _RecordingSession()
@@ -114,6 +141,20 @@ class AlmaCourseAssignmentTests(unittest.TestCase):
             "300",
         )
         self.assertIn("MACH-FML", {row[0] for row in detail.module_study_program_tables[0].rows})
+
+    def test_extract_occurrence_credit_from_timetable_description(self) -> None:
+        credits = extract_occurrence_credits([
+            CalendarOccurrence(
+                summary="INFO4195b AI for Scientific Discovery",
+                start=datetime(2026, 4, 15, 18, 0),
+                end=datetime(2026, 4, 15, 20, 0),
+                location=None,
+                description="3 CP",
+            )
+        ])
+
+        self.assertIsNotNone(credits)
+        self.assertEqual(credits.value if credits is not None else None, 3)
 
 
 if __name__ == "__main__":

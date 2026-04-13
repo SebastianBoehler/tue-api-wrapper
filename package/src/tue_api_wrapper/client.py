@@ -114,11 +114,17 @@ class AlmaClient:
     def fetch_timetable_for_term(self, term_label: str) -> TimetableResult:
         timetable_html = self.fetch_timetable_page()
         terms = extract_timetable_terms(timetable_html)
-        try:
-            term_id = terms[term_label]
-        except KeyError as exc:
+        resolved_term_label = term_label
+        term_id = terms.get(term_label)
+        if term_id is None:
+            for label, value in terms.items():
+                if value == term_label:
+                    resolved_term_label = label
+                    term_id = value
+                    break
+        if term_id is None:
             available = ", ".join(sorted(terms))
-            raise AlmaParseError(f"Unknown term '{term_label}'. Available terms: {available}") from exc
+            raise AlmaParseError(f"Unknown term '{term_label}'. Available terms: {available}")
 
         export_url = build_term_export_url(extract_timetable_export_url(timetable_html), term_id)
         calendar_response = self.session.get(export_url, timeout=self.timeout_seconds)
@@ -128,9 +134,9 @@ class AlmaClient:
             raise AlmaParseError("Expected an iCalendar export but received a different response.")
 
         events = parse_ics_events(raw_ics)
-        occurrences = expand_ics_events(events, term_label)
+        occurrences = expand_ics_events(events, resolved_term_label)
         return TimetableResult(
-            term_label=term_label,
+            term_label=resolved_term_label,
             term_id=term_id,
             export_url=export_url,
             raw_ics=raw_ics,

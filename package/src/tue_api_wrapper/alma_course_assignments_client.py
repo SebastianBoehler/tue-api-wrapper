@@ -8,11 +8,12 @@ from .alma_course_assignments_models import (
     AlmaTimetableCourseAssignmentsPage,
     AlmaTimetableCourseSlot,
 )
+from .alma_course_credits import AlmaCourseCredit, extract_detail_credits, extract_occurrence_credits
 from .alma_course_search_client import search_courses
 from .alma_course_search_models import AlmaCourseSearchResult
 from .client import AlmaClient
 from .config import AlmaError
-from .models import CalendarOccurrence
+from .models import CalendarOccurrence, TimetableResult
 
 _COURSE_CODE_PATTERN = re.compile(r"^(?P<number>[A-ZÄÖÜ]+[A-ZÄÖÜ0-9-]*\d+[a-z]?|GTCNEURO)\s+(?P<title>.+)$")
 
@@ -24,6 +25,15 @@ def fetch_timetable_course_assignments(
     limit: int | None = None,
 ) -> AlmaTimetableCourseAssignmentsPage:
     timetable = client.fetch_timetable_for_term(term)
+    return build_timetable_course_assignments(client, timetable, limit=limit)
+
+
+def build_timetable_course_assignments(
+    client: AlmaClient,
+    timetable: TimetableResult,
+    *,
+    limit: int | None = None,
+) -> AlmaTimetableCourseAssignmentsPage:
     grouped: dict[str, list[CalendarOccurrence]] = defaultdict(list)
     for occurrence in timetable.occurrences:
         grouped[occurrence.summary].append(occurrence)
@@ -35,9 +45,15 @@ def fetch_timetable_course_assignments(
             break
         assignments.append(_fetch_course_assignment(client, summary, grouped[summary], course_search_term))
 
+    resolved = [assignment for assignment in assignments if assignment.credits is not None]
+    unresolved = tuple(assignment.summary for assignment in assignments if assignment.credits is None)
     return AlmaTimetableCourseAssignmentsPage(
         term_label=timetable.term_label,
         term_id=timetable.term_id,
+        total_credits=round(sum(assignment.credits or 0 for assignment in assignments), 1),
+        resolved_credit_count=len(resolved),
+        unresolved_credit_count=len(unresolved),
+        unresolved_credit_summaries=unresolved,
         courses=tuple(assignments),
     )
 
@@ -52,6 +68,7 @@ def _fetch_course_assignment(
     result: AlmaCourseSearchResult | None = None
     detail = None
     error = None
+    occurrence_credit = extract_occurrence_credits(occurrences)
     try:
         page = search_courses(client, query=_search_query(number, title), term=course_search_term, limit=30)
         result = _select_result(page.results, number=number, title=title)
@@ -61,6 +78,8 @@ def _fetch_course_assignment(
     except (AlmaError, ValueError) as exc:
         error = str(exc)
 
+    detail_credit = extract_detail_credits(detail)
+    credit = detail_credit or occurrence_credit or _search_public_credit_candidate(client, title)
     return AlmaTimetableCourseAssignment(
         summary=summary,
         occurrence_count=len(occurrences),
@@ -70,6 +89,8 @@ def _fetch_course_assignment(
         event_type=result.event_type if result is not None else None,
         organization=result.organization if result is not None else None,
         detail_url=result.detail_url if result is not None else None,
+        credits=credit.value if credit is not None else None,
+        credit_source=credit.source if credit is not None else None,
         detail=detail,
         error=error,
     )
@@ -122,6 +143,34 @@ def _select_result(
         if title_key in result_title or result_title in title_key:
             return result
     return results[0] if len(results) == 1 else None
+
+
+def _search_public_credit_candidate(client: AlmaClient, title: str) -> AlmaCourseCredit | None:
+    try:
+        response = client.search_public_module_descriptions(query=title, max_results=10)
+    except AlmaError:
+        return None
+
+    candidates: list[AlmaCourseCredit] = []
+    title_key = _normalize(title)
+    for result in response.results:
+        result_title = _normalize(result.title)
+        if not result.detail_url or not (title_key in result_title or result_title in title_key):
+            continue
+        try:
+            credit = extract_detail_credits(client.fetch_public_module_detail(result.detail_url))
+        except AlmaError:
+            continue
+        if credit is None:
+            continue
+        candidates.append(
+            AlmaCourseCredit(
+                value=credit.value,
+                source=f"Public module search: {result.number or result.title}",
+            )
+        )
+
+    return max(candidates, key=lambda candidate: candidate.value, default=None)
 
 
 def _slots_for_occurrences(occurrences: list[CalendarOccurrence]) -> tuple[AlmaTimetableCourseSlot, ...]:

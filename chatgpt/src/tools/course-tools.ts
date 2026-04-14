@@ -164,7 +164,7 @@ export function registerCourseTools(server: McpServer) {
     {
       title: "Get combined course detail",
       description:
-        "Use this when the user wants one course page that combines Alma module/course details with related ILIAS learning spaces or registration hints.",
+        "Use this when the user wants one course page that combines Alma details with signup status across Alma, ILIAS, and Moodle.",
       inputSchema: {
         url: z.string().url().optional(),
         title: z.string().optional(),
@@ -181,12 +181,13 @@ export function registerCourseTools(server: McpServer) {
         }
 
         const bundle = await loadUnifiedCourseDetail({ url, title, term, iliasLimit });
+        const signedUpCount = bundle.portal_statuses.filter((status) => status.signed_up === true).length;
         return {
           structuredContent: asStructured(bundle),
           content: [
             {
               type: "text" as const,
-              text: `Loaded ${bundle.alma.title} with ${bundle.ilias_results.length} related ILIAS result(s) and ${bundle.registration_hints.length} registration hint(s).`,
+              text: `Loaded ${bundle.alma.title} with ${signedUpCount} signed-up portal status(es), ${bundle.ilias_results.length} related ILIAS result(s), and ${bundle.registration_hints.length} registration hint(s).`,
             },
           ],
           _meta: {

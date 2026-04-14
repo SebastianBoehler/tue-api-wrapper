@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UnifiedCourseDetail } from "../lib/course-detail-types";
 import type { AlmaDetailTable } from "../lib/types";
+import { CoursePortalStatuses } from "./course-portal-statuses";
 
 export function CourseDetailContent({
   bundle,
@@ -42,6 +43,7 @@ export function CourseDetailContent({
         </CardAction>
       </CardHeader>
       <CardContent className="grid gap-4">
+        <CoursePortalStatuses statuses={bundle.portal_statuses} />
         <RegistrationHints bundle={bundle} />
         <AlmaSections bundle={bundle} />
         <RelatedIlias bundle={bundle} />

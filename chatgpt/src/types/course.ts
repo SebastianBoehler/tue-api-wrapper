@@ -106,11 +106,24 @@ export interface RelatedIliasResult {
   matched_identifier: string | null;
 }
 
+export interface CoursePortalStatus {
+  portal: string;
+  status: string;
+  signed_up: boolean | null;
+  title: string | null;
+  url: string | null;
+  match_reason: string | null;
+  score: number | null;
+  message: string | null;
+  error: string | null;
+}
+
 export interface UnifiedCourseDetail {
   alma: ModuleDetail;
   ilias_results: RelatedIliasResult[];
   lookup_queries: CourseDetailLookupQuery[];
   registration_hints: CourseRegistrationHint[];
+  portal_statuses: CoursePortalStatus[];
   ilias_error: string | null;
 }
 

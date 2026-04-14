@@ -18,6 +18,70 @@ struct CampusHappening: Identifiable, Codable, Hashable {
     }
 }
 
+struct CampusLandmark: Identifiable, Hashable {
+    var id: String
+    var name: String
+    var detail: String
+    var symbolName: String
+    var latitude: Double
+    var longitude: Double
+
+    var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+
+    static let important: [CampusLandmark] = [
+        CampusLandmark(
+            id: "university-library",
+            name: "University Library",
+            detail: "Wilhelmstraße study hub",
+            symbolName: "books.vertical",
+            latitude: 48.5239,
+            longitude: 9.0587
+        ),
+        CampusLandmark(
+            id: "neue-aula",
+            name: "Neue Aula",
+            detail: "Central lecture building",
+            symbolName: "building.columns",
+            latitude: 48.5247,
+            longitude: 9.0584
+        ),
+        CampusLandmark(
+            id: "kupferbau",
+            name: "Kupferbau",
+            detail: "Large lecture halls",
+            symbolName: "graduationcap",
+            latitude: 48.5246,
+            longitude: 9.0609
+        ),
+        CampusLandmark(
+            id: "mensa-wilhelmstrasse",
+            name: "Mensa Wilhelmstraße",
+            detail: "Central cafeteria",
+            symbolName: "fork.knife",
+            latitude: 48.5231,
+            longitude: 9.0573
+        ),
+        CampusLandmark(
+            id: "morgenstelle",
+            name: "Campus Morgenstelle",
+            detail: "Natural sciences campus",
+            symbolName: "atom",
+            latitude: 48.5371,
+            longitude: 9.0359
+        ),
+        CampusLandmark(
+            id: "brechtbau",
+            name: "Brechtbau",
+            detail: "Humanities lecture rooms",
+            symbolName: "text.book.closed",
+            latitude: 48.5270,
+            longitude: 9.0603
+        )
+    ]
+}
+
 enum HappeningCategory: String, CaseIterable, Codable, Identifiable {
     case study
     case food

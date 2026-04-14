@@ -15,6 +15,15 @@ struct CampusMapView: View {
     var body: some View {
         VStack(spacing: 0) {
             Map(position: $mapPosition, selection: $selectedHappening) {
+                ForEach(CampusLandmark.important) { landmark in
+                    Marker(
+                        landmark.name,
+                        systemImage: landmark.symbolName,
+                        coordinate: landmark.coordinate
+                    )
+                    .tint(.blue)
+                }
+
                 ForEach(store.happenings) { happening in
                     Marker(
                         happening.title,
@@ -34,6 +43,15 @@ struct CampusMapView: View {
             List {
                 Section {
                     statusContent
+                }
+
+                Section("Places") {
+                    ForEach(CampusLandmark.important) { landmark in
+                        LandmarkRow(landmark: landmark)
+                            .onTapGesture {
+                                mapPosition = .region(landmark.focusRegion)
+                            }
+                    }
                 }
 
                 Section("Happenings") {
@@ -77,7 +95,7 @@ struct CampusMapView: View {
         case .idle:
             StatusBanner(
                 title: "Campus map",
-                message: "Posts are saved on this device after Maps finds the location.",
+                message: "Important campus places are pinned. Posts are saved on this device after Maps finds the location.",
                 systemImage: "mappin.and.ellipse"
             )
         case .saving:
@@ -87,6 +105,21 @@ struct CampusMapView: View {
         case .failed(let message):
             StatusBanner(title: "Could not post", message: message, systemImage: "exclamationmark.triangle")
         }
+    }
+}
+
+private struct LandmarkRow: View {
+    var landmark: CampusLandmark
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(landmark.name, systemImage: landmark.symbolName)
+                .font(.headline)
+            Text(landmark.detail)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
     }
 }
 
@@ -186,6 +219,15 @@ private struct PostHappeningSheet: View {
                 }
             }
         }
+    }
+}
+
+private extension CampusLandmark {
+    var focusRegion: MKCoordinateRegion {
+        MKCoordinateRegion(
+            center: coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        )
     }
 }
 

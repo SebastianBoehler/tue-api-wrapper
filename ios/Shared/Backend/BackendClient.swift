@@ -58,7 +58,7 @@ struct BackendClient {
 
     // MARK: - Private
 
-    private func makeURL(path: String, queryItems: [URLQueryItem]) throws -> URL {
+    func makeURL(path: String, queryItems: [URLQueryItem]) throws -> URL {
         var components = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false)
         components?.queryItems = queryItems
         guard let url = components?.url else {
@@ -67,7 +67,7 @@ struct BackendClient {
         return url
     }
 
-    private func get(_ url: URL) async throws -> Data {
+    func get(_ url: URL) async throws -> Data {
         let (data, response) = try await URLSession.shared.data(from: url)
         guard let http = response as? HTTPURLResponse else {
             throw BackendClientError.server(0)

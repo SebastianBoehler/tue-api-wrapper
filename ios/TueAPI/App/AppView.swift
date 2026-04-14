@@ -27,6 +27,13 @@ struct AppView: View {
             }
 
             NavigationStack {
+                ModuleSearchView(model: model)
+            }
+            .tabItem {
+                Label("Modules", systemImage: "books.vertical")
+            }
+
+            NavigationStack {
                 TalksView()
             }
             .tabItem {

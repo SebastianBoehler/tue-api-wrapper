@@ -34,6 +34,13 @@ struct AppView: View {
             }
 
             NavigationStack {
+                CampusMapView()
+            }
+            .tabItem {
+                Label("Campus", systemImage: "map")
+            }
+
+            NavigationStack {
                 TalksView()
             }
             .tabItem {

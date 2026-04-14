@@ -39,6 +39,12 @@ struct CourseDetailView: View {
                 portalStatusContent
             }
 
+            if course.location?.nilIfEmpty != nil {
+                Section("Quick navigation") {
+                    CourseNavigationActions(course: course)
+                }
+            }
+
             Section("Portals") {
                 if let detailURL = course.detailURL {
                     Link(destination: detailURL) {

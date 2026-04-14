@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct CourseDetailReference: Hashable {
     var id: String
@@ -100,6 +101,116 @@ private enum CourseDetailURLFinder {
         return detector?
             .firstMatch(in: text, options: [], range: range)?
             .url
+    }
+}
+
+struct PortalStatusRow: View {
+    var status: CoursePortalStatus
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Label(status.displayStatus, systemImage: status.systemImage)
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Text(status.portalLabel)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            if let title = status.title?.nilIfBlank {
+                Text(title)
+                    .font(.subheadline)
+            }
+            if let message = status.error ?? status.message ?? status.matchReason {
+                Text(message)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            if let url = status.resolvedURL {
+                Link("Open match", destination: url)
+                    .font(.footnote.weight(.semibold))
+            }
+        }
+    }
+}
+
+struct CoursePortalStatusPayload: Decodable {
+    var portalStatuses: [CoursePortalStatus]
+
+    enum CodingKeys: String, CodingKey {
+        case portalStatuses = "portal_statuses"
+    }
+}
+
+struct CoursePortalStatus: Decodable, Identifiable {
+    var portal: String
+    var status: String
+    var signedUp: Bool?
+    var title: String?
+    var url: String?
+    var matchReason: String?
+    var score: Int?
+    var message: String?
+    var error: String?
+
+    var id: String { portal }
+
+    enum CodingKeys: String, CodingKey {
+        case portal
+        case status
+        case signedUp = "signed_up"
+        case title
+        case url
+        case matchReason = "match_reason"
+        case score
+        case message
+        case error
+    }
+
+    var portalLabel: String {
+        switch portal {
+        case "alma": "Alma"
+        case "ilias": "ILIAS"
+        case "moodle": "Moodle"
+        default: portal
+        }
+    }
+
+    var displayStatus: String {
+        if signedUp == true { return "Signed up" }
+        if signedUp == false { return "Not signed up" }
+        if status == "error" { return "Unavailable" }
+        return "Unknown"
+    }
+
+    var systemImage: String {
+        if signedUp == true { return "checkmark.circle.fill" }
+        if signedUp == false { return "xmark.circle" }
+        return status == "error" ? "exclamationmark.triangle" : "questionmark.circle"
+    }
+
+    var resolvedURL: URL? {
+        guard let url else { return nil }
+        return URL(string: url)
+    }
+}
+
+enum PortalStatusPhase {
+    case idle
+    case loading
+    case loaded([CoursePortalStatus])
+    case unavailable(String)
+    case failed(String)
+}
+
+enum PortalStatusError: LocalizedError {
+    case server(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .server(let message):
+            message
+        }
     }
 }
 

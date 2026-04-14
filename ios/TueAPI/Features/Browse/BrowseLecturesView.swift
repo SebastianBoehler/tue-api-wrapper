@@ -41,7 +41,7 @@ struct BrowseLecturesView: View {
         }
         .navigationTitle("Browse")
         .navigationDestination(for: AlmaCurrentLecture.self) { lecture in
-            CourseDetailView(lecture: lecture)
+            CourseDetailView(lecture: lecture, model: model)
         }
         .searchable(text: $query, prompt: "Filter title, room, lecturer")
         .refreshable {

@@ -31,14 +31,35 @@ final class AppModel {
             UserDefaults.standard.set(baseURLString, forKey: Self.baseURLKey)
         }
     }
+    var portalAPIBaseURLString: String {
+        didSet {
+            UserDefaults.standard.set(portalAPIBaseURLString, forKey: Self.portalAPIBaseURLKey)
+        }
+    }
+
+    // Tasks & deadlines from the FastAPI backend
+    var tasks: [IliasTask] = []
+    var deadlines: [MoodleDeadline] = []
+    var tasksPhase: TasksLoadPhase = .idle
 
     private let keychain = KeychainCredentialsStore()
     private static let baseURLKey = "almaBaseURL"
+    private static let portalAPIBaseURLKey = "portalAPIBaseURL"
     private static let remindersEnabledKey = "lectureRemindersEnabled"
     private static let reminderLeadTimeKey = "lectureReminderLeadTimeMinutes"
 
+    // Shared date formatter for Alma date strings (allocated once)
+    private static let almaDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "de_DE")
+        f.dateFormat = "dd.MM.yyyy"
+        return f
+    }()
+
     init() {
         self.baseURLString = UserDefaults.standard.string(forKey: Self.baseURLKey) ?? "https://alma.uni-tuebingen.de"
+        self.portalAPIBaseURLString = UserDefaults.standard.string(forKey: Self.portalAPIBaseURLKey) ?? ""
         let cachedSnapshot = UpcomingLectureCache.load()
         self.events = Self.upcomingOnly(cachedSnapshot?.events ?? [])
         self.semesterCredits = cachedSnapshot?.semesterCredits
@@ -254,11 +275,7 @@ final class AppModel {
     }
 
     private static func almaDateString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "de_DE")
-        formatter.dateFormat = "dd.MM.yyyy"
-        return formatter.string(from: date)
+        almaDateFormatter.string(from: date)
     }
 }
 

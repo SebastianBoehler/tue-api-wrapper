@@ -39,7 +39,7 @@ struct CalendarScheduleView: View {
         }
         .navigationTitle("Calendar")
         .navigationDestination(for: LectureEvent.self) { event in
-            CourseDetailView(event: event)
+            CourseDetailView(event: event, model: model)
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -148,21 +148,40 @@ private struct CalendarDayChip: View {
     var day: Date
     var isSelected: Bool
 
+    private var isToday: Bool {
+        CalendarSchedule.calendar.isDateInToday(day)
+    }
+
     var body: some View {
         VStack(spacing: 4) {
             Text(day.formatted(.dateTime.weekday(.abbreviated)))
                 .font(.caption)
-            Text(day.formatted(.dateTime.day()))
-                .font(.headline)
+
+            ZStack(alignment: .bottom) {
+                Text(day.formatted(.dateTime.day()))
+                    .font(.headline)
+                    .padding(.bottom, isToday ? 6 : 0)
+
+                if isToday {
+                    Circle()
+                        .fill(isSelected ? Color.white : Color.accentColor)
+                        .frame(width: 5, height: 5)
+                }
+            }
+            .frame(height: 28)
+
             Text(day.formatted(.dateTime.month(.abbreviated)))
                 .font(.caption2)
         }
         .frame(width: 68, height: 74)
-        .foregroundStyle(isSelected ? Color.white : Color.primary)
+        .foregroundStyle(isSelected ? Color.white : (isToday ? Color.accentColor : Color.primary))
         .background(isSelected ? Color.accentColor : Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
-                .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.18))
+                .stroke(
+                    isSelected ? Color.accentColor : (isToday ? Color.accentColor.opacity(0.6) : Color.secondary.opacity(0.18)),
+                    lineWidth: isToday && !isSelected ? 1.5 : 1
+                )
         }
     }
 }

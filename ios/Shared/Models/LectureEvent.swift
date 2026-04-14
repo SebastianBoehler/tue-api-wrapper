@@ -9,19 +9,39 @@ struct LectureEvent: Codable, Identifiable, Hashable {
     var detail: String?
 
     var timeRangeText: String {
-        let formatter = DateFormatter()
-        formatter.timeZone = TimeZone(identifier: "Europe/Berlin")
-        formatter.dateFormat = "E, dd.MM. HH:mm"
-
         guard let endDate else {
-            return formatter.string(from: startDate)
+            return Self.startFormatter.string(from: startDate)
         }
-
-        let endFormatter = DateFormatter()
-        endFormatter.timeZone = formatter.timeZone
-        endFormatter.dateFormat = "HH:mm"
-        return "\(formatter.string(from: startDate)) - \(endFormatter.string(from: endDate))"
+        return "\(Self.startFormatter.string(from: startDate)) – \(Self.endFormatter.string(from: endDate))"
     }
+
+    // MARK: - Shared formatters (allocated once)
+
+    private static let berlinZone = TimeZone(identifier: "Europe/Berlin") ?? .current
+
+    private static let startFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.timeZone = berlinZone
+        f.dateFormat = "E, dd.MM. HH:mm"
+        return f
+    }()
+
+    private static let endFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.timeZone = berlinZone
+        f.dateFormat = "HH:mm"
+        return f
+    }()
+
+    // MARK: - Placeholder for skeleton loading
+
+    static let placeholder = LectureEvent(
+        id: "placeholder",
+        title: "Introduction to Computer Science",
+        startDate: Date(),
+        endDate: Date().addingTimeInterval(5400),
+        location: "Sand 14, Room 0.01"
+    )
 }
 
 struct LectureSnapshot: Codable, Equatable {

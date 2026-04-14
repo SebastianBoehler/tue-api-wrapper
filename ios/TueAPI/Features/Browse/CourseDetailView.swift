@@ -1,13 +1,17 @@
 import SwiftUI
 
 struct CourseDetailView: View {
+    var model: AppModel
     var course: CourseDetailReference
+    @State private var portalStatusPhase: PortalStatusPhase = .idle
 
-    init(lecture: AlmaCurrentLecture) {
+    init(lecture: AlmaCurrentLecture, model: AppModel) {
+        self.model = model
         self.course = CourseDetailReference(lecture: lecture)
     }
 
-    init(event: LectureEvent) {
+    init(event: LectureEvent, model: AppModel) {
+        self.model = model
         self.course = CourseDetailReference(event: event)
     }
 
@@ -29,6 +33,10 @@ struct CourseDetailView: View {
                 if let semester = course.semester {
                     LabeledContent("Semester", value: semester)
                 }
+            }
+
+            Section("Signup status") {
+                portalStatusContent
             }
 
             Section("Portals") {
@@ -82,6 +90,9 @@ struct CourseDetailView: View {
             }
         }
         .navigationTitle("Course Detail")
+        .task(id: statusLookupID) {
+            await loadPortalStatuses()
+        }
     }
 
     private var subtitle: String? {
@@ -110,6 +121,86 @@ struct CourseDetailView: View {
             URLQueryItem(name: "term", value: iliasQuery)
         ]
         return components.url
+    }
+
+    @ViewBuilder
+    private var portalStatusContent: some View {
+        switch portalStatusPhase {
+        case .idle, .loading:
+            ProgressView("Loading portal status")
+        case .unavailable(let message):
+            StatusBanner(title: "Status lookup unavailable", message: message, systemImage: "network.slash")
+        case .failed(let message):
+            StatusBanner(title: "Status lookup failed", message: message, systemImage: "exclamationmark.triangle")
+        case .loaded(let statuses):
+            if statuses.isEmpty {
+                Text("No portal status was returned.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(statuses) { status in
+                    PortalStatusRow(status: status)
+                }
+            }
+        }
+    }
+
+    private var statusLookupID: String {
+        [
+            model.portalAPIBaseURLString,
+            course.id,
+            course.detailURL?.absoluteString ?? "",
+            course.title
+        ].joined(separator: "|")
+    }
+
+    private func loadPortalStatuses() async {
+        let backend = model.portalAPIBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !backend.isEmpty else {
+            portalStatusPhase = .unavailable("Add the FastAPI backend URL in Settings to check Alma, ILIAS, and Moodle.")
+            return
+        }
+        guard let baseURL = URL(string: backend), baseURL.scheme?.hasPrefix("http") == true else {
+            portalStatusPhase = .failed("The portal status backend URL is invalid.")
+            return
+        }
+        guard let url = courseStatusURL(baseURL: baseURL) else {
+            portalStatusPhase = .failed("Could not build the portal status request.")
+            return
+        }
+
+        portalStatusPhase = .loading
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw PortalStatusError.server("The backend did not return an HTTP response.")
+            }
+            guard (200..<300).contains(httpResponse.statusCode) else {
+                throw PortalStatusError.server("The backend returned HTTP \(httpResponse.statusCode).")
+            }
+            let payload = try JSONDecoder().decode(CoursePortalStatusPayload.self, from: data)
+            portalStatusPhase = .loaded(payload.portalStatuses)
+        } catch {
+            portalStatusPhase = .failed(error.localizedDescription)
+        }
+    }
+
+    private func courseStatusURL(baseURL: URL) -> URL? {
+        var components = URLComponents(
+            url: baseURL.appending(path: "api/course-detail"),
+            resolvingAgainstBaseURL: false
+        )
+        var items: [URLQueryItem] = []
+        if let detailURL = course.detailURL {
+            items.append(URLQueryItem(name: "url", value: detailURL.absoluteString))
+        } else {
+            items.append(URLQueryItem(name: "title", value: course.title))
+        }
+        if let semester = course.semester {
+            items.append(URLQueryItem(name: "term", value: semester))
+        }
+        components?.queryItems = items
+        return components?.url
     }
 }
 

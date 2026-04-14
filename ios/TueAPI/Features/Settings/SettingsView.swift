@@ -45,7 +45,18 @@ struct SettingsView: View {
             } header: {
                 Text("Alma endpoint")
             } footer: {
-                Text("Default: https://alma.uni-tuebingen.de. The app calls Alma directly and does not use the web dashboard or FastAPI backend.")
+                Text("Default: https://alma.uni-tuebingen.de. Timetable refreshes still call Alma directly.")
+            }
+
+            Section {
+                TextField("Backend URL", text: $model.portalAPIBaseURLString)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .keyboardType(.URL)
+            } header: {
+                Text("Portal status")
+            } footer: {
+                Text("Optional FastAPI base URL for course detail signup status across Alma, ILIAS, and Moodle.")
             }
 
             Section("Widget cache") {

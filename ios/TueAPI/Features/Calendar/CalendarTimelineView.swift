@@ -31,6 +31,8 @@ struct CalendarTimelineView: View {
                 .padding(.vertical, 36)
             } else {
                 GeometryReader { proxy in
+                    let timelineWidth = max(0, proxy.size.width - 60)
+
                     HStack(alignment: .top, spacing: 12) {
                         TimelineHourLabels(window: window)
                             .frame(width: 48)
@@ -38,16 +40,16 @@ struct CalendarTimelineView: View {
                         ZStack(alignment: .topLeading) {
                             TimelineHourGrid(window: window)
 
-                            ForEach(events) { event in
-                                NavigationLink(value: event) {
-                                    TimelineEventBlock(event: event)
+                            ForEach(placements) { placement in
+                                NavigationLink(value: placement.event) {
+                                    TimelineEventBlock(event: placement.event)
                                 }
                                 .buttonStyle(.plain)
-                                .frame(height: blockHeight(for: event))
-                                .offset(y: blockOffset(for: event))
+                                .frame(width: placement.width(in: timelineWidth), height: placement.height)
+                                .offset(x: placement.x(in: timelineWidth), y: placement.y)
                             }
                         }
-                        .frame(width: max(0, proxy.size.width - 60), height: window.height)
+                        .frame(width: timelineWidth, height: window.height)
                     }
                 }
                 .frame(height: window.height)
@@ -64,17 +66,8 @@ struct CalendarTimelineView: View {
         }
     }
 
-    private func blockOffset(for event: LectureEvent) -> CGFloat {
-        let startMinute = max(window.startMinute, window.minuteOfDay(event.startDate))
-        return CGFloat(startMinute - window.startMinute) / 60 * CalendarTimelineWindow.hourHeight
-    }
-
-    private func blockHeight(for event: LectureEvent) -> CGFloat {
-        let startMinute = max(window.startMinute, window.minuteOfDay(event.startDate))
-        let endDate = event.endDate ?? event.startDate.addingTimeInterval(50 * 60)
-        let endMinute = min(window.endMinute, max(startMinute, window.minuteOfDay(endDate)))
-        let durationHeight = CGFloat(endMinute - startMinute) / 60 * CalendarTimelineWindow.hourHeight
-        return durationHeight > 0 ? durationHeight : 56
+    private var placements: [TimelineEventPlacement] {
+        TimelineEventLayout(events: events, window: window).placements
     }
 }
 

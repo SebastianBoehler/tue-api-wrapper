@@ -41,16 +41,25 @@ enum LectureReminderScheduler {
             throw LectureReminderSchedulerError.notificationsDisabled
         }
 
-        await cancelScheduledReminders()
-
         let leadTime = TimeInterval(leadTimeMinutes * 60)
         let upcomingRequests = events
             .sorted { $0.startDate < $1.startDate }
             .compactMap { request(for: $0, leadTime: leadTime, now: now) }
 
         let requests = Array(upcomingRequests.prefix(maxPendingReminders))
+        let wantedIDs = Set(requests.map(\.identifier))
 
-        for request in requests {
+        // Diff against existing reminders: only cancel what's no longer needed,
+        // only add what isn't already scheduled. Avoids a full cancel+rebuild on
+        // every refresh when only a handful of events changed.
+        let existingIDs = Set(await reminderIdentifiers(in: center))
+        let toRemove = Array(existingIDs.subtracting(wantedIDs))
+        if !toRemove.isEmpty {
+            center.removePendingNotificationRequests(withIdentifiers: toRemove)
+        }
+
+        let toAdd = requests.filter { !existingIDs.contains($0.identifier) }
+        for request in toAdd {
             try await center.add(request)
         }
 

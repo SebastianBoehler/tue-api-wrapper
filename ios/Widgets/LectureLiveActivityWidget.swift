@@ -10,21 +10,49 @@ struct LectureLiveActivityWidget: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Text(context.state.startDate, style: .time)
+                    Label(context.state.startDate.formatted(date: .omitted, time: .shortened), systemImage: "calendar")
+                        .font(.caption2)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     if let endDate = context.state.endDate {
                         Text(endDate, style: .time)
+                            .font(.caption2)
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text(context.state.title)
-                        .lineLimit(2)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(context.state.title)
+                            .font(.subheadline.weight(.semibold))
+                            .lineLimit(2)
+                        if let location = context.state.location, !location.isEmpty {
+                            Label(location, systemImage: "mappin.and.ellipse")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
             } compactLeading: {
                 Image(systemName: "calendar")
+                    .foregroundStyle(.white)
             } compactTrailing: {
-                Text(context.state.startDate, style: .time)
+                // Progress ring showing how much of the lecture has elapsed.
+                // Falls back to a static time label when no end date is available.
+                if let endDate = context.state.endDate {
+                    ProgressView(
+                        timerInterval: context.state.startDate...endDate,
+                        countsDown: false
+                    ) {
+                        EmptyView()
+                    } currentValueLabel: {
+                        EmptyView()
+                    }
+                    .progressViewStyle(.circular)
+                    .tint(.white)
+                    .frame(width: 20, height: 20)
+                } else {
+                    Text(context.state.startDate, style: .time)
+                        .font(.caption2)
+                }
             } minimal: {
                 Image(systemName: "calendar")
             }

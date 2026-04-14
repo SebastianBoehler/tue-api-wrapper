@@ -9,6 +9,7 @@ from .alma_course_registration_html import (
     extract_registration_options,
     extract_registration_start_request,
     extract_registration_status,
+    _safe_detail_identity,
 )
 from .alma_course_registration_models import (
     AlmaCourseRegistrationOptions,
@@ -28,13 +29,18 @@ def inspect_course_registration_support(client: "AlmaClient", detail_url: str) -
     detail_url = _normalize_detail_url(client, detail_url)
     response = _get_authenticated_html(client, detail_url)
     start = extract_registration_start_request(response.text, response.url)
+    messages = extract_registration_messages(response.text)
+    status = extract_registration_status(response.text, messages)
     if start is None:
+        title, number = _safe_detail_identity(response.text, response.url)
         return AlmaCourseRegistrationSupport(
             detail_url=response.url,
-            title=None,
-            number=None,
+            title=title,
+            number=number,
             supported=False,
             action=None,
+            status=status,
+            messages=messages,
             message="This Alma detail page does not expose a course-registration action.",
         )
     return AlmaCourseRegistrationSupport(
@@ -43,6 +49,8 @@ def inspect_course_registration_support(client: "AlmaClient", detail_url: str) -
         number=start.number,
         supported=True,
         action=start.action,
+        status=status,
+        messages=messages,
     )
 
 

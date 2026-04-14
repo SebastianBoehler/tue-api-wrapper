@@ -1,20 +1,21 @@
 from __future__ import annotations
 
 import re
-import unicodedata
 from typing import TYPE_CHECKING
 
 from .alma_course_search_client import search_courses
 from .alma_course_search_models import AlmaCourseSearchResult
 from .alma_detail_client import fetch_public_module_detail
 from .config import AlmaError, AlmaParseError
-from .course_identifier import extract_course_identifiers, identifier_search_terms, normalize_course_identifier
+from .course_identifier import extract_course_identifiers, identifier_search_terms
+from .course_matching import dedupe_query_specs, normalize_text, score_course_candidate
 from .course_detail_models import (
     CourseDetailLookupQuery,
     CourseRegistrationHint,
     RelatedIliasResult,
     UnifiedCourseDetail,
 )
+from .course_portal_status import build_course_portal_statuses
 from .ilias_feature_client import search_ilias
 from .ilias_feature_models import IliasSearchResult
 from .models import AlmaModuleDetail
@@ -22,13 +23,13 @@ from .models import AlmaModuleDetail
 if TYPE_CHECKING:
     from .client import AlmaClient
     from .ilias_client import IliasClient
+    from .moodle_client import MoodleClient
 
 
 REGISTRATION_SIGNAL_RE = re.compile(
     r"\b(ilias|anmeld\w*|registr\w*|einschreib\w*|beleg\w*|enrol\w*|sign\s*up)\b",
     re.IGNORECASE,
 )
-STOPWORDS = {"and", "das", "der", "die", "ein", "eine", "for", "mit", "the", "und", "von"}
 ILIAS_COURSE_CONTENT_TYPES = ("crs", "grp", "cat")
 
 
@@ -55,7 +56,7 @@ def resolve_alma_course_detail(
     exact_matches = tuple(
         result
         for result in candidates
-        if _normalize_text(result.title) == _normalize_text(normalized_title)
+        if normalize_text(result.title) == normalize_text(normalized_title)
     )
     selected = _single_or_none(exact_matches) or _single_or_none(candidates)
     if selected is None:
@@ -74,6 +75,10 @@ def build_unified_course_detail(
     ilias_client: "IliasClient | None" = None,
     ilias_error: str | None = None,
     ilias_limit: int = 8,
+    alma_client: "AlmaClient | None" = None,
+    alma_error: str | None = None,
+    moodle_client: "MoodleClient | None" = None,
+    moodle_error: str | None = None,
 ) -> UnifiedCourseDetail:
     lookup_queries: list[CourseDetailLookupQuery] = []
     related: dict[str, RelatedIliasResult] = {}
@@ -126,6 +131,16 @@ def build_unified_course_detail(
         ilias_results=ranked,
         lookup_queries=tuple(lookup_queries),
         registration_hints=_extract_registration_hints(detail),
+        portal_statuses=build_course_portal_statuses(
+            detail,
+            alma_client=alma_client,
+            alma_error=alma_error,
+            ilias_client=ilias_client,
+            ilias_error=ilias_error,
+            ilias_results=ranked,
+            moodle_client=moodle_client,
+            moodle_error=moodle_error,
+        ),
         ilias_error=ilias_error,
     )
 
@@ -178,20 +193,11 @@ def _build_identifier_query_specs(detail: AlmaModuleDetail) -> tuple[tuple[str, 
     for identifier in identifiers:
         for term in identifier_search_terms(identifier):
             specs.append((term, "Alma module or event number"))
-    return _dedupe_query_specs(specs)
+    return dedupe_query_specs(specs)
 
 
 def _build_title_query_specs(detail: AlmaModuleDetail) -> tuple[tuple[str, str], ...]:
-    return _dedupe_query_specs([(detail.title, "Alma title")] if detail.title else [])
-
-
-def _dedupe_query_specs(specs: list[tuple[str, str]]) -> tuple[tuple[str, str], ...]:
-    unique: dict[str, tuple[str, str]] = {}
-    for query, reason in specs:
-        normalized = _normalize_text(query)
-        if normalized and normalized not in unique:
-            unique[normalized] = (query, reason)
-    return tuple(unique.values())
+    return dedupe_query_specs([(detail.title, "Alma title")] if detail.title else [])
 
 
 def _score_ilias_result(
@@ -199,56 +205,24 @@ def _score_ilias_result(
     result: IliasSearchResult,
     query: str,
 ) -> RelatedIliasResult:
-    haystack = _normalize_text(
-        " ".join(
-            (
-                result.title,
-                result.description or "",
-                " ".join(result.breadcrumbs),
-                " ".join(result.properties),
-                result.item_type or "",
-            )
-        )
+    match = score_course_candidate(
+        detail,
+        title=result.title,
+        text_parts=(
+            result.description or "",
+            " ".join(result.breadcrumbs),
+            " ".join(result.properties),
+            result.item_type or "",
+        ),
+        query=query,
     )
-    title = _normalize_text(detail.title)
-    number = detail.number or ""
-    detail_identifiers = extract_course_identifiers(number, detail.title)
-    normalized_numbers = tuple(normalize_course_identifier(identifier) for identifier in detail_identifiers)
-    identifier_text = normalize_course_identifier(haystack)
-    score = 0
-    reasons: list[str] = []
-    matched_identifier = None
-
-    if match := next((identifier for identifier in normalized_numbers if identifier and identifier in identifier_text), None):
-        score += 100
-        matched_identifier = next(
-            identifier for identifier in detail_identifiers if normalize_course_identifier(identifier) == match
-        )
-        reasons.append(f"shared Alma number {matched_identifier}")
-
-    result_title = _normalize_text(result.title)
-    if title and title == result_title:
-        score += 80
-        reasons.append("same title")
-    elif title and title in haystack:
-        score += 55
-        reasons.append("title appears in ILIAS")
-
-    overlap = sorted(_tokens(title) & _tokens(haystack))
-    if overlap:
-        score += min(30, len(overlap) * 6)
-        if not reasons:
-            reasons.append("title word overlap")
-
-    if not reasons:
-        reasons.append(f"matched search query '{query}'")
 
     return RelatedIliasResult(
         result=result,
         match_query=query,
-        match_reason=", ".join(reasons),
-        score=score,
-        matched_identifier=matched_identifier,
+        match_reason=match.reason_text,
+        score=match.score,
+        matched_identifier=match.matched_identifier,
     )
 
 
@@ -274,15 +248,3 @@ def _single_or_none(results: tuple[AlmaCourseSearchResult, ...]) -> AlmaCourseSe
 
 def _dedupe_key(result: IliasSearchResult) -> str:
     return result.info_url or result.url or "::".join((result.title, *result.breadcrumbs))
-
-
-def _normalize_text(value: str) -> str:
-    return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
-
-
-def _tokens(value: str) -> set[str]:
-    return {
-        token
-        for token in re.findall(r"[\wäöüß]+", value.casefold())
-        if len(token) >= 4 and token not in STOPWORDS
-    }

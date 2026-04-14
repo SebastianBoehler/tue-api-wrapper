@@ -32,9 +32,23 @@ class RelatedIliasResult:
 
 
 @dataclass(frozen=True)
+class CoursePortalStatus:
+    portal: str
+    status: str
+    signed_up: bool | None
+    title: str | None
+    url: str | None
+    match_reason: str | None
+    score: int | None
+    message: str | None = None
+    error: str | None = None
+
+
+@dataclass(frozen=True)
 class UnifiedCourseDetail:
     alma: AlmaModuleDetail
     ilias_results: tuple[RelatedIliasResult, ...]
     lookup_queries: tuple[CourseDetailLookupQuery, ...]
     registration_hints: tuple[CourseRegistrationHint, ...]
+    portal_statuses: tuple[CoursePortalStatus, ...]
     ilias_error: str | None

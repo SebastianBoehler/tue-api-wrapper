@@ -17,6 +17,14 @@ from tue_api_wrapper.ilias_feature_models import IliasSearchResult
 from tue_api_wrapper.models import AlmaDetailField, AlmaDetailSection, AlmaModuleDetail
 
 
+class _FakeIliasClient:
+    def __init__(self, memberships=()) -> None:
+        self._memberships = memberships
+
+    def fetch_membership_overview(self):
+        return self._memberships
+
+
 class ExtendedContractTests(unittest.TestCase):
     def test_course_detail_bundle_ranks_ilias_result_by_shared_number(self) -> None:
         detail = AlmaModuleDetail(
@@ -54,7 +62,10 @@ class ExtendedContractTests(unittest.TestCase):
             "tue_api_wrapper.course_detail_linking.search_ilias",
             return_value=SimpleNamespace(results=(ilias_result,)),
         ) as search_mock:
-            bundle = build_unified_course_detail(detail, ilias_client=object())
+            bundle = build_unified_course_detail(
+                detail,
+                ilias_client=_FakeIliasClient(memberships=()),
+            )
 
         self.assertEqual(bundle.lookup_queries[0].query, "INF-4201")
         self.assertEqual(search_mock.call_count, 1)
@@ -63,6 +74,8 @@ class ExtendedContractTests(unittest.TestCase):
         self.assertEqual(bundle.ilias_results[0].matched_identifier, "INF-4201")
         self.assertIn("shared Alma number", bundle.ilias_results[0].match_reason)
         self.assertEqual(bundle.registration_hints[0].source, "alma")
+        self.assertEqual(bundle.portal_statuses[1].portal, "ilias")
+        self.assertFalse(bundle.portal_statuses[1].signed_up)
 
     def test_course_detail_bundle_uses_title_fallback_after_identifier_miss(self) -> None:
         detail = AlmaModuleDetail(
@@ -95,7 +108,7 @@ class ExtendedContractTests(unittest.TestCase):
                 SimpleNamespace(results=(ilias_result,)),
             ),
         ) as search_mock:
-            bundle = build_unified_course_detail(detail, ilias_client=object())
+            bundle = build_unified_course_detail(detail, ilias_client=_FakeIliasClient())
 
         self.assertEqual(
             [call.kwargs["term"] for call in search_mock.call_args_list],
@@ -103,6 +116,7 @@ class ExtendedContractTests(unittest.TestCase):
         )
         self.assertEqual(bundle.lookup_queries[-1].reason, "Alma title")
         self.assertEqual(bundle.ilias_results[0].match_query, "Statistical Machine Learning")
+        self.assertEqual(bundle.portal_statuses[1].status, "found_not_joined")
 
     def test_course_identifier_variants_cover_common_alma_and_ilias_formats(self) -> None:
         self.assertEqual(extract_course_identifiers("Data Literacy (ML 4102)"), ("ML 4102",))
@@ -129,6 +143,7 @@ class ExtendedContractTests(unittest.TestCase):
         self.assertEqual(bundle.alma.title, "Computer Graphics")
         self.assertEqual(bundle.ilias_results, ())
         self.assertIsNotNone(bundle.lookup_queries[0].error)
+        self.assertEqual(bundle.portal_statuses[1].status, "error")
 
     def test_extract_ilias_search_form(self) -> None:
         html = """

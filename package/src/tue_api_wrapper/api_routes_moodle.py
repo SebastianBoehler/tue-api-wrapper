@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Form, Query
 
-from .config import AlmaError, AlmaParseError
-from .credentials import read_uni_credentials
+from .config import AlmaError
+from .moodle_auth import build_moodle_client
 from .moodle_client import MoodleClient
 from .portal_service import serialize
 
@@ -11,15 +11,7 @@ router = APIRouter()
 
 
 def _moodle_client() -> MoodleClient:
-    username, password = read_uni_credentials()
-    if not username or not password:
-        raise AlmaParseError(
-            "Set UNI_USERNAME and UNI_PASSWORD before using authenticated Moodle endpoints. "
-            "Legacy ALMA_* and ILIAS_* env vars are still supported as fallbacks."
-        )
-    client = MoodleClient()
-    client.login(username=username, password=password)
-    return client
+    return build_moodle_client()
 
 
 def _translate_error(error: AlmaError):

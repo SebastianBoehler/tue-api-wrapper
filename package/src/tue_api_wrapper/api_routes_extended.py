@@ -18,6 +18,7 @@ from .client import AlmaClient
 from .config import AlmaError
 from .course_detail_linking import build_unified_course_detail, resolve_alma_course_detail
 from .ilias_feature_client import fetch_ilias_info_page, fetch_ilias_search_filters, search_ilias
+from .moodle_auth import build_moodle_client
 from .portal_service import PortalService, serialize
 
 router = APIRouter()
@@ -61,12 +62,17 @@ def unified_course_detail(
     ilias_limit: int = Query(8, ge=1, le=20),
 ) -> dict[str, object]:
     try:
+        authenticated_alma = None
+        alma_error = None
+        if not url.strip():
+            authenticated_alma = _alma_client()
+
         detail = resolve_alma_course_detail(
             AlmaClient(),
             detail_url=url,
             title=title,
             term=term.strip() or None,
-            search_client=_alma_client() if not url.strip() else None,
+            search_client=authenticated_alma if not url.strip() else None,
         )
         ilias_client = None
         ilias_error = None
@@ -74,6 +80,17 @@ def unified_course_detail(
             ilias_client = _ilias_client()
         except AlmaError as error:
             ilias_error = str(error)
+        if authenticated_alma is None:
+            try:
+                authenticated_alma = _alma_client()
+            except AlmaError as error:
+                alma_error = str(error)
+        moodle_client = None
+        moodle_error = None
+        try:
+            moodle_client = build_moodle_client()
+        except AlmaError as error:
+            moodle_error = str(error)
 
         return serialize(
             build_unified_course_detail(
@@ -81,6 +98,10 @@ def unified_course_detail(
                 ilias_client=ilias_client,
                 ilias_error=ilias_error,
                 ilias_limit=ilias_limit,
+                alma_client=authenticated_alma,
+                alma_error=alma_error,
+                moodle_client=moodle_client,
+                moodle_error=moodle_error,
             )
         )
     except AlmaError as error:

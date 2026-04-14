@@ -17,6 +17,8 @@ class AlmaCourseRegistrationSupport:
     number: str | None
     supported: bool
     action: str | None
+    status: str | None = None
+    messages: tuple[str, ...] = ()
     message: str | None = None
 
 

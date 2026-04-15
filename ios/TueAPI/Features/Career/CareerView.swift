@@ -77,7 +77,7 @@ struct CareerView: View {
         case .idle:
             StatusBanner(
                 title: "Backend required",
-                message: "Add the FastAPI backend URL in Settings to browse Praxisportal listings.",
+                message: "The bundled backend URL is required to browse Praxisportal listings.",
                 systemImage: "server.rack"
             )
         case .loading:
@@ -91,7 +91,7 @@ struct CareerView: View {
         case .unavailable:
             StatusBanner(
                 title: "Backend unavailable",
-                message: "Add the FastAPI backend URL in Settings before using Career.",
+                message: "The bundled backend URL is not available in this build.",
                 systemImage: "exclamationmark.triangle"
             )
         case .failed(let message):

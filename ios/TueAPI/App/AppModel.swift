@@ -31,10 +31,9 @@ final class AppModel {
             UserDefaults.standard.set(baseURLString, forKey: Self.baseURLKey)
         }
     }
+
     var portalAPIBaseURLString: String {
-        didSet {
-            UserDefaults.standard.set(portalAPIBaseURLString, forKey: Self.portalAPIBaseURLKey)
-        }
+        AppConfig.portalAPIBaseURLString
     }
 
     // Tasks & deadlines from the FastAPI backend
@@ -44,7 +43,6 @@ final class AppModel {
 
     private let keychain = KeychainCredentialsStore()
     private static let baseURLKey = "almaBaseURL"
-    private static let portalAPIBaseURLKey = "portalAPIBaseURL"
     private static let remindersEnabledKey = "lectureRemindersEnabled"
     private static let reminderLeadTimeKey = "lectureReminderLeadTimeMinutes"
 
@@ -59,7 +57,6 @@ final class AppModel {
 
     init() {
         self.baseURLString = UserDefaults.standard.string(forKey: Self.baseURLKey) ?? "https://alma.uni-tuebingen.de"
-        self.portalAPIBaseURLString = UserDefaults.standard.string(forKey: Self.portalAPIBaseURLKey) ?? ""
         let cachedSnapshot = UpcomingLectureCache.load()
         self.events = Self.upcomingOnly(cachedSnapshot?.events ?? [])
         self.semesterCredits = cachedSnapshot?.semesterCredits

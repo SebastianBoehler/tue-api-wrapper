@@ -101,7 +101,7 @@ struct MailMessageDetailView: View {
 
     private func load() async {
         guard let client = BackendClient(baseURLString: model.portalAPIBaseURLString) else {
-            phase = .failed("Add the FastAPI backend URL in Settings before reading mail.")
+            phase = .failed("The bundled backend URL is required before reading mail.")
             return
         }
 

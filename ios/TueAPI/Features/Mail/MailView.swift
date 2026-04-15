@@ -80,7 +80,7 @@ struct MailView: View {
         case .idle:
             StatusBanner(
                 title: "Backend required",
-                message: "Add the FastAPI backend URL in Settings to read your university mailbox.",
+                message: "The bundled backend URL is required to read mail through the shared backend.",
                 systemImage: "server.rack"
             )
         case .loading:
@@ -94,7 +94,7 @@ struct MailView: View {
         case .unavailable:
             StatusBanner(
                 title: "Backend unavailable",
-                message: "Add the FastAPI backend URL in Settings before reading mail.",
+                message: "The bundled backend URL is not available in this build.",
                 systemImage: "exclamationmark.triangle"
             )
         case .failed(let message):
@@ -130,7 +130,7 @@ struct MailView: View {
                 ContentUnavailableView(
                     "Mail not loaded",
                     systemImage: "envelope",
-                    description: Text("Refresh after setting the FastAPI backend URL.")
+                    description: Text("Refresh after the backend is available.")
                 )
             }
         }

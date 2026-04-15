@@ -117,7 +117,7 @@ struct CareerProjectDetailView: View {
 
     private func load() async {
         guard let client = BackendClient(baseURLString: model.portalAPIBaseURLString) else {
-            phase = .failed("Add the FastAPI backend URL in Settings before opening Praxisportal listings.")
+            phase = .failed("The bundled backend URL is required before opening Praxisportal listings.")
             return
         }
 

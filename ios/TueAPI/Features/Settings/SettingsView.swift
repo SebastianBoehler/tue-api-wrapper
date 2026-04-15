@@ -48,17 +48,6 @@ struct SettingsView: View {
                 Text("Default: https://alma.uni-tuebingen.de. Timetable refreshes still call Alma directly.")
             }
 
-            Section {
-                TextField("Backend URL", text: $model.portalAPIBaseURLString)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .keyboardType(.URL)
-            } header: {
-                Text("Portal status")
-            } footer: {
-                Text("Optional FastAPI base URL for course detail signup status and confirmed actions across Alma, ILIAS, and Moodle.")
-            }
-
             Section("Widget cache") {
                 Text("Upcoming lectures are cached in the app group after each refresh.")
                 Text(AppGroup.identifier)

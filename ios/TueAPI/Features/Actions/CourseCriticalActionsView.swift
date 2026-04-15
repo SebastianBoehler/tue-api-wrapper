@@ -63,7 +63,7 @@ struct CourseCriticalActionsView: View {
             return
         }
         guard let client = BackendClient(baseURLString: model.portalAPIBaseURLString) else {
-            phase = .failed("Add the FastAPI backend URL in Settings before preparing critical actions.")
+            phase = .failed("The bundled backend URL is required before preparing critical actions.")
             return
         }
 
@@ -98,7 +98,7 @@ struct CourseCriticalActionsView: View {
 
     private func submit(_ intent: CriticalActionIntent) async {
         guard let client = BackendClient(baseURLString: model.portalAPIBaseURLString) else {
-            actionError = "Add the FastAPI backend URL in Settings before submitting critical actions."
+            actionError = "The bundled backend URL is required before submitting critical actions."
             return
         }
         guard intent.kind == .almaCourseRegistration, let targetURL = intent.targetURL else {

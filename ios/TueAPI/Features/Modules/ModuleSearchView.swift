@@ -81,7 +81,7 @@ struct ModuleSearchView: View {
         case .idle:
             StatusBanner(
                 title: "Backend required",
-                message: "Add the FastAPI backend URL in Settings to search Alma module descriptions.",
+                message: "The bundled backend URL is required to search Alma module descriptions.",
                 systemImage: "server.rack"
             )
         case .loading:
@@ -95,7 +95,7 @@ struct ModuleSearchView: View {
         case .unavailable:
             StatusBanner(
                 title: "Backend unavailable",
-                message: "Add the FastAPI backend URL in Settings before using module search.",
+                message: "The bundled backend URL is not available in this build.",
                 systemImage: "exclamationmark.triangle"
             )
         case .failed(let message):

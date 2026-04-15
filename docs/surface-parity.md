@@ -31,7 +31,7 @@ Status legend:
 | ILIAS learning-space detail | full | full | full | none | proposed | partial | full |
 | ILIAS info screen | full | none | proposed | none | proposed | none | full |
 | ILIAS favorites / waitlist actions | full | partial | proposed | none | proposed | none | partial |
-| Mail inbox / message detail | full | full | full | partial | proposed | none | full |
+| Mail inbox / message detail | full | full | full | partial | full | none | full |
 | Moodle dashboard and detail routes | full | full | proposed | partial | partial | none | full |
 | Moodle enrolment action | full | partial | proposed | none | proposed | none | none |
 | Campus buildings / canteens | full | full | proposed | none | partial | none | full |
@@ -52,12 +52,12 @@ Status legend:
 
 ## Recommended Parity Work
 
-1. Bring mail and documents to iOS first. These are high-value mobile use cases and can start read-only: mailboxes, inbox filters, message detail, study-service summary, current PDF, and report list.
+1. Bring study-service documents to iOS next. These are high-value mobile use cases and can start read-only: study-service summary, current PDF, and report list.
 2. Bring full Moodle to iOS and ChatGPT. iOS currently only consumes Moodle deadlines, while web already has dashboard, calendar, courses, grades, messages, notifications, and course detail.
 3. Bring TIMMS archive, Praxisportal, and richer campus data to iOS, ChatGPT, and desktop. These are mostly public/product-style flows and already have backend contracts.
 4. Bring iOS-native utility back to web and desktop: lecture reminders, map navigation, and schedule notification workflows.
 5. Add a global command/search surface to web and desktop that reuses the existing unified Alma/ILIAS search/fetch backend.
-6. Add critical action flows with explicit confirmation UI before mutation. Start with web, then ChatGPT and iOS.
+6. Add critical action flows with explicit confirmation UI before mutation. Continue expanding from Alma registration to Moodle enrolment and ILIAS waitlist/favorites.
 
 ## Critical Action Flow Policy
 

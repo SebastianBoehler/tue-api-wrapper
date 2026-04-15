@@ -34,6 +34,13 @@ struct AppView: View {
             }
 
             NavigationStack {
+                MailView(model: model)
+            }
+            .tabItem {
+                Label("Mail", systemImage: "envelope")
+            }
+
+            NavigationStack {
                 CampusMapView()
             }
             .tabItem {

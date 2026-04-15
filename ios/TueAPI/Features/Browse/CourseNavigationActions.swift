@@ -86,6 +86,10 @@ private struct CampusLectureDestinationResolver {
     private let geocoder = CLGeocoder()
 
     func resolve(_ location: String) async throws -> CampusLectureDestination {
+        if let known = CampusLandmark.navigationMatch(for: location) {
+            return CampusLectureDestination(name: known.name, coordinate: known.coordinate)
+        }
+
         for query in queries(for: location) {
             let placemarks = try await geocoder.geocodeAddressString(query)
             if let match = placemarks.first(where: \.isNearTuebingenCampus),

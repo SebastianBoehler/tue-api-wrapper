@@ -1,4 +1,5 @@
 import "./styles.css";
+import { isCriticalActionView, renderActionTemplate } from "./action-confirmation-render.js";
 import { isModuleDetail, renderModuleDetailTemplate } from "./module-detail-render.js";
 import type {
   AgendaItem,
@@ -7,7 +8,8 @@ import type {
   DashboardPayload,
   IliasMembershipItem,
   IliasTaskItem,
-  ModuleDetail
+  ModuleDetail,
+  CriticalActionView
 } from "../../src/types.js";
 
 type WidgetResult =
@@ -27,6 +29,7 @@ type WidgetResult =
       view: "error";
       message: string;
     }
+  | CriticalActionView
   | ModuleDetail
   | null;
 type WidgetViewResult = Exclude<WidgetResult, ModuleDetail | null>;
@@ -101,6 +104,7 @@ declare global {
     openai?: {
       toolInput?: Record<string, unknown>;
       toolOutput?: WidgetResult;
+      toolResponseMetadata?: Record<string, unknown>;
       widgetState?: PersistedWidgetState;
       setWidgetState?: (state: PersistedWidgetState) => void;
       callTool?: <T = unknown>(name: string, args?: Record<string, unknown>) => Promise<ToolCallResult<T>>;
@@ -122,6 +126,7 @@ declare global {
 
 const detailWidgetUri = "ui://study-hub/detail-v1.html";
 const isDetailTemplate = document.body.dataset.template === "detail";
+const isActionTemplate = document.body.dataset.template === "action";
 
 const state: WidgetState = {
   result: window.openai?.toolOutput ?? null,
@@ -1090,6 +1095,11 @@ function render(result: WidgetResult) {
     return;
   }
 
+  if (isActionTemplate) {
+    renderActionTemplate(root, isCriticalActionView(result) ? result : null, window.openai?.toolResponseMetadata, escapeHtml);
+    return;
+  }
+
   if (!result) {
     root.innerHTML = `
       <div class="widget-empty">
@@ -1112,6 +1122,8 @@ function render(result: WidgetResult) {
         ? renderDocuments(result.documents)
         : result.view === "error"
           ? renderError(result.message)
+          : isCriticalActionView(result)
+            ? renderError("Open this action from its confirmation UI.")
           : result.view === "course-detail"
             ? renderModuleDetailTemplate(result.detail, escapeHtml)
             : renderAppShell(renderPanel());

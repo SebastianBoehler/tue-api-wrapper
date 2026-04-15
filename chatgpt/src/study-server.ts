@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { registerWidgetResources } from "./widget-resources.js";
+import { registerActionTools } from "./tools/action-tools.js";
 import { registerCourseTools } from "./tools/course-tools.js";
 import { registerIliasTools } from "./tools/ilias-tools.js";
 import { registerMailTools } from "./tools/mail-tools.js";
@@ -20,6 +21,7 @@ export function createAppServer() {
   registerIliasTools(server);
   registerMailTools(server);
   registerWidgetTools(server);
+  registerActionTools(server);
 
   return server;
 }

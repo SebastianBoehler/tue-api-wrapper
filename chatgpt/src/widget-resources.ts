@@ -18,8 +18,9 @@ const apiBaseUrl = process.env.PORTAL_API_BASE_URL;
 
 export const widgetUri = "ui://study-hub/dashboard-v1.html";
 export const detailWidgetUri = "ui://study-hub/detail-v1.html";
+export const actionWidgetUri = "ui://study-hub/action-v1.html";
 
-function buildWidgetHtml(template: "dashboard" | "detail") {
+function buildWidgetHtml(template: "dashboard" | "detail" | "action") {
   const meta: Record<string, unknown> = {
     ui: {
       prefersBorder: true,
@@ -31,7 +32,9 @@ function buildWidgetHtml(template: "dashboard" | "detail") {
     "openai/widgetDescription":
       template === "detail"
         ? "Shows a host modal with focused details for a selected study item."
-        : "Shows an interactive study dashboard with upcoming Alma events, open ILIAS tasks, exam progress, documents, and learning spaces.",
+        : template === "action"
+          ? "Shows a human confirmation screen for a prepared critical university action with Proceed and Cancel controls."
+          : "Shows an interactive study dashboard with upcoming Alma events, open ILIAS tasks, exam progress, documents, and learning spaces.",
   };
 
   if (widgetDomain) {
@@ -44,7 +47,7 @@ function buildWidgetHtml(template: "dashboard" | "detail") {
   return {
     contents: [
       {
-        uri: template === "detail" ? detailWidgetUri : widgetUri,
+        uri: template === "detail" ? detailWidgetUri : template === "action" ? actionWidgetUri : widgetUri,
         mimeType: RESOURCE_MIME_TYPE,
         text: `<!doctype html>
 <html lang="en">
@@ -78,5 +81,12 @@ export function registerWidgetResources(server: McpServer) {
     detailWidgetUri,
     {},
     async () => buildWidgetHtml("detail"),
+  );
+  registerAppResource(
+    server,
+    "study-hub-action-widget",
+    actionWidgetUri,
+    {},
+    async () => buildWidgetHtml("action"),
   );
 }

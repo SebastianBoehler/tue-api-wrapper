@@ -56,7 +56,7 @@ struct SettingsView: View {
             } header: {
                 Text("Portal status")
             } footer: {
-                Text("Optional FastAPI base URL for course detail signup status across Alma, ILIAS, and Moodle.")
+                Text("Optional FastAPI base URL for course detail signup status and confirmed actions across Alma, ILIAS, and Moodle.")
             }
 
             Section("Widget cache") {

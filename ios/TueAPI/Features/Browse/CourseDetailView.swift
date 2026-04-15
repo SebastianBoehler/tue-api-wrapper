@@ -39,6 +39,8 @@ struct CourseDetailView: View {
                 portalStatusContent
             }
 
+            CourseCriticalActionsView(model: model, course: course)
+
             if course.location?.nilIfEmpty != nil {
                 Section("Quick navigation") {
                     CourseNavigationActions(course: course)

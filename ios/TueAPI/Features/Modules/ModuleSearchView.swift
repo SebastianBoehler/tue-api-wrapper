@@ -8,6 +8,7 @@ struct ModuleSearchView: View {
     @State private var response: ModuleSearchResponse?
     @State private var request = ModuleSearchRequest()
     @State private var phase: ModuleSearchPhase = .idle
+    @FocusState private var isQueryFocused: Bool
 
     var body: some View {
         List {
@@ -19,6 +20,9 @@ struct ModuleSearchView: View {
                 TextField("Machine learning, ethics, statistics", text: $request.query)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                    .submitLabel(.search)
+                    .focused($isQueryFocused)
+                    .onSubmit(submitSearch)
 
                 filterPicker("Degree", selection: $request.degree, options: filters?.degrees ?? [])
                 filterPicker("Subject", selection: $request.subject, options: filters?.subjects ?? [])
@@ -27,9 +31,7 @@ struct ModuleSearchView: View {
                 filterPicker("Faculty", selection: $request.faculty, options: filters?.faculties ?? [])
 
                 HStack {
-                    Button {
-                        Task { await search() }
-                    } label: {
+                    Button(action: submitSearch) {
                         Label("Search modules", systemImage: "magnifyingglass")
                     }
                     .disabled(!canSearch)
@@ -88,8 +90,8 @@ struct ModuleSearchView: View {
             ProgressView("Loading Alma module data")
         case .loaded(let returned, let total):
             StatusBanner(
-                title: returned == 0 ? "Filters loaded" : "\(returned) modules",
-                message: statusMessage(returned: returned, total: total),
+                title: statusTitle(returned: returned, hasSearchResponse: response != nil),
+                message: statusMessage(returned: returned, total: total, hasSearchResponse: response != nil),
                 systemImage: "checkmark.circle"
             )
         case .unavailable:
@@ -106,7 +108,11 @@ struct ModuleSearchView: View {
     @ViewBuilder
     private var resultsContent: some View {
         if let response, response.results.isEmpty {
-            ContentUnavailableView.search(text: request.query)
+            ContentUnavailableView(
+                "No modules found",
+                systemImage: "magnifyingglass",
+                description: Text("Try a broader search term or fewer filters.")
+            )
         } else if let response {
             if response.truncated {
                 Text("Narrow the filters to see all matches.")
@@ -126,6 +132,12 @@ struct ModuleSearchView: View {
                 description: Text("Choose a degree, subject, course type, language, faculty, or enter a search term.")
             )
         }
+    }
+
+    private func submitSearch() {
+        guard canSearch else { return }
+        isQueryFocused = false
+        Task { await search() }
     }
 
     private func filterPicker(
@@ -182,9 +194,19 @@ struct ModuleSearchView: View {
         }
     }
 
-    private func statusMessage(returned: Int, total: Int?) -> String {
-        if returned == 0 {
+    private func statusTitle(returned: Int, hasSearchResponse: Bool) -> String {
+        if !hasSearchResponse {
+            return "Filters loaded"
+        }
+        return returned == 0 ? "No modules" : "\(returned) modules"
+    }
+
+    private func statusMessage(returned: Int, total: Int?, hasSearchResponse: Bool) -> String {
+        if !hasSearchResponse {
             return "Public Alma module filters are ready, including degrees, subjects, course types, languages, and faculties."
+        }
+        if returned == 0 {
+            return "No public Alma module-description matches for these criteria."
         }
         if let total {
             return "Showing \(returned) of \(total) public Alma module-description matches."

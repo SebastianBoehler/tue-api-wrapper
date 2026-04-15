@@ -35,7 +35,7 @@ Status legend:
 | Moodle dashboard and detail routes | full | full | proposed | partial | partial | none | full |
 | Moodle enrolment action | full | partial | proposed | none | proposed | none | none |
 | Campus buildings / canteens | full | full | proposed | none | partial | none | full |
-| Career / Praxisportal | full | full | proposed | none | proposed | none | full |
+| Career / Praxisportal | full | full | proposed | none | full | none | full |
 | TIMMS archive | full | full | proposed | none | proposed | none | full |
 | Talks calendar | full | full | partial | partial | full | none | partial |
 | Native reminders / widgets / live activities | none | proposed | none | proposed | full | none | none |
@@ -54,7 +54,7 @@ Status legend:
 
 1. Bring study-service documents to iOS next. These are high-value mobile use cases and can start read-only: study-service summary, current PDF, and report list.
 2. Bring full Moodle to iOS and ChatGPT. iOS currently only consumes Moodle deadlines, while web already has dashboard, calendar, courses, grades, messages, notifications, and course detail.
-3. Bring TIMMS archive, Praxisportal, and richer campus data to iOS, ChatGPT, and desktop. These are mostly public/product-style flows and already have backend contracts.
+3. Bring TIMMS archive and richer campus data to iOS, ChatGPT, and desktop. These are mostly public/product-style flows and already have backend contracts.
 4. Bring iOS-native utility back to web and desktop: lecture reminders, map navigation, and schedule notification workflows.
 5. Add a global command/search surface to web and desktop that reuses the existing unified Alma/ILIAS search/fetch backend.
 6. Add critical action flows with explicit confirmation UI before mutation. Continue expanding from Alma registration to Moodle enrolment and ILIAS waitlist/favorites.

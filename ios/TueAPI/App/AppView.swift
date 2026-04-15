@@ -41,6 +41,13 @@ struct AppView: View {
             }
 
             NavigationStack {
+                CareerView(model: model)
+            }
+            .tabItem {
+                Label("Career", systemImage: "briefcase")
+            }
+
+            NavigationStack {
                 CampusMapView()
             }
             .tabItem {

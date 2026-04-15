@@ -8,6 +8,7 @@ struct ModuleSearchView: View {
     @State private var response: ModuleSearchResponse?
     @State private var request = ModuleSearchRequest()
     @State private var phase: ModuleSearchPhase = .idle
+    @State private var isSearching = false
     @FocusState private var isQueryFocused: Bool
 
     var body: some View {
@@ -32,7 +33,15 @@ struct ModuleSearchView: View {
 
                 HStack {
                     Button(action: submitSearch) {
-                        Label("Search modules", systemImage: "magnifyingglass")
+                        HStack(spacing: 8) {
+                            if isSearching {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else {
+                                Image(systemName: "magnifyingglass")
+                            }
+                            Text(isSearching ? "Searching modules" : "Search modules")
+                        }
                     }
                     .disabled(!canSearch)
 
@@ -41,9 +50,10 @@ struct ModuleSearchView: View {
                     Button("Reset") {
                         request = ModuleSearchRequest()
                         response = nil
+                        isSearching = false
                         phase = filters == nil ? .idle : .loaded(0, nil)
                     }
-                    .disabled(!request.hasCriteria && response == nil)
+                    .disabled(isSearching || (!request.hasCriteria && response == nil))
                 }
             }
 
@@ -87,7 +97,7 @@ struct ModuleSearchView: View {
                 systemImage: "server.rack"
             )
         case .loading:
-            ProgressView("Loading Alma module data")
+            ProgressView(isSearching ? "Searching Alma modules" : "Loading Alma module filters")
         case .loaded(let returned, let total):
             StatusBanner(
                 title: statusTitle(returned: returned, hasSearchResponse: response != nil),
@@ -107,7 +117,9 @@ struct ModuleSearchView: View {
 
     @ViewBuilder
     private var resultsContent: some View {
-        if let response, response.results.isEmpty {
+        if isSearching {
+            ProgressView("Searching public Alma module descriptions")
+        } else if let response, response.results.isEmpty {
             ContentUnavailableView(
                 "No modules found",
                 systemImage: "magnifyingglass",
@@ -184,6 +196,7 @@ struct ModuleSearchView: View {
         }
 
         phase = .loading
+        isSearching = true
         do {
             let payload = try await client.searchModules(request)
             response = payload
@@ -192,6 +205,7 @@ struct ModuleSearchView: View {
             response = nil
             phase = .failed(error.localizedDescription)
         }
+        isSearching = false
     }
 
     private func statusTitle(returned: Int, hasSearchResponse: Bool) -> String {

@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct MailMessageDetailView: View {
-    var model: AppModel
     var selection: MailMessageSelection
+
+    private let mailService = OnDeviceMailService()
 
     @State private var phase: MailDetailPhase = .loading
     @State private var detail: MailMessageDetail?
@@ -67,7 +68,7 @@ struct MailMessageDetailView: View {
                 ContentUnavailableView(
                     "No body text",
                     systemImage: "doc.text",
-                    description: Text("The backend did not return readable text for this message.")
+                    description: Text("The message did not include readable text.")
                 )
             }
         }
@@ -100,14 +101,9 @@ struct MailMessageDetailView: View {
     }
 
     private func load() async {
-        guard let client = BackendClient(baseURLString: model.portalAPIBaseURLString) else {
-            phase = .failed("The bundled backend URL is required before reading mail.")
-            return
-        }
-
         phase = .loading
         do {
-            detail = try await client.fetchMailMessage(uid: selection.uid, mailbox: selection.mailbox)
+            detail = try await mailService.fetchMailMessage(uid: selection.uid, mailbox: selection.mailbox)
             phase = .loaded
         } catch {
             phase = .failed(error.localizedDescription)

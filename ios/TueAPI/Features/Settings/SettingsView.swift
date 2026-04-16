@@ -32,7 +32,7 @@ struct SettingsView: View {
             Section {
                 StatusBanner(
                     title: model.hasCredentials ? "Credentials stored" : "Nothing stored",
-                    message: model.hasCredentials ? "The app can refresh Alma directly. Widgets only read cached lecture data." : "Credentials stay in this app's Keychain item.",
+                    message: model.hasCredentials ? "The app can refresh Alma and read mail directly. Widgets only read cached lecture data." : "Credentials stay in this app's Keychain item.",
                     systemImage: model.hasCredentials ? "lock.shield" : "lock"
                 )
             }

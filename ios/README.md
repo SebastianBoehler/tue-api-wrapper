@@ -2,7 +2,7 @@
 
 Native SwiftUI client for TUE API wrapper data.
 
-This target does not call the Next.js or FastAPI surfaces. It logs in to Alma directly, stores university credentials in Keychain from Settings, parses the Alma timetable iCalendar feed in Swift, browses public current lectures, caches upcoming lectures in an app group container, and exposes that cache through WidgetKit plus Live Activities.
+This target does not call the Next.js or FastAPI surfaces for native data flows. It logs in to Alma directly, reads Uni Tuebingen mail directly over TLS IMAP, stores university credentials in Keychain from Settings, parses the Alma timetable iCalendar feed in Swift, browses public current lectures, caches upcoming lectures in an app group container, and exposes that cache through WidgetKit plus Live Activities.
 
 ## Requirements
 

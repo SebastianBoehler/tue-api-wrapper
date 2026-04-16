@@ -4,7 +4,6 @@ enum MailLoadPhase: Equatable {
     case idle
     case loading
     case loaded(Date)
-    case unavailable
     case failed(String)
 
     var isLoading: Bool {

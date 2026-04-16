@@ -56,7 +56,7 @@ The upstream systems remain the source of truth. This repo focuses on cleaner ac
 - Alma: timetable export, current lectures, exam overview, portal messages feed refresh, study-service documents, study planner parsing, public module search, module detail fetching, and combined course detail bundles
 - ILIAS: root navigation, memberships, task overview, content parsing, forum topics, exercise assignments, authenticated search, info-page resolution, and related learning-space matching for course detail pages
 - Moodle: dashboard, calendar, courses, categories, grades, messages, and notifications
-- Mail: read-only mailbox, inbox, and message access over IMAP
+- Mail: read-only mailbox, inbox, and message access over IMAP through the backend, plus direct on-device IMAP in iOS
 - Shared delivery surfaces: Python package, FastAPI backend, Go CLI, Next.js dashboard, ChatGPT MCP app, Electron desktop shell, and native iOS app
 
 The repo is live-data oriented. When upstream authentication or university systems fail, the tools return explicit errors instead of mock data.
@@ -69,6 +69,7 @@ flowchart LR
     ILIAS["ILIAS"] --> Python
     Moodle["Moodle"] --> Python
     Mail["Uni mail"] --> Python
+    Mail --> iOS
     Python --> API["FastAPI backend and normalized JSON contracts"]
     API --> Web["Next.js dashboard"]
     API --> ChatGPT["ChatGPT app and MCP tools"]
@@ -95,7 +96,7 @@ Typical development flow:
 | Next.js app | Student-facing dashboard UI | `cd nextjs && npm run dev` |
 | ChatGPT app | MCP server plus widget-based study assistant | `cd chatgpt && npm run dev` |
 | Electron desktop app | Local desktop shell with encrypted credential storage and managed backend | `cd desktop && npm run dev` |
-| iOS app | Native Alma timetable client with Keychain credentials, WidgetKit widgets, and Live Activities | `npm run generate:ios` |
+| iOS app | Native Alma timetable and on-device mail client with Keychain credentials, WidgetKit widgets, and Live Activities | `npm run generate:ios` |
 
 ## Preview
 
@@ -176,7 +177,7 @@ Note for the current macOS toolchain in this repo: plain `go build` or `go run` 
 
 ### 5. Generate the iOS app
 
-The iOS workspace lives in [`ios/`](./ios/). It does not call the Next.js or FastAPI surfaces; it logs in to Alma directly, stores credentials in Keychain from Settings, parses the Alma timetable iCalendar feed in Swift, browses public current lectures, and caches upcoming lectures for WidgetKit widgets and Live Activities.
+The iOS workspace lives in [`ios/`](./ios/). It does not call the Next.js or FastAPI surfaces for native data flows; it logs in to Alma directly, reads Uni Tuebingen mail directly over TLS IMAP, stores credentials in Keychain from Settings, parses the Alma timetable iCalendar feed in Swift, browses public current lectures, and caches upcoming lectures for WidgetKit widgets and Live Activities.
 
 ```bash
 npm run generate:ios

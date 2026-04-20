@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Calendar,
+  CalendarDays,
   BookOpen,
   Clapperboard,
   Mic,
@@ -35,6 +36,7 @@ const groups: Array<{
       { href: "/agenda", label: "Agenda", icon: Calendar },
       { href: "/courses", label: "Courses", icon: BookOpen },
       { href: "/talks", label: "Talks", icon: Mic },
+      { href: "/events", label: "Events", icon: CalendarDays },
       { href: "/archive", label: "Archive", icon: Clapperboard },
       { href: "/career", label: "Career", icon: BriefcaseBusiness },
       { href: "/campus", label: "Campus", icon: Map },

@@ -9,12 +9,14 @@ import type {
   CareerProjectDetail,
   CareerSearchFilters,
   CareerSearchResponse,
+  KufTrainingOccupancy,
   Talk,
   TalksResponse,
   TimmsItemDetail,
   TimmsSearchResponse,
   TimmsStreamVariant,
-  TimmsTreeResponse
+  TimmsTreeResponse,
+  UniversityCalendarResponse
 } from "./product-types";
 
 async function fetchProductJson<T>(path: string): Promise<T> {
@@ -131,4 +133,19 @@ export function getCampusBuildings(): Promise<CampusBuildingDirectory> {
 export function getCampusBuildingDetail(path: string): Promise<CampusBuildingDetail> {
   const params = new URLSearchParams({ path });
   return fetchProductJson(`/api/campus/buildings/detail?${params.toString()}`);
+}
+
+export function getKufTrainingOccupancy(): Promise<KufTrainingOccupancy> {
+  return fetchProductJson("/api/campus/fitness/kuf");
+}
+
+export function getUniversityEvents(options: {
+  query?: string;
+  limit?: number;
+} = {}): Promise<UniversityCalendarResponse> {
+  const params = new URLSearchParams({ limit: String(options.limit ?? 50) });
+  if (options.query?.trim()) {
+    params.set("query", options.query.trim());
+  }
+  return fetchProductJson(`/api/campus/events?${params.toString()}`);
 }

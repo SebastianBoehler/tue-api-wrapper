@@ -213,3 +213,34 @@ export interface CampusBuildingDetail {
   longitude: number | null;
   source_url: string;
 }
+
+export interface KufTrainingOccupancy {
+  facility_id: string;
+  facility_name: string;
+  count: number;
+  source_url: string;
+  image_url: string;
+  retrieved_at: string;
+  refresh_after_seconds: number;
+}
+
+export interface UniversityCalendarEvent {
+  id: string;
+  title: string;
+  starts_at: string;
+  url: string | null;
+  speaker: string | null;
+  location: string | null;
+  description: string | null;
+  content_html: string | null;
+  categories: string[];
+}
+
+export interface UniversityCalendarResponse {
+  source_url: string;
+  feed_url: string;
+  query: string;
+  total_hits: number;
+  returned_hits: number;
+  items: UniversityCalendarEvent[];
+}

@@ -5,7 +5,8 @@ import { PortalApiError } from "../../lib/portal-api";
 import {
   getCampusBuildingDetail,
   getCampusBuildings,
-  getCampusCanteens
+  getCampusCanteens,
+  getKufTrainingOccupancy
 } from "../../lib/product-api";
 
 function parseOptionalInt(value?: string): number | null {
@@ -25,9 +26,10 @@ export default async function CampusPage({
   const selectedCanteenId = parseOptionalInt(params.canteenId);
 
   try {
-    const [canteens, directory] = await Promise.all([
+    const [canteens, directory, kufOccupancy] = await Promise.all([
       getCampusCanteens(),
-      getCampusBuildings()
+      getCampusBuildings(),
+      getKufTrainingOccupancy()
     ]);
     if (!canteens.length) {
       throw new PortalApiError("No active Tübingen canteen feeds were returned by the mealplan API.");
@@ -47,6 +49,7 @@ export default async function CampusPage({
           directory={directory}
           selectedBuilding={building}
           currentBuildingPath={selectedBuildingPath}
+          kufOccupancy={kufOccupancy}
         />
       </AppShell>
     );

@@ -6,9 +6,11 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import type {
   CampusBuildingDetail,
   CampusBuildingDirectory,
-  CampusCanteen
+  CampusCanteen,
+  KufTrainingOccupancy
 } from "../lib/product-types";
 import { CampusBuildingExplorer } from "./campus-building-explorer";
+import { KufOccupancyCard } from "./kuf-occupancy-card";
 
 function buildCampusHref(options: { canteenId?: string; buildingPath?: string }) {
   const params = new URLSearchParams();
@@ -26,13 +28,15 @@ export function CampusHub({
   selectedCanteen,
   directory,
   selectedBuilding,
-  currentBuildingPath
+  currentBuildingPath,
+  kufOccupancy
 }: {
   canteens: CampusCanteen[];
   selectedCanteen: CampusCanteen;
   directory: CampusBuildingDirectory;
   selectedBuilding: CampusBuildingDetail;
   currentBuildingPath: string;
+  kufOccupancy: KufTrainingOccupancy;
 }) {
   return (
     <>
@@ -81,6 +85,8 @@ export function CampusHub({
           </div>
         </CardContent>
       </Card>
+
+      <KufOccupancyCard occupancy={kufOccupancy} />
 
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
         <div className="flex flex-col gap-3">

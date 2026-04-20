@@ -25,9 +25,9 @@ enum BackendCredentialFeature {
     var unavailableMessage: String {
         switch self {
         case .deadlines:
-            "Backend credentials are missing. Set UNI_USERNAME and UNI_PASSWORD on the backend host to load tasks and deadlines."
+            "Legacy/dev backend credentials are missing. Set UNI_USERNAME and UNI_PASSWORD on the backend host to load tasks and deadlines."
         case .portalStatus:
-            "Backend credentials are missing. Set UNI_USERNAME and UNI_PASSWORD on the backend host to check signup status."
+            "Legacy/dev backend credentials are missing. Set UNI_USERNAME and UNI_PASSWORD on the backend host to check signup status."
         }
     }
 }
@@ -74,7 +74,8 @@ struct BackendClient {
 
     // MARK: - ILIAS
 
-    /// Fetches pending ILIAS tasks from `/api/ilias/tasks`.
+    /// Legacy/dev backend route for pending ILIAS tasks.
+    /// Production iOS task refresh uses `UniversityPortalClient` on-device.
     func fetchIliasTasks(limit: Int = 20) async throws -> [IliasTask] {
         let url = try makeURL(
             path: "api/ilias/tasks",
@@ -86,7 +87,8 @@ struct BackendClient {
 
     // MARK: - Moodle
 
-    /// Fetches upcoming Moodle calendar events from `/api/moodle/calendar`.
+    /// Legacy/dev backend route for Moodle calendar events.
+    /// Production iOS deadline refresh uses `UniversityPortalClient` on-device.
     func fetchMoodleCalendar(days: Int = 14, limit: Int = 30) async throws -> [MoodleDeadline] {
         let url = try makeURL(
             path: "api/moodle/calendar",

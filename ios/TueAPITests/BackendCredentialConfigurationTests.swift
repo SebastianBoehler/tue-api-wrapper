@@ -13,7 +13,7 @@ final class BackendCredentialConfigurationTests: XCTestCase {
 
         XCTAssertEqual(
             message,
-            "Backend credentials are missing. Set UNI_USERNAME and UNI_PASSWORD on the backend host to load tasks and deadlines."
+            "Legacy/dev backend credentials are missing. Set UNI_USERNAME and UNI_PASSWORD on the backend host to load tasks and deadlines."
         )
     }
 
@@ -26,7 +26,7 @@ final class BackendCredentialConfigurationTests: XCTestCase {
 
         XCTAssertEqual(
             message,
-            "Backend credentials are missing. Set UNI_USERNAME and UNI_PASSWORD on the backend host to check signup status."
+            "Legacy/dev backend credentials are missing. Set UNI_USERNAME and UNI_PASSWORD on the backend host to check signup status."
         )
     }
 

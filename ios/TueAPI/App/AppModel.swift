@@ -36,12 +36,12 @@ final class AppModel {
         AppConfig.portalAPIBaseURLString
     }
 
-    // Tasks & deadlines from the FastAPI backend
+    // Tasks and deadlines are fetched on-device with Keychain credentials.
     var tasks: [IliasTask] = []
     var deadlines: [MoodleDeadline] = []
     var tasksPhase: TasksLoadPhase = .idle
 
-    private let keychain = KeychainCredentialsStore()
+    let keychain = KeychainCredentialsStore()
     private static let baseURLKey = "almaBaseURL"
     private static let remindersEnabledKey = "lectureRemindersEnabled"
     private static let reminderLeadTimeKey = "lectureReminderLeadTimeMinutes"

@@ -63,7 +63,7 @@ struct CourseCriticalActionsView: View {
             return
         }
         guard let client = BackendClient(baseURLString: model.portalAPIBaseURLString) else {
-            phase = .failed("The bundled backend URL is required before preparing critical actions.")
+            phase = .failed("The legacy/dev backend URL is required before preparing critical actions.")
             return
         }
 
@@ -85,7 +85,7 @@ struct CourseCriticalActionsView: View {
                 sideEffects: [
                     "Submits a course-registration request for your signed-in university account.",
                     "Uses this Alma detail page as the registration target.",
-                    "If Alma exposes multiple registration paths, the backend stops and reports that a path must be selected."
+                    "If Alma exposes multiple registration paths, the legacy/dev backend stops and reports that a path must be selected."
                 ],
                 requiredInputs: support.status.map { ["Current Alma status: \($0)"] } ?? [],
                 confirmButtonTitle: "Proceed with registration"
@@ -98,7 +98,7 @@ struct CourseCriticalActionsView: View {
 
     private func submit(_ intent: CriticalActionIntent) async {
         guard let client = BackendClient(baseURLString: model.portalAPIBaseURLString) else {
-            actionError = "The bundled backend URL is required before submitting critical actions."
+            actionError = "The legacy/dev backend URL is required before submitting critical actions."
             return
         }
         guard intent.kind == .almaCourseRegistration, let targetURL = intent.targetURL else {

@@ -54,8 +54,8 @@ struct GradeOverviewView: View {
         switch phase {
         case .idle:
             StatusBanner(
-                title: "Backend required",
-                message: "Grades are loaded from the authenticated backend used by the web progress page.",
+                title: "Legacy backend required",
+                message: "Grades still use the legacy/dev authenticated backend until the on-device grade client is ported.",
                 systemImage: "server.rack"
             )
         case .loading:

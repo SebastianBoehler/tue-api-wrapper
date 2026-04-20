@@ -67,7 +67,7 @@ struct CriticalActionConfirmationSheet: View {
                     }
                     .disabled(isSubmitting)
                 } footer: {
-                    Text("Cancel leaves Alma, ILIAS, and Moodle unchanged. Proceed submits exactly this action to the backend.")
+                    Text("Cancel leaves Alma, ILIAS, and Moodle unchanged. Proceed submits this legacy/dev backend action.")
                 }
             }
             .navigationTitle("Confirm Action")

@@ -165,7 +165,7 @@ struct CourseDetailView: View {
     private func loadPortalStatuses() async {
         let backend = model.portalAPIBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !backend.isEmpty else {
-            portalStatusPhase = .unavailable("The bundled backend URL is required to check Alma, ILIAS, and Moodle.")
+            portalStatusPhase = .unavailable("The legacy/dev backend URL is required to check Alma, ILIAS, and Moodle status until this lookup is ported on-device.")
             return
         }
         guard let baseURL = URL(string: backend),

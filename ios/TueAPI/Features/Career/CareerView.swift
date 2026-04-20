@@ -161,11 +161,11 @@ struct CareerView: View {
         if response.totalPages > 1 {
             HStack {
                 Button {
-                    Task { await goToPage(request.page - 1) }
+                    Task { await goToPage(response.page - 1) }
                 } label: {
                     Label("Previous", systemImage: "chevron.left")
                 }
-                .disabled(request.page <= 0 || phase.isLoading)
+                .disabled(response.page <= 0 || phase.isLoading)
 
                 Spacer()
 
@@ -176,12 +176,13 @@ struct CareerView: View {
                 Spacer()
 
                 Button {
-                    Task { await goToPage(request.page + 1) }
+                    Task { await goToPage(response.page + 1) }
                 } label: {
                     Label("Next", systemImage: "chevron.right")
                 }
-                .disabled(request.page + 1 >= response.totalPages || phase.isLoading)
+                .disabled(response.page + 1 >= response.totalPages || phase.isLoading)
             }
+            .id(response.page)
         }
     }
 
@@ -203,7 +204,7 @@ struct CareerView: View {
             )
             let (fetchedFilters, fetchedResponse) = try await (filtersFetch, searchFetch)
             filters = fetchedFilters
-            response = fetchedResponse
+            applySearchResponse(fetchedResponse)
             phase = .loaded(Date())
         } catch {
             phase = .failed(error.localizedDescription)
@@ -221,13 +222,14 @@ struct CareerView: View {
 
         phase = .loading
         do {
-            response = try await client.searchCareerProjects(
+            let fetchedResponse = try await client.searchCareerProjects(
                 query: request.query,
                 projectTypeId: request.projectTypeId,
                 industryId: request.industryId,
                 page: request.page,
                 perPage: request.perPage
             )
+            applySearchResponse(fetchedResponse)
             phase = .loaded(Date())
         } catch {
             phase = .failed(error.localizedDescription)
@@ -237,6 +239,12 @@ struct CareerView: View {
     private func goToPage(_ page: Int) async {
         request.page = max(page, 0)
         await search(resetPage: false)
+    }
+
+    private func applySearchResponse(_ fetchedResponse: CareerSearchResponse) {
+        response = fetchedResponse
+        request.page = fetchedResponse.page
+        request.perPage = fetchedResponse.perPage
     }
 }
 

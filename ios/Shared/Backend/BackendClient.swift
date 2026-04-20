@@ -2,19 +2,25 @@ import Foundation
 
 enum BackendClientError: LocalizedError {
     case invalidURL
-    case server(Int)
+    case server(Int, String?)
 
     var errorDescription: String? {
         switch self {
         case .invalidURL:
             "Could not build the backend request URL."
-        case .server(let code):
-            "Backend returned HTTP \(code)."
+        case .server(let code, let detail):
+            if let detail, !detail.isEmpty {
+                "Backend returned HTTP \(code): \(detail)"
+            } else {
+                "Backend returned HTTP \(code)."
+            }
         }
     }
 }
 
 struct BackendClient {
+    private static let maxErrorDetailLength = 600
+
     let baseURL: URL
 
     /// Returns nil when the URL string is empty or invalid.
@@ -22,7 +28,7 @@ struct BackendClient {
         let trimmed = baseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty,
               let url = URL(string: trimmed),
-              url.scheme?.hasPrefix("http") == true else {
+              ["http", "https"].contains(url.scheme?.lowercased() ?? "") else {
             return nil
         }
         self.baseURL = url
@@ -70,11 +76,36 @@ struct BackendClient {
     func get(_ url: URL) async throws -> Data {
         let (data, response) = try await URLSession.shared.data(from: url)
         guard let http = response as? HTTPURLResponse else {
-            throw BackendClientError.server(0)
+            throw BackendClientError.server(0, nil)
         }
         guard (200..<300).contains(http.statusCode) else {
-            throw BackendClientError.server(http.statusCode)
+            throw BackendClientError.server(http.statusCode, Self.errorDetail(from: data))
         }
         return data
     }
+
+    static func errorDetail(from data: Data) -> String? {
+        if let payload = try? JSONDecoder().decode(BackendErrorPayload.self, from: data),
+           let detail = payload.detail?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !detail.isEmpty {
+            return cappedErrorDetail(detail)
+        }
+
+        let text = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let text, !text.isEmpty else {
+            return nil
+        }
+        return cappedErrorDetail(text)
+    }
+
+    private static func cappedErrorDetail(_ detail: String) -> String {
+        guard detail.count > maxErrorDetailLength else {
+            return detail
+        }
+        return "\(detail.prefix(maxErrorDetailLength))..."
+    }
+}
+
+private struct BackendErrorPayload: Decodable {
+    var detail: String?
 }

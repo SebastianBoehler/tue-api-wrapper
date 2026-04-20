@@ -168,7 +168,8 @@ struct CourseDetailView: View {
             portalStatusPhase = .unavailable("The bundled backend URL is required to check Alma, ILIAS, and Moodle.")
             return
         }
-        guard let baseURL = URL(string: backend), baseURL.scheme?.hasPrefix("http") == true else {
+        guard let baseURL = URL(string: backend),
+              ["http", "https"].contains(baseURL.scheme?.lowercased() ?? "") else {
             portalStatusPhase = .failed("The portal status backend URL is invalid.")
             return
         }
@@ -184,7 +185,9 @@ struct CourseDetailView: View {
                 throw PortalStatusError.server("The backend did not return an HTTP response.")
             }
             guard (200..<300).contains(httpResponse.statusCode) else {
-                throw PortalStatusError.server("The backend returned HTTP \(httpResponse.statusCode).")
+                let detail = BackendClient.errorDetail(from: data)
+                let suffix = detail.map { ": \($0)" } ?? "."
+                throw PortalStatusError.server("The backend returned HTTP \(httpResponse.statusCode)\(suffix)")
             }
             let payload = try JSONDecoder().decode(CoursePortalStatusPayload.self, from: data)
             portalStatusPhase = .loaded(payload.portalStatuses)

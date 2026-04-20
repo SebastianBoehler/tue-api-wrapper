@@ -45,7 +45,11 @@ struct CalendarTimelineView: View {
                                     TimelineEventBlock(event: placement.event)
                                 }
                                 .buttonStyle(.plain)
-                                .frame(width: placement.width(in: timelineWidth), height: placement.height)
+                                .frame(
+                                    width: placement.width(in: timelineWidth),
+                                    height: placement.height,
+                                    alignment: .topLeading
+                                )
                                 .offset(x: placement.x(in: timelineWidth), y: placement.y)
                             }
                         }
@@ -125,12 +129,13 @@ private struct TimelineEventBlock: View {
             }
         }
         .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.accentColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color.accentColor.opacity(0.35))
         }
+        .contentShape(RoundedRectangle(cornerRadius: 8))
         .padding(.trailing, 2)
     }
 }

@@ -21,7 +21,7 @@ struct CourseDetailReference: Hashable {
             lecture.title,
             lecture.remark
         ])
-        self.detailURL = lecture.detailURL
+        self.detailURL = lecture.detailURL.flatMap(CourseDetailURLFinder.supportedAlmaURL)
         self.timeRange = lecture.timeRange
         self.eventType = lecture.eventType
         self.lecturer = lecture.lecturer ?? lecture.responsibleLecturer
@@ -90,17 +90,27 @@ extension AlmaCurrentLecture {
 extension LectureEvent {
     var detailURL: URL? {
         guard let detail else { return nil }
-        return CourseDetailURLFinder.firstURL(in: detail)
+        return CourseDetailURLFinder.firstAlmaURL(in: detail)
     }
 }
 
 private enum CourseDetailURLFinder {
-    static func firstURL(in text: String) -> URL? {
+    static func firstAlmaURL(in text: String) -> URL? {
         let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
         let range = NSRange(text.startIndex..<text.endIndex, in: text)
         return detector?
-            .firstMatch(in: text, options: [], range: range)?
-            .url
+            .matches(in: text, options: [], range: range)
+            .compactMap(\.url)
+            .compactMap(supportedAlmaURL)
+            .first
+    }
+
+    static func supportedAlmaURL(_ url: URL) -> URL? {
+        guard ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
+              url.path.hasPrefix("/alma/") else {
+            return nil
+        }
+        return url
     }
 }
 

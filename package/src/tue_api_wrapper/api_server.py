@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse, Response
 import uvicorn
 
 from .alma_catalog_client import fetch_course_catalog_page
+from .api_errors import alma_error_status_code, translate_alma_error
 from .api_routes_alma_assignments import router as alma_assignments_router
 from .api_routes_alma_registration import router as alma_registration_router
 from .api_routes_edit_actions import router as edit_actions_router
@@ -46,7 +47,7 @@ def _public_alma_client() -> AlmaClient:
 
 
 def _translate_error(error: AlmaError) -> HTTPException:
-    return HTTPException(status_code=400, detail=str(error))
+    return translate_alma_error(error)
 
 @app.get("/")
 def root() -> dict[str, str]:
@@ -282,7 +283,7 @@ def ilias_exercise(target: str) -> list[object]:
 
 @app.exception_handler(AlmaError)
 async def handle_alma_error(_request, error: AlmaError) -> JSONResponse:
-    return JSONResponse(status_code=400, content={"detail": str(error)})
+    return JSONResponse(status_code=alma_error_status_code(error), content={"detail": str(error)})
 
 
 def main() -> None:

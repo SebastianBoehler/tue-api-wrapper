@@ -75,6 +75,8 @@ export UNI_PASSWORD='your-password'
 
 Mail uses the same `UNI_USERNAME` / `UNI_PASSWORD` pair by default. `MAIL_USERNAME` / `MAIL_PASSWORD` remains available only as an optional override if a mailbox ever needs separate values.
 
+Authenticated API endpoints return HTTP 503 when the backend process is missing the required university credentials.
+
 ## Tests
 
 ```bash

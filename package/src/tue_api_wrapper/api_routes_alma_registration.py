@@ -7,6 +7,7 @@ from .alma_course_registration_client import (
     prepare_course_registration,
     register_for_course,
 )
+from .api_errors import translate_alma_error
 from .config import AlmaError
 from .portal_service import PortalService, serialize
 
@@ -19,9 +20,7 @@ def _alma_client():
 
 
 def _translate_error(error: AlmaError):
-    from fastapi import HTTPException
-
-    return HTTPException(status_code=400, detail=str(error))
+    return translate_alma_error(error)
 
 
 @router.get("/api/alma/course-registration/support")

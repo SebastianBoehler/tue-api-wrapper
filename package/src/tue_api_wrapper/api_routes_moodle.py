@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Form, Query
 
+from .api_errors import translate_alma_error
 from .config import AlmaError
 from .moodle_auth import build_moodle_client
 from .moodle_client import MoodleClient
@@ -15,9 +16,7 @@ def _moodle_client() -> MoodleClient:
 
 
 def _translate_error(error: AlmaError):
-    from fastapi import HTTPException
-
-    return HTTPException(status_code=400, detail=str(error))
+    return translate_alma_error(error)
 
 
 @router.get("/api/moodle/dashboard")

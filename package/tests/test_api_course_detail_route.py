@@ -5,6 +5,8 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
+from fastapi import HTTPException
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
@@ -84,6 +86,19 @@ class CourseDetailRouteTests(unittest.TestCase):
         self.assertIsNone(calls["search_client"])
         self.assertIsNone(calls["alma_client"])
         self.assertEqual(calls["alma_error"], "No Alma")
+
+    def test_title_lookup_surfaces_missing_backend_credentials(self) -> None:
+        missing_credentials = (
+            "Set UNI_USERNAME and UNI_PASSWORD before using authenticated endpoints. "
+            "Legacy ALMA_* and ILIAS_* env vars are still supported as fallbacks."
+        )
+
+        with patch.object(api_routes_extended.portal_service, "_alma_client", side_effect=AlmaParseError(missing_credentials)):
+            with self.assertRaises(HTTPException) as context:
+                api_routes_extended.unified_course_detail(title="ML4202 Probabilistic Machine Learning")
+
+        self.assertEqual(context.exception.status_code, 503)
+        self.assertEqual(context.exception.detail, missing_credentials)
 
 
 if __name__ == "__main__":

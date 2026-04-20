@@ -186,6 +186,14 @@ struct CourseDetailView: View {
             }
             guard (200..<300).contains(httpResponse.statusCode) else {
                 let detail = BackendClient.errorDetail(from: data)
+                if let message = BackendCredentialConfiguration.message(
+                    statusCode: httpResponse.statusCode,
+                    detail: detail,
+                    feature: .portalStatus
+                ) {
+                    portalStatusPhase = .unavailable(message)
+                    return
+                }
                 let suffix = detail.map { ": \($0)" } ?? "."
                 throw PortalStatusError.server("The backend returned HTTP \(httpResponse.statusCode)\(suffix)")
             }

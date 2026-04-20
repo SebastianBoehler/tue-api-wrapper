@@ -14,8 +14,9 @@ from .alma_timetable_client import (
     refresh_timetable_export_url,
 )
 from .alma_timetable_pdf import render_timetable_pdf
+from .api_errors import translate_alma_error
 from .client import AlmaClient
-from .config import AlmaError
+from .config import AlmaError, AlmaParseError
 from .course_detail_linking import build_unified_course_detail, resolve_alma_course_detail
 from .ilias_feature_client import fetch_ilias_info_page, fetch_ilias_search_filters, search_ilias
 from .moodle_auth import build_moodle_client
@@ -34,9 +35,7 @@ def _ilias_client():
 
 
 def _translate_error(error: AlmaError):
-    from fastapi import HTTPException
-
-    return HTTPException(status_code=400, detail=str(error))
+    return translate_alma_error(error)
 
 
 def _studyservice_summary(client: AlmaClient) -> dict[str, object]:
@@ -68,6 +67,9 @@ def unified_course_detail(
             authenticated_alma = _alma_client()
         except AlmaError as error:
             alma_error = str(error)
+
+        if not url.strip() and title.strip() and authenticated_alma is None and alma_error:
+            raise AlmaParseError(alma_error)
 
         detail = resolve_alma_course_detail(
             authenticated_alma or AlmaClient(),

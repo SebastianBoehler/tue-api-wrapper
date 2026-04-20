@@ -8,6 +8,7 @@ from .alma_official_documents import (
     download_studyservice_report,
     list_exam_reports,
 )
+from .api_errors import translate_alma_error
 from .config import AlmaError
 from .ilias_actions_client import add_to_favorites, inspect_waitlist_support, join_waitlist
 from .portal_service import PortalService, serialize
@@ -17,9 +18,7 @@ portal_service = PortalService()
 
 
 def _translate_error(error: AlmaError):
-    from fastapi import HTTPException
-
-    return HTTPException(status_code=400, detail=str(error))
+    return translate_alma_error(error)
 
 
 def _pdf_response(document) -> Response:

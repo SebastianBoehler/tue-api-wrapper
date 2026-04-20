@@ -18,6 +18,44 @@ enum BackendClientError: LocalizedError {
     }
 }
 
+enum BackendCredentialFeature {
+    case deadlines
+    case portalStatus
+
+    var unavailableMessage: String {
+        switch self {
+        case .deadlines:
+            "Backend credentials are missing. Set UNI_USERNAME and UNI_PASSWORD on the backend host to load tasks and deadlines."
+        case .portalStatus:
+            "Backend credentials are missing. Set UNI_USERNAME and UNI_PASSWORD on the backend host to check signup status."
+        }
+    }
+}
+
+enum BackendCredentialConfiguration {
+    static func message(for error: Error, feature: BackendCredentialFeature) -> String? {
+        guard case BackendClientError.server(_, let detail) = error,
+              isMissingCredentialDetail(detail) else {
+            return nil
+        }
+        return feature.unavailableMessage
+    }
+
+    static func message(statusCode _: Int, detail: String?, feature: BackendCredentialFeature) -> String? {
+        guard isMissingCredentialDetail(detail) else {
+            return nil
+        }
+        return feature.unavailableMessage
+    }
+
+    private static func isMissingCredentialDetail(_ detail: String?) -> Bool {
+        guard let detail else {
+            return false
+        }
+        return detail.range(of: "Set UNI_USERNAME and UNI_PASSWORD", options: [.caseInsensitive]) != nil
+    }
+}
+
 struct BackendClient {
     private static let maxErrorDetailLength = 600
 

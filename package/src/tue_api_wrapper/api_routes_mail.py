@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Query
 
+from .api_errors import translate_alma_error
 from .config import AlmaError
 from .portal_service import PortalService, serialize
 
@@ -14,9 +15,7 @@ def _mail_client():
 
 
 def _translate_error(error: AlmaError):
-    from fastapi import HTTPException
-
-    return HTTPException(status_code=400, detail=str(error))
+    return translate_alma_error(error)
 
 
 @router.get("/api/mail/mailboxes")

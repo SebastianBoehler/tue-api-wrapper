@@ -17,7 +17,11 @@ extension AppModel {
             deadlines = fetchedDeadlines.filter { $0.isActionable }
             tasksPhase = .loaded(Date())
         } catch {
-            tasksPhase = .failed(error.localizedDescription)
+            if let message = BackendCredentialConfiguration.message(for: error, feature: .deadlines) {
+                tasksPhase = .failed(message)
+            } else {
+                tasksPhase = .failed(error.localizedDescription)
+            }
         }
     }
 }

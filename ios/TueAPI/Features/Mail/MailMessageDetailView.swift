@@ -54,6 +54,9 @@ struct MailMessageDetailView: View {
                 Label("Unread", systemImage: "envelope.badge")
                     .foregroundStyle(.blue)
             }
+            if let notice = detail.universityApprovalNotice {
+                MailUniversityApprovalBadge(notice: notice, showsMessage: true)
+            }
         }
     }
 

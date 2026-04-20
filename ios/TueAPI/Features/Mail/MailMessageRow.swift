@@ -29,6 +29,10 @@ struct MailMessageRow: View {
                     .lineLimit(2)
             }
 
+            if let notice = message.universityApprovalNotice {
+                MailUniversityApprovalBadge(notice: notice)
+            }
+
             if let preview = message.preview, !preview.isEmpty {
                 Text(preview)
                     .font(.footnote)

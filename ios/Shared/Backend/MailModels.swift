@@ -1,5 +1,10 @@
 import Foundation
 
+struct MailUniversityApprovalNotice: Decodable, Hashable {
+    var title: String
+    var message: String
+}
+
 struct MailMessageSummary: Decodable, Identifiable, Hashable {
     var uid: String
     var subject: String
@@ -7,6 +12,7 @@ struct MailMessageSummary: Decodable, Identifiable, Hashable {
     var fromAddress: String?
     var receivedAt: String?
     var preview: String?
+    var universityApprovalNotice: MailUniversityApprovalNotice?
     var isUnread: Bool
 
     var id: String { uid }
@@ -16,6 +22,7 @@ struct MailMessageSummary: Decodable, Identifiable, Hashable {
         case fromName = "from_name"
         case fromAddress = "from_address"
         case receivedAt = "received_at"
+        case universityApprovalNotice = "university_approval_notice"
         case isUnread = "is_unread"
     }
 }
@@ -60,6 +67,7 @@ struct MailMessageDetail: Decodable, Identifiable {
     var receivedAt: String?
     var preview: String?
     var bodyText: String?
+    var universityApprovalNotice: MailUniversityApprovalNotice?
     var attachmentNames: [String]
     var isUnread: Bool
 
@@ -73,6 +81,7 @@ struct MailMessageDetail: Decodable, Identifiable {
         case ccRecipients = "cc_recipients"
         case receivedAt = "received_at"
         case bodyText = "body_text"
+        case universityApprovalNotice = "university_approval_notice"
         case attachmentNames = "attachment_names"
         case isUnread = "is_unread"
     }

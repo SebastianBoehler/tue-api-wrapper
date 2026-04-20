@@ -1,23 +1,36 @@
 import Foundation
 
+struct MailBodyContent {
+    var text: String?
+    var universityApprovalNotice: MailUniversityApprovalNotice?
+}
+
 enum MailBodyExtractor {
-    static func bodyText(from part: MIMEPart) -> String? {
+    static func bodyContent(from part: MIMEPart) -> MailBodyContent {
         let leaves = leafParts(from: part)
         if let plain = leaves.first(where: { isText($0, subtype: "plain") && !$0.isAttachment }),
            let text = decodedText(from: plain)?.trimmedOrNil {
-            return normalize(text)
+            return normalizedContent(text)
         }
 
         if let html = leaves.first(where: { isText($0, subtype: "html") && !$0.isAttachment }),
            let text = decodedText(from: html)?.trimmedOrNil {
-            return normalize(htmlToText(text))
+            return normalizedContent(htmlToText(text))
         }
 
-        return nil
+        return MailBodyContent(text: nil, universityApprovalNotice: nil)
+    }
+
+    static func bodyText(from part: MIMEPart) -> String? {
+        bodyContent(from: part).text
     }
 
     static func preview(from part: MIMEPart, limit: Int = 160) -> String? {
-        guard let body = bodyText(from: part) else { return nil }
+        preview(from: bodyContent(from: part), limit: limit)
+    }
+
+    static func preview(from content: MailBodyContent, limit: Int = 160) -> String? {
+        guard let body = content.text else { return nil }
         let collapsed = body
             .split(whereSeparator: \.isWhitespace)
             .joined(separator: " ")
@@ -59,6 +72,58 @@ enum MailBodyExtractor {
         return text.isEmpty ? nil : text
     }
 
+    private static func normalizedContent(_ value: String) -> MailBodyContent {
+        guard let normalized = normalize(value) else {
+            return MailBodyContent(text: nil, universityApprovalNotice: nil)
+        }
+        return stripUniversityApprovalBanner(from: normalized)
+    }
+
+    private static func stripUniversityApprovalBanner(from value: String) -> MailBodyContent {
+        let lines = value.components(separatedBy: "\n")
+        guard let firstContentIndex = lines.firstIndex(where: { !$0.trimmedForBanner.isEmpty }),
+              firstContentIndex < lines.count - 3,
+              isBannerSeparator(lines[firstContentIndex]) else {
+            return MailBodyContent(text: value, universityApprovalNotice: nil)
+        }
+
+        let approvalLine = bannerText(lines[firstContentIndex + 1])
+        let responsibilityLine = bannerText(lines[firstContentIndex + 2])
+        guard approvalLine.contains("Die Hochschulleitung hat dem Versand dieser Rundmail zugestimmt"),
+              responsibilityLine.contains("Die inhaltliche Verantwortung liegt bei der Absenderin/dem Absender"),
+              isBannerSeparator(lines[firstContentIndex + 3]) else {
+            return MailBodyContent(text: value, universityApprovalNotice: nil)
+        }
+
+        let remainingStart = firstBodyLineIndex(in: lines, after: firstContentIndex + 3)
+        let body = lines[remainingStart...].joined(separator: "\n").trimmedOrNil
+        let notice = MailUniversityApprovalNotice(
+            title: "Approved university broadcast",
+            message: "Die Hochschulleitung hat dem Versand dieser Rundmail zugestimmt."
+        )
+        return MailBodyContent(text: body, universityApprovalNotice: notice)
+    }
+
+    private static func firstBodyLineIndex(in lines: [String], after bannerEndIndex: Int) -> Int {
+        var index = bannerEndIndex + 1
+        while index < lines.count && lines[index].trimmedForBanner.isEmpty {
+            index += 1
+        }
+        return min(index, lines.count)
+    }
+
+    private static func isBannerSeparator(_ value: String) -> Bool {
+        let trimmed = value.trimmedForBanner
+        guard trimmed.count >= 10 else { return false }
+        return trimmed.allSatisfy { $0 == "*" }
+    }
+
+    private static func bannerText(_ value: String) -> String {
+        value.trimmedForBanner
+            .trimmingCharacters(in: CharacterSet(charactersIn: "*"))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private static func htmlToText(_ value: String) -> String {
         value
             .replacingOccurrences(of: #"(?i)<br\s*/?>"#, with: "\n", options: .regularExpression)
@@ -98,5 +163,11 @@ enum MailBodyExtractor {
         }
 
         return lines.joined(separator: "\n").trimmedOrNil
+    }
+}
+
+private extension String {
+    var trimmedForBanner: String {
+        trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

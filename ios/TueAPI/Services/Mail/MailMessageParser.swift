@@ -8,13 +8,15 @@ enum MailMessageParser {
     ) -> MailMessageSummary {
         let part = MIMEPart(data: rawMessage)
         let sender = MailAddressParser.single(part.header("From"))
+        let body = MailBodyExtractor.bodyContent(from: part)
         return MailMessageSummary(
             uid: uid,
             subject: subject(from: part),
             fromName: sender.name,
             fromAddress: sender.address,
             receivedAt: MailHeaderDecoder.isoDate(part.header("Date")),
-            preview: MailBodyExtractor.preview(from: part),
+            preview: MailBodyExtractor.preview(from: body),
+            universityApprovalNotice: body.universityApprovalNotice,
             isUnread: isUnread
         )
     }
@@ -27,6 +29,7 @@ enum MailMessageParser {
     ) -> MailMessageDetail {
         let part = MIMEPart(data: rawMessage)
         let sender = MailAddressParser.single(part.header("From"))
+        let body = MailBodyExtractor.bodyContent(from: part)
         return MailMessageDetail(
             uid: uid,
             mailbox: mailbox,
@@ -36,8 +39,9 @@ enum MailMessageParser {
             toRecipients: MailAddressParser.formattedList(part.header("To")),
             ccRecipients: MailAddressParser.formattedList(part.header("Cc")),
             receivedAt: MailHeaderDecoder.isoDate(part.header("Date")),
-            preview: MailBodyExtractor.preview(from: part),
-            bodyText: MailBodyExtractor.bodyText(from: part),
+            preview: MailBodyExtractor.preview(from: body),
+            bodyText: body.text,
+            universityApprovalNotice: body.universityApprovalNotice,
             attachmentNames: MailBodyExtractor.attachmentNames(from: part),
             isUnread: isUnread
         )

@@ -23,6 +23,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: dev.sebastianboehler.tueapi
         PRODUCT_NAME: TueAPI
         CODE_SIGN_ENTITLEMENTS: TueAPI/TueAPI.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     info:
       path: TueAPI/Info.plist
       properties:
@@ -53,3 +55,20 @@ targets:
         CFBundleVersion: "1"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+  TueAPITests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: TueAPITests
+    dependencies:
+      - target: TueAPI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.sebastianboehler.tueapi.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  TueAPI:
+    build:
+      targets:
+        TueAPI: all
+        TueAPIWidgetExtension: all

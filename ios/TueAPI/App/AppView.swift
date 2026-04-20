@@ -41,6 +41,13 @@ struct AppView: View {
             }
 
             NavigationStack {
+                GradeOverviewView(model: model)
+            }
+            .tabItem {
+                Label("Grades", systemImage: "graduationcap")
+            }
+
+            NavigationStack {
                 CareerView(model: model)
             }
             .tabItem {

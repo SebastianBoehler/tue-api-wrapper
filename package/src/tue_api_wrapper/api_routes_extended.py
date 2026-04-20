@@ -64,11 +64,13 @@ def unified_course_detail(
     try:
         authenticated_alma = None
         alma_error = None
-        if not url.strip():
+        try:
             authenticated_alma = _alma_client()
+        except AlmaError as error:
+            alma_error = str(error)
 
         detail = resolve_alma_course_detail(
-            AlmaClient(),
+            authenticated_alma or AlmaClient(),
             detail_url=url,
             title=title,
             term=term.strip() or None,
@@ -80,11 +82,6 @@ def unified_course_detail(
             ilias_client = _ilias_client()
         except AlmaError as error:
             ilias_error = str(error)
-        if authenticated_alma is None:
-            try:
-                authenticated_alma = _alma_client()
-            except AlmaError as error:
-                alma_error = str(error)
         moodle_client = None
         moodle_error = None
         try:

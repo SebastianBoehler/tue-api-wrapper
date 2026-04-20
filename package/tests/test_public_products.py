@@ -14,6 +14,11 @@ from tue_api_wrapper.campus_client import (
     parse_building_directory_page,
     parse_canteen_page,
 )
+from tue_api_wrapper.event_calendar_client import parse_university_events_feed
+from tue_api_wrapper.fitness_client import (
+    parse_kuf_occupancy_page,
+    parse_kuf_training_count_image,
+)
 from tue_api_wrapper.praxisportal_client import (
     build_praxisportal_filter_options,
     map_praxisportal_detail,
@@ -153,6 +158,65 @@ class PublicProductContractTests(unittest.TestCase):
         self.assertEqual(title, "Mensa Wilhelmstraße")
         self.assertEqual(address, "Wilhelmstraße 13 72074 Tübingen")
         self.assertIn("google.com/maps/search", map_url or "")
+
+    def test_parse_kuf_occupancy_page_and_count_image(self) -> None:
+        html = """
+        <html><body>
+          <div class="bs_head">Anzahl der Trainierenden in der KuF</div>
+          <img alt="Auslastung aktuell" src="/cgi/studio.cgi?size=70">
+        </body></html>
+        """
+        image = base64.b64decode(
+            "R0lGODlhOwAoALMAAP///wAAAN/f35+fn19fXx8fH7+/vz8/P39/fwAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAAAALAAAAAA7ACgAAAT+EMhJq7046827/5cwEEURlMQggNoQvAdIvHT9EitbCXXcCSab8GTQUQ69X3A4LBoRNt9mCVMBBIZZrZADGYTSjKs2uBioBBYQzKGWMd8aC8nW8GiFjfb17ozrGXEvCBt/AYQ/ZEthZjWIgTVpHYsAlBqChxuYjxp7XJU0jBZ3L3mdZByGTpYadHwZpC8ca4MTrJCoo1ScGK5htxlQPQY5WVEcwi9doDAehkw0kpe5tqEfAslMBE5T0RbAGghUQwW8F54X4Gbj0ERiNdwU6hWYN8RXBuI2fRSx5hLzJsQKcGAZhT0v4knwlSHgwiSn8FTIZlCeNVg2KlpwFaAPJn6F3y5iyPbPAiYftAJIw+CQo8KGcgA8a9fO1ASOHziumEmTiU2AMTsg3Nmz6E8AOj3glFm051GEL1nG5Nl0y8RIiUSCcDhQYwWEID04RAoxWEYjYwd+upAtE1qtI4WkWIFFX1kdYyUgLCpqK9x3TVe+beZBwF4wUVnk3TGiRKkDCBLj/SshAgA7"
+        )
+
+        occupancy = parse_kuf_occupancy_page(html, "https://buchung.hsp.uni-tuebingen.de/angebote/aktueller_zeitraum/_Anzahl_der_Trainierenden_in_der_KuF.html")
+        count = parse_kuf_training_count_image(image)
+
+        self.assertEqual(occupancy.facility_name, "Anzahl der Trainierenden in der KuF")
+        self.assertEqual(occupancy.image_url, "https://buchung.hsp.uni-tuebingen.de/cgi/studio.cgi?size=70")
+        self.assertEqual(count, 84)
+
+    def test_parse_university_events_feed_extracts_namespaced_fields(self) -> None:
+        feed = """<?xml version="1.0" encoding="utf-8"?>
+        <rss version="2.0"
+          xmlns:content="http://purl.org/rss/1.0/modules/content/"
+          xmlns:utevent="http://uni-tuebingen.de/ns/event/">
+          <channel>
+            <title>Veranstaltungskalender</title>
+            <link>https://uni-tuebingen.de/universitaet/campusleben/veranstaltungen/veranstaltungskalender/</link>
+            <item>
+              <guid isPermaLink="false">news-129066</guid>
+              <pubDate>Mon, 20 Apr 2026 18:15:00 +0200</pubDate>
+              <title>Wirtschaftswachstum, Produktivität und KI</title>
+              <utevent:speaker>Prof. Dr. Dominik Papies</utevent:speaker>
+              <utevent:location>Hörsaal 21, Kupferbau</utevent:location>
+              <link>https://uni-tuebingen.de/event-one/</link>
+              <description>Intro</description>
+              <content:encoded><![CDATA[<p>Public lecture.</p>]]></content:encoded>
+              <category>Studium Generale</category>
+              <category>Top Termine Startseite</category>
+            </item>
+            <item>
+              <guid isPermaLink="false">news-129102</guid>
+              <pubDate>Tue, 21 Apr 2026 18:15:00 +0200</pubDate>
+              <title>Medien und Miteinander</title>
+              <utevent:location>Kupferbau</utevent:location>
+              <link>https://uni-tuebingen.de/event-two/</link>
+              <category>Termine</category>
+            </item>
+          </channel>
+        </rss>
+        """
+
+        response = parse_university_events_feed(feed, query="KI", limit=5)
+
+        self.assertEqual(response.total_hits, 1)
+        self.assertEqual(response.items[0].id, "news-129066")
+        self.assertEqual(response.items[0].speaker, "Prof. Dr. Dominik Papies")
+        self.assertEqual(response.items[0].location, "Hörsaal 21, Kupferbau")
+        self.assertEqual(response.items[0].starts_at, "2026-04-20T18:15:00+02:00")
+        self.assertEqual(response.items[0].categories, ["Studium Generale", "Top Termine Startseite"])
 
     def test_map_talks_payload_and_filter_response(self) -> None:
         talk = map_talk(

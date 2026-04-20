@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
   "beautifulsoup4>=4.12,<5",
   "fastapi>=0.115,<1",
+  "pillow>=10.4,<12",
   "python-multipart>=0.0.20,<1",
   "python-dateutil>=2.9,<3",
   "requests>=2.32,<3",

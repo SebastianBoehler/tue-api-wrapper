@@ -4,6 +4,8 @@ import requests
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
 
+from .event_calendar_client import EventCalendarClient
+from .fitness_client import FitnessClient
 from .campus_client import CampusClient
 from .praxisportal_client import PraxisportalClient
 from .portal_service import serialize
@@ -15,6 +17,8 @@ timms_client = TimmsClient()
 praxisportal_client = PraxisportalClient()
 campus_client = CampusClient()
 talks_client = TalksClient()
+event_calendar_client = EventCalendarClient()
+fitness_client = FitnessClient()
 
 
 def _translate_public_error(error: Exception) -> HTTPException:
@@ -174,5 +178,21 @@ def campus_buildings() -> dict[str, object]:
 def campus_building_detail(path: str) -> dict[str, object]:
     try:
         return serialize(campus_client.fetch_building_detail(path))
+    except Exception as error:  # pragma: no cover - exercised via FastAPI surface
+        raise _translate_public_error(error) from error
+
+
+@router.get("/api/campus/events")
+def campus_events(query: str = Query("", max_length=120), limit: int = Query(24, ge=1, le=100)) -> dict[str, object]:
+    try:
+        return serialize(event_calendar_client.fetch_events(query=query, limit=limit))
+    except Exception as error:  # pragma: no cover - exercised via FastAPI surface
+        raise _translate_public_error(error) from error
+
+
+@router.get("/api/campus/fitness/kuf")
+def campus_kuf_training_occupancy() -> dict[str, object]:
+    try:
+        return serialize(fitness_client.fetch_kuf_training_occupancy())
     except Exception as error:  # pragma: no cover - exercised via FastAPI surface
         raise _translate_public_error(error) from error

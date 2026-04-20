@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ModuleSearchView: View {
     var model: AppModel
+    var navigationTitle = "Modules"
 
     @Environment(\.openURL) private var openURL
     @State private var filters: ModuleSearchFilters?
@@ -61,7 +62,7 @@ struct ModuleSearchView: View {
                 resultsContent
             }
         }
-        .navigationTitle("Modules")
+        .navigationTitle(navigationTitle)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {

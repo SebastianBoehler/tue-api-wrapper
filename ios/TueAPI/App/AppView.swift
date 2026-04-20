@@ -20,17 +20,10 @@ struct AppView: View {
             }
 
             NavigationStack {
-                BrowseLecturesView(model: model)
+                CoursesView(model: model)
             }
             .tabItem {
-                Label("Browse", systemImage: "list.bullet.rectangle")
-            }
-
-            NavigationStack {
-                ModuleSearchView(model: model)
-            }
-            .tabItem {
-                Label("Modules", systemImage: "books.vertical")
+                Label("Courses", systemImage: "books.vertical")
             }
 
             NavigationStack {

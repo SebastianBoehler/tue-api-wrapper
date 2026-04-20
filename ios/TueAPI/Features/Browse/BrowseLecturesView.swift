@@ -2,6 +2,8 @@ import SwiftUI
 
 struct BrowseLecturesView: View {
     var model: AppModel
+    var navigationTitle = "Browse"
+
     @State private var selectedDate = Date()
     @State private var query = ""
 
@@ -39,7 +41,7 @@ struct BrowseLecturesView: View {
                 }
             }
         }
-        .navigationTitle("Browse")
+        .navigationTitle(navigationTitle)
         .navigationDestination(for: AlmaCurrentLecture.self) { lecture in
             CourseDetailView(lecture: lecture, model: model)
         }

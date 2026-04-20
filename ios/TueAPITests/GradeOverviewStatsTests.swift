@@ -30,13 +30,14 @@ final class GradeOverviewStatsTests: XCTestCase {
         title: String,
         grade: String?,
         cp: String?,
-        status: String?
+        status: String?,
+        number: String? = nil
     ) -> AlmaExamRecord {
         AlmaExamRecord(
             level: 1,
             kind: "Module",
             title: title,
-            number: title,
+            number: number,
             attempt: nil,
             grade: grade,
             cp: cp,

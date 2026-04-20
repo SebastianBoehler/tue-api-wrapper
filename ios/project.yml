@@ -72,3 +72,6 @@ schemes:
       targets:
         TueAPI: all
         TueAPIWidgetExtension: all
+    test:
+      targets:
+        - TueAPITests

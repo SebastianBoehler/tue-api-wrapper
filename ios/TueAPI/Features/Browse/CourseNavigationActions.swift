@@ -60,7 +60,7 @@ struct CourseNavigationActions: View {
     }
 }
 
-private struct CampusLectureDestination {
+struct CampusLectureDestination {
     var name: String
     var coordinate: CLLocationCoordinate2D
 }
@@ -71,7 +71,7 @@ private enum CourseNavigationPhase: Equatable {
     case failed(String)
 }
 
-private enum CampusLectureDestinationError: LocalizedError {
+enum CampusLectureDestinationError: LocalizedError {
     case noCampusMatch
 
     var errorDescription: String? {
@@ -82,8 +82,18 @@ private enum CampusLectureDestinationError: LocalizedError {
     }
 }
 
-private struct CampusLectureDestinationResolver {
-    private let geocoder = CLGeocoder()
+protocol CampusLectureGeocoding {
+    func geocodeAddressString(_ addressString: String) async throws -> [CLPlacemark]
+}
+
+extension CLGeocoder: CampusLectureGeocoding {}
+
+struct CampusLectureDestinationResolver {
+    private let geocoder: CampusLectureGeocoding
+
+    init(geocoder: CampusLectureGeocoding = CLGeocoder()) {
+        self.geocoder = geocoder
+    }
 
     func resolve(_ location: String) async throws -> CampusLectureDestination {
         if let known = CampusLandmark.navigationMatch(for: location) {
@@ -91,10 +101,14 @@ private struct CampusLectureDestinationResolver {
         }
 
         for query in queries(for: location) {
-            let placemarks = try await geocoder.geocodeAddressString(query)
-            if let match = placemarks.first(where: \.isNearTuebingenCampus),
-               let coordinate = match.location?.coordinate {
-                return CampusLectureDestination(name: query, coordinate: coordinate)
+            do {
+                let placemarks = try await geocoder.geocodeAddressString(query)
+                if let match = placemarks.first(where: \.isNearTuebingenCampus),
+                   let coordinate = match.location?.coordinate {
+                    return CampusLectureDestination(name: query, coordinate: coordinate)
+                }
+            } catch {
+                continue
             }
         }
         throw CampusLectureDestinationError.noCampusMatch

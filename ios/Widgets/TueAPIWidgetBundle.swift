@@ -5,6 +5,7 @@ import SwiftUI
 struct TueAPIWidgetBundle: WidgetBundle {
     var body: some Widget {
         UpcomingLecturesWidget()
+        KufOccupancyWidget()
         LectureLiveActivityWidget()
     }
 }

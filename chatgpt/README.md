@@ -57,17 +57,17 @@ Set `PORTAL_API_BASE_URL` to point at the Python backend in `../package`. The ap
 
 ## Auth and deployment
 
-This app does not implement Apps SDK OAuth yet.
+This app does not implement Apps SDK OAuth yet. All private university data tools are therefore legacy/dev-authenticated through the Python backend, not production multi-user authentication.
 
-For now, the intended deployment model is private use:
+For now, the only supported private-data deployment model is single-user development:
 
 - deploy the Python backend with `UNI_USERNAME` and `UNI_PASSWORD` set in the backend environment
 - point `PORTAL_API_BASE_URL` at that private backend
 - keep the ChatGPT app deployment private to your own setup rather than exposing it as a broadly shared public app
 
-That keeps the system simple while still making the ChatGPT app useful for personal study management.
+Do not use this model for multiple students. The backend credentials represent one account, and ChatGPT widget state, browser storage, and cookies must not store university passwords.
 
-If you later want real user auth in ChatGPT, treat that as a separate project. The Apps SDK auth flow requires OAuth resource metadata and per-tool auth policy declarations, so it is meaningfully more involved than the current env-backed backend setup.
+Production ChatGPT auth should use Apps SDK OAuth with protected resource metadata, PKCE-capable authorization, bearer-token verification on each MCP request, and per-tool scope checks. If private university portal access is still needed there, credentials belong in an explicit server-side encrypted account-linking vault keyed by the authenticated user, not in widget storage.
 
 Typical local setup:
 
@@ -111,7 +111,7 @@ gcloud run deploy tue-study-hub-chatgpt \
   --set-env-vars PORTAL_API_BASE_URL=https://your-backend.example.com
 ```
 
-`--allow-unauthenticated` keeps the MCP endpoint reachable by ChatGPT. Without Apps SDK OAuth, "private" here means a private ChatGPT app configuration and a backend that uses your own env-backed university credentials, not a connector endpoint that is network-inaccessible to OpenAI.
+`--allow-unauthenticated` keeps the MCP endpoint reachable by ChatGPT. Without Apps SDK OAuth, "private" here means a private ChatGPT app configuration and a legacy/dev backend that uses your own env-backed university credentials, not production multi-user auth or a connector endpoint that is network-inaccessible to OpenAI.
 
 Then update the service so `APP_BASE_URL` matches the Cloud Run URL that was assigned:
 

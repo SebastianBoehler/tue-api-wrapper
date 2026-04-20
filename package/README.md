@@ -71,11 +71,13 @@ export UNI_USERNAME='your-uni-login'
 export UNI_PASSWORD='your-password'
 ```
 
-`UNI_USERNAME` / `UNI_PASSWORD` is the canonical credential pair. Legacy `ALMA_*` and `ILIAS_*` vars are still accepted as fallbacks for compatibility.
+`UNI_USERNAME` / `UNI_PASSWORD` is the canonical credential pair for legacy/dev authenticated backend routes. Legacy `ALMA_*` and `ILIAS_*` vars are still accepted as fallbacks for compatibility.
 
 Mail uses the same `UNI_USERNAME` / `UNI_PASSWORD` pair by default. `MAIL_USERNAME` / `MAIL_PASSWORD` remains available only as an optional override if a mailbox ever needs separate values.
 
 Authenticated API endpoints return HTTP 503 when the backend process is missing the required university credentials.
+
+These env-backed authenticated routes are not production multi-user auth. Native iOS private-data flows should use on-device Keychain credentials, and ChatGPT private-data flows should use Apps SDK OAuth plus a per-user credential-linking design if the university portals cannot delegate with OAuth/OIDC.
 
 ## Tests
 

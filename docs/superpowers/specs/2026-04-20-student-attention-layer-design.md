@@ -4,7 +4,7 @@ Date: 2026-04-20
 
 ## Goal
 
-Build an iOS attention layer that helps students notice important university changes without turning every feed into noise. The feature set should combine unread mail counts, university-approved circular badges, important mail detection, calendar invite extraction, Alma room/time change detection, a Today command center, and a daily study briefing.
+Build an iOS attention layer that helps students notice important university changes without turning every feed into noise. The feature set should combine unread mail counts, university-approved circular badges, important mail detection, calendar invite extraction, Alma room/time change detection, grade overview signals, a Today command center, and a daily study briefing.
 
 The system must stay honest about freshness. Mail and Alma data are only current after a successful refresh or background refresh opportunity; the UI must show last refreshed timestamps and explicit error states instead of pretending to be real time.
 
@@ -22,7 +22,8 @@ The main app should expose attention signals in three places:
 
 - The Mail tab shows an unread badge, with the count based on the latest successful mail refresh.
 - The Home Screen app icon can optionally show a badge count for unread mail.
-- A Today command center summarizes the next lecture, current room, important unread mail, detected room/time changes, event invites, and Moodle/ILIAS deadlines.
+- A Grades tab shows Alma exam records, Moodle grades, selected Alma term, passed exams, and tracked credits.
+- A Today command center summarizes the next lecture, current room, important unread mail, detected room/time changes, event invites, grade changes, and Moodle/ILIAS deadlines.
 
 Settings should include a small "Attention" section:
 
@@ -144,6 +145,7 @@ The Today surface should be the main destination for attention data. It should i
 - Recent room/time changes.
 - Important unread mail.
 - Event invites and conflicts.
+- Grade overview signals.
 - Moodle/ILIAS deadlines.
 - Last refresh status for each source.
 
@@ -171,6 +173,14 @@ Today:
 1. Reads cached lecture, mail attention, invite, deadline, and change snapshots.
 2. Shows partial data with source-specific freshness/error state.
 3. Offers direct navigation to the relevant feature detail.
+
+Grades:
+
+1. Reads Alma exam records from `/api/alma/exams`.
+2. Reads Alma enrollment status from `/api/alma/enrollments`.
+3. Reads Moodle grade rows from `/api/moodle/grades`.
+4. Computes passed exams, graded records, pending records, and tracked credits in the iOS app.
+5. Feeds the Today command center with compact grade status once a grade snapshot has loaded.
 
 ## Error Handling
 

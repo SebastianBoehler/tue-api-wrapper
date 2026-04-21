@@ -8,6 +8,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from tue_api_wrapper.alma_course_assignments_client import _slots_for_occurrences
 from tue_api_wrapper.alma_course_credits import extract_detail_credits, extract_occurrence_credits
 from tue_api_wrapper.alma_detail_html import parse_module_detail_page
 from tue_api_wrapper.client import AlmaClient
@@ -155,6 +156,28 @@ class AlmaCourseAssignmentTests(unittest.TestCase):
 
         self.assertIsNotNone(credits)
         self.assertEqual(credits.value if credits is not None else None, 3)
+
+    def test_slots_sort_when_locations_are_missing(self) -> None:
+        slots = _slots_for_occurrences([
+            CalendarOccurrence(
+                summary="INFO4195b AI for Scientific Discovery",
+                start=datetime(2026, 4, 15, 18, 0),
+                end=datetime(2026, 4, 15, 20, 0),
+                location="Maria-von-Linden-Str. 6",
+                description=None,
+            ),
+            CalendarOccurrence(
+                summary="INFO4195b AI for Scientific Discovery",
+                start=datetime(2026, 4, 15, 18, 0),
+                end=datetime(2026, 4, 15, 20, 0),
+                location=None,
+                description=None,
+            ),
+        ])
+
+        self.assertEqual(len(slots), 2)
+        self.assertIsNone(slots[0].location)
+        self.assertEqual(slots[1].location, "Maria-von-Linden-Str. 6")
 
 
 if __name__ == "__main__":

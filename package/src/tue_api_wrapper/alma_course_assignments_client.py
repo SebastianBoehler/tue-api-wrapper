@@ -192,5 +192,10 @@ def _slots_for_occurrences(occurrences: list[CalendarOccurrence]) -> tuple[AlmaT
             end_time=end_time,
             location=location,
         )
-        for weekday, weekday_label, start_time, end_time, location in sorted(slots)
+        for weekday, weekday_label, start_time, end_time, location in sorted(slots, key=_slot_sort_key)
     )
+
+
+def _slot_sort_key(slot: tuple[int, str, str, str | None, str | None]) -> tuple[int, str, str, str, str]:
+    weekday, weekday_label, start_time, end_time, location = slot
+    return (weekday, start_time, end_time or "", location or "", weekday_label)

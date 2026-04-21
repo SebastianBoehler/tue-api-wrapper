@@ -10,6 +10,7 @@ import { registerStudyTools } from "./tools/study-tools.js";
 import { registerWidgetTools } from "./tools/widget-tools.js";
 
 export const serverName = "tue-study-hub";
+const enableMailTools = process.env.CHATGPT_ENABLE_MAIL_TOOLS !== "false";
 
 export function createAppServer() {
   const server = new McpServer({ name: serverName, version: "0.5.0" });
@@ -19,7 +20,9 @@ export function createAppServer() {
   registerStudyTools(server);
   registerCourseTools(server);
   registerIliasTools(server);
-  registerMailTools(server);
+  if (enableMailTools) {
+    registerMailTools(server);
+  }
   registerWidgetTools(server);
   registerActionTools(server);
 

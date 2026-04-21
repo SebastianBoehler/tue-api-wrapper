@@ -87,6 +87,28 @@ struct AlmaClient {
         )
     }
 
+    func fetchAcademicOverview(
+        credentials: AlmaCredentials,
+        examLimit: Int = 50
+    ) async throws -> AlmaAcademicOverview {
+        try await login(credentials: credentials)
+
+        async let enrollmentPage = loadAuthenticatedHTMLResponse(
+            enrollmentURL(),
+            pageName: "enrollment page"
+        )
+        async let examsPage = loadAuthenticatedHTMLResponse(
+            examOverviewURL(),
+            pageName: "exam overview page"
+        )
+        let (enrollment, exams) = try await (enrollmentPage, examsPage)
+
+        return AlmaAcademicOverview(
+            enrollment: try AlmaAcademicHTMLParser.parseEnrollment(enrollment.html),
+            exams: try AlmaAcademicHTMLParser.parseExamOverview(exams.html, limit: examLimit)
+        )
+    }
+
     private func login(credentials: AlmaCredentials) async throws {
         let response = try await loadHTMLResponse(startPageURL())
         var form = try AlmaHTMLParser.extractLoginForm(from: response.html, pageURL: response.url)
@@ -109,6 +131,17 @@ struct AlmaClient {
 
     private func loadText(_ url: URL) async throws -> String {
         try await loadHTMLResponse(url).html
+    }
+
+    private func loadAuthenticatedHTMLResponse(
+        _ url: URL,
+        pageName: String
+    ) async throws -> (html: String, url: URL) {
+        let response = try await loadHTMLResponse(url)
+        if AlmaHTMLParser.looksLoggedOut(response.html) {
+            throw AlmaClientError.loginFailed("Session is not authenticated; the \(pageName) redirected back to login.")
+        }
+        return response
     }
 
     private func loadHTMLResponse(_ url: URL) async throws -> (html: String, url: URL) {
@@ -152,6 +185,24 @@ struct AlmaClient {
             .appending(queryItems: [
                 URLQueryItem(name: "_flowId", value: "showEventsAndExaminationsOnDate-flow"),
                 URLQueryItem(name: "navigationPosition", value: "studiesOffered,currentLecturesGeneric"),
+                URLQueryItem(name: "recordRequest", value: "true")
+            ])
+    }
+
+    private func enrollmentURL() -> URL {
+        baseURL.appending(path: "alma/pages/cm/exa/enrollment/info/start.xhtml")
+            .appending(queryItems: [
+                URLQueryItem(name: "_flowId", value: "searchOwnEnrollmentInfo-flow"),
+                URLQueryItem(name: "navigationPosition", value: "hisinoneMeinStudium,hisinoneOwnEnrollmentList"),
+                URLQueryItem(name: "recordRequest", value: "true")
+            ])
+    }
+
+    private func examOverviewURL() -> URL {
+        baseURL.appending(path: "alma/pages/sul/examAssessment/personExamsReadonly.xhtml")
+            .appending(queryItems: [
+                URLQueryItem(name: "_flowId", value: "examsOverviewForPerson-flow"),
+                URLQueryItem(name: "navigationPosition", value: "hisinoneMeinStudium,examAssessmentForStudent"),
                 URLQueryItem(name: "recordRequest", value: "true")
             ])
     }

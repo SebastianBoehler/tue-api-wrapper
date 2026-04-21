@@ -1,6 +1,6 @@
 import Foundation
 
-struct MoodleOnDeviceClient: UniversityMoodleDeadlineLoading {
+struct MoodleOnDeviceClient: UniversityMoodleDeadlineLoading, UniversityMoodleGradeLoading {
     private let credentials: AlmaCredentials
     private let baseURL: URL
     private let http: PortalHTTPSession
@@ -25,6 +25,12 @@ struct MoodleOnDeviceClient: UniversityMoodleDeadlineLoading {
             referer: dashboard.url
         )
         return Array(try MoodleCalendarNormalizer.deadlines(from: response.data, baseURL: baseURL).prefix(max(1, limit)))
+    }
+
+    func fetchGrades(limit: Int = 50) async throws -> MoodleGradesResponse {
+        try await login()
+        let page = try await getAuthenticatedPage(gradesURL)
+        return MoodleGradesHTMLParser.parse(page.text, pageURL: page.url, limit: limit)
     }
 
     private func login() async throws {
@@ -87,6 +93,10 @@ struct MoodleOnDeviceClient: UniversityMoodleDeadlineLoading {
 
     private var dashboardURL: URL {
         baseURL.appending(path: "my/")
+    }
+
+    private var gradesURL: URL {
+        baseURL.appending(path: "grade/report/overview/index.php")
     }
 
     private func ajaxURL(sesskey: String) -> URL {

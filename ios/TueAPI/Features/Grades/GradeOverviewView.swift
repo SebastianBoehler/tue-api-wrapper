@@ -54,9 +54,11 @@ struct GradeOverviewView: View {
         switch phase {
         case .idle:
             StatusBanner(
-                title: "Legacy backend required",
-                message: "Grades still use the legacy/dev authenticated backend until the on-device grade client is ported.",
-                systemImage: "server.rack"
+                title: model.hasCredentials ? "On-device grades" : "Credentials needed",
+                message: model.hasCredentials
+                    ? "Grades load directly from Alma and Moodle with the credentials stored in Keychain."
+                    : "Save university credentials in Settings before refreshing grades.",
+                systemImage: model.hasCredentials ? "lock.shield" : "key"
             )
         case .loading:
             ProgressView("Loading grades")
@@ -68,8 +70,8 @@ struct GradeOverviewView: View {
             )
         case .unavailable:
             StatusBanner(
-                title: "Backend unavailable",
-                message: "The bundled backend URL is not available in this build.",
+                title: "Alma unavailable",
+                message: "The configured Alma base URL is not available in this build.",
                 systemImage: "exclamationmark.triangle"
             )
         case .failed(let message):
@@ -164,29 +166,24 @@ struct GradeOverviewView: View {
     }
 
     private func refresh() async {
-        guard let client = BackendClient(baseURLString: model.portalAPIBaseURLString) else {
+        guard let almaBaseURL = URL(string: model.baseURLString),
+              ["http", "https"].contains(almaBaseURL.scheme?.lowercased() ?? "") else {
             phase = .unavailable
             return
         }
 
         phase = .loading
         do {
-            async let enrollmentFetch = client.fetchAlmaEnrollment()
-            async let examsFetch = client.fetchAlmaExams(limit: 50)
-            async let moodleGradesFetch = client.fetchMoodleGrades(limit: 50)
-            let (enrollment, exams, moodleGrades) = try await (
-                enrollmentFetch,
-                examsFetch,
-                moodleGradesFetch
+            let response = try await UniversityGradesClient(
+                credentialsLoader: model.keychain,
+                almaBaseURL: almaBaseURL
             )
-            let refreshedAt = Date()
-            payload = GradeOverviewPayload(
-                enrollment: enrollment,
-                exams: exams,
-                moodleGrades: moodleGrades,
-                refreshedAt: refreshedAt
+            .fetchGrades(
+                examLimit: 50,
+                moodleLimit: 50
             )
-            phase = .loaded(refreshedAt)
+            payload = response
+            phase = .loaded(response.refreshedAt)
         } catch {
             phase = .failed(error.localizedDescription)
         }

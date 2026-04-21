@@ -1,0 +1,45 @@
+.widget-shell {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  width: 100%;
+  height: min(680px, calc(100vh - 1rem));
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.widget-shell.is-expanded {
+  height: min(880px, calc(100vh - 1rem));
+  max-width: 1360px;
+  margin: 0 auto;
+}
+
+.widget-shell .widget-hero,
+.widget-shell .widget-tabs {
+  flex: none;
+}
+
+.widget-shell.is-expanded .widget-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.widget-scroll {
+  display: grid;
+  gap: 0.9rem;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.25rem;
+  scrollbar-gutter: stable;
+}
+
+.widget-scroll:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .widget-shell,
+  .widget-shell.is-expanded {
+    height: min(620px, calc(100vh - 1rem));
+    min-height: 360px;
+  }
+}

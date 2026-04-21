@@ -1,4 +1,5 @@
 import { buildPortalApiUrl, PortalBackendError } from "./backend.js";
+import { normalizeOptionalStudyTerm } from "./terms.js";
 import type { UnifiedCourseDetail } from "./types/course.js";
 
 async function fetchCourseDetailJson<T>(path: string): Promise<T> {
@@ -37,8 +38,9 @@ export async function loadUnifiedCourseDetail({
   if (title.trim()) {
     params.set("title", title.trim());
   }
-  if (term.trim()) {
-    params.set("term", term.trim());
+  const normalizedTerm = normalizeOptionalStudyTerm(term);
+  if (normalizedTerm) {
+    params.set("term", normalizedTerm);
   }
   params.set("ilias_limit", String(iliasLimit));
   return fetchCourseDetailJson(`/api/course-detail?${params.toString()}`);

@@ -19,9 +19,9 @@ import type {
   ModuleDetail,
   SearchItem
 } from "./types.js";
-const apiBaseUrl = process.env.PORTAL_API_BASE_URL;
-const defaultTerm = "Sommer 2026";
+import { defaultStudyTerm, normalizeOptionalStudyTerm, normalizeStudyTerm } from "./terms.js";
 
+const apiBaseUrl = process.env.PORTAL_API_BASE_URL;
 export function buildPortalApiUrl(path: string): string {
   if (!apiBaseUrl) {
     throw new PortalBackendError(
@@ -141,9 +141,9 @@ export interface LearningSpaceSearchParams {
   createdMode?: string;
   createdDate?: string;
 }
-export async function loadDashboard(term = defaultTerm): Promise<DashboardPayload> {
+export async function loadDashboard(term = defaultStudyTerm): Promise<DashboardPayload> {
   const dashboard = await fetchJson<DashboardPayload>(
-    `/api/dashboard?term=${encodeURIComponent(term)}`
+    `/api/dashboard?term=${encodeURIComponent(normalizeStudyTerm(term))}`
   );
   return normalizeDashboard(dashboard);
 }
@@ -160,8 +160,8 @@ export async function loadExams(limit = 8): Promise<AlmaExamRecord[]> {
   return fetchJson<AlmaExamRecord[]>(`/api/alma/exams?limit=${limit}`);
 }
 
-export async function loadTimetable(term = defaultTerm): Promise<AlmaTimetablePayload> {
-  return fetchJson<AlmaTimetablePayload>(`/api/alma/timetable?term=${encodeURIComponent(term)}`);
+export async function loadTimetable(term = defaultStudyTerm): Promise<AlmaTimetablePayload> {
+  return fetchJson<AlmaTimetablePayload>(`/api/alma/timetable?term=${encodeURIComponent(normalizeStudyTerm(term))}`);
 }
 
 export async function loadEnrollments(): Promise<DashboardPayload["enrollment"]> {
@@ -204,7 +204,7 @@ export async function searchCourseOfferings(
 ): Promise<AuthenticatedCourseSearchResponse> {
   const query = buildQueryString({
     query: params.query?.trim(),
-    term: params.term?.trim(),
+    term: normalizeOptionalStudyTerm(params.term),
     limit: params.limit ?? 12,
   });
 

@@ -1,3 +1,5 @@
+@import "./widget-shell.css";
+
 :root {
   color-scheme: light;
   --tue-red: #9f1838;

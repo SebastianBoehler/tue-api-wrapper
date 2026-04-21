@@ -34,6 +34,7 @@ type WidgetResult =
   | ModuleDetail
   | null;
 type WidgetViewResult = Exclude<WidgetResult, ModuleDetail | null>;
+type DisplayMode = "inline" | "pip" | "fullscreen";
 
 type PanelName = "overview" | "schedule" | "tasks" | "grades" | "spaces" | "courses";
 
@@ -60,6 +61,7 @@ interface PersistedWidgetState {
   activePanel?: PanelName;
   courseQuery?: string;
   detailModal?: DetailPayload | null;
+  expanded?: boolean;
 }
 
 interface PanelCache {
@@ -92,6 +94,7 @@ interface WidgetState {
   loadingPanel: PanelName | null;
   panelError: string | null;
   inlineDetailOpen: boolean;
+  expanded: boolean;
 }
 
 interface ToolCallResult<T = unknown> {
@@ -114,7 +117,9 @@ declare global {
         params?: Record<string, unknown>;
       }) => Promise<void>;
       requestClose?: () => Promise<void>;
-      requestDisplayMode?: (args: { mode: "inline" | "pip" | "fullscreen" }) => Promise<void>;
+      requestDisplayMode?: (args: { mode: DisplayMode }) => Promise<void>;
+      displayMode?: DisplayMode;
+      maxHeight?: number;
       openExternal?: (args: { href: string; redirectUrl?: string | false }) => Promise<void>;
       sendFollowUpMessage?: (args: {
         prompt: string;
@@ -125,7 +130,7 @@ declare global {
   }
 }
 
-const detailWidgetUri = "ui://study-hub/detail-v3.html";
+const detailWidgetUri = "ui://study-hub/detail-v4.html";
 const isDetailTemplate = document.body.dataset.template === "detail";
 const isActionTemplate = document.body.dataset.template === "action";
 
@@ -137,7 +142,8 @@ const state: WidgetState = {
   panelCache: {},
   loadingPanel: null,
   panelError: null,
-  inlineDetailOpen: false
+  inlineDetailOpen: false,
+  expanded: window.openai?.displayMode === "fullscreen" || window.openai?.widgetState?.expanded === true
 };
 
 function sanitizePanel(value: string | undefined): PanelName {
@@ -213,7 +219,8 @@ function persistState() {
   const snapshot: PersistedWidgetState = {
     activePanel: state.activePanel,
     courseQuery: state.courseQuery,
-    detailModal: state.detailModal
+    detailModal: state.detailModal,
+    expanded: state.expanded
   };
   window.openai?.setWidgetState?.(snapshot);
 }
@@ -969,6 +976,15 @@ function renderError(message: string): string {
   `;
 }
 
+function notifyRenderedHeight(root: HTMLElement) {
+  const shell = root.querySelector<HTMLElement>(".widget-shell");
+  if (!shell) {
+    window.openai?.notifyIntrinsicHeight?.();
+    return;
+  }
+  window.openai?.notifyIntrinsicHeight?.(Math.ceil(shell.getBoundingClientRect().height));
+}
+
 function renderDetailTemplate(): string {
   const moduleDetail = getRenderedModuleDetail();
   if (moduleDetail) {
@@ -1028,7 +1044,7 @@ function renderAppShell(content: string): string {
   ];
 
   return `
-    <div class="widget-stack">
+    <div class="widget-stack widget-shell${state.expanded ? " is-expanded" : ""}">
       <header class="widget-hero">
         <div>
           <p class="widget-kicker">${escapeHtml(dashboard?.termLabel ?? "Study Hub")}</p>
@@ -1036,7 +1052,9 @@ function renderAppShell(content: string): string {
           <p>${escapeHtml(dashboard?.hero.subtitle ?? "Use the panels below to explore live study data without remounting the widget.")}</p>
         </div>
         <div class="widget-card-actions">
-          <button class="widget-button ghost small" data-action="fullscreen">Fullscreen</button>
+          <button class="widget-button ghost small" data-action="toggle-expand" aria-pressed="${state.expanded}">
+            ${state.expanded ? "Collapse" : "Expand"}
+          </button>
           <button class="widget-button ghost" data-follow-up="Summarize the most urgent things in my study dashboard.">Summarize</button>
         </div>
       </header>
@@ -1057,26 +1075,28 @@ function renderAppShell(content: string): string {
           .join("")}
       </nav>
 
-      ${content}
+      <main class="widget-scroll" tabindex="0">
+        ${content}
 
-      ${
-        state.inlineDetailOpen && state.detailModal
-          ? `
-            <section class="widget-card widget-card-wide">
-              <div class="widget-card-header">
-                <div>
-                  <p class="widget-kicker">Inline detail</p>
-                  <h2>${escapeHtml(state.detailModal.title)}</h2>
+        ${
+          state.inlineDetailOpen && state.detailModal
+            ? `
+              <section class="widget-card widget-card-wide">
+                <div class="widget-card-header">
+                  <div>
+                    <p class="widget-kicker">Inline detail</p>
+                    <h2>${escapeHtml(state.detailModal.title)}</h2>
+                  </div>
+                  <button class="widget-button ghost small" data-action="dismiss-inline-detail">Close</button>
                 </div>
-                <button class="widget-button ghost small" data-action="dismiss-inline-detail">Close</button>
-              </div>
-              <div class="widget-list">
-                ${state.detailModal.lines.map((line) => `<div class="widget-row compact"><p>${escapeHtml(line)}</p></div>`).join("")}
-              </div>
-            </section>
-          `
-          : ""
-      }
+                <div class="widget-list">
+                  ${state.detailModal.lines.map((line) => `<div class="widget-row compact"><p>${escapeHtml(line)}</p></div>`).join("")}
+                </div>
+              </section>
+            `
+            : ""
+        }
+      </main>
     </div>
   `;
 }
@@ -1092,7 +1112,7 @@ function render(result: WidgetResult) {
   if (isDetailTemplate) {
     root.innerHTML = renderDetailTemplate();
     bindActions(root);
-    window.openai?.notifyIntrinsicHeight?.();
+    notifyRenderedHeight(root);
     return;
   }
 
@@ -1109,7 +1129,7 @@ function render(result: WidgetResult) {
         <p>Call the dashboard tool to populate this view.</p>
       </div>
     `;
-    window.openai?.notifyIntrinsicHeight?.();
+    notifyRenderedHeight(root);
     return;
   }
 
@@ -1131,7 +1151,7 @@ function render(result: WidgetResult) {
   }
 
   bindActions(root);
-  window.openai?.notifyIntrinsicHeight?.();
+  notifyRenderedHeight(root);
 }
 
 async function callTool<T>(name: string, args: Record<string, unknown> = {}): Promise<T | null> {
@@ -1228,6 +1248,16 @@ async function openExternal(href: string) {
   window.open(href, "_blank", "noopener,noreferrer");
 }
 
+async function setExpanded(expanded: boolean) {
+  state.expanded = expanded;
+  persistState();
+  render(state.result);
+
+  if (window.openai?.requestDisplayMode) {
+    await window.openai.requestDisplayMode({ mode: expanded ? "fullscreen" : "inline" }).catch(() => undefined);
+  }
+}
+
 async function handleAction(element: HTMLElement) {
   const action = element.dataset.action;
   if (!action) {
@@ -1277,8 +1307,8 @@ async function handleAction(element: HTMLElement) {
     return;
   }
 
-  if (action === "fullscreen" && window.openai?.requestDisplayMode) {
-    await window.openai.requestDisplayMode({ mode: "fullscreen" });
+  if (action === "toggle-expand") {
+    await setExpanded(!state.expanded);
   }
 }
 
@@ -1317,6 +1347,21 @@ function bindActions(root: HTMLElement) {
     };
   }
 }
+
+window.addEventListener("openai:set_globals", (event) => {
+  const customEvent = event as CustomEvent<{ globals?: { displayMode?: DisplayMode } }>;
+  const displayMode = customEvent.detail?.globals?.displayMode;
+  if (!displayMode) {
+    return;
+  }
+
+  const expanded = displayMode === "fullscreen";
+  if (expanded !== state.expanded) {
+    state.expanded = expanded;
+    persistState();
+    render(state.result);
+  }
+});
 
 connectWidgetResultUpdates((result) => render(result as WidgetResult));
 render(readInitialWidgetResult() as WidgetResult);

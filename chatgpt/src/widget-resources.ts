@@ -16,9 +16,9 @@ const widgetCss = readFileSync(join(projectRoot, "web/dist/widget.css"), "utf8")
 const widgetDomain = process.env.APP_BASE_URL;
 const apiBaseUrl = process.env.PORTAL_API_BASE_URL;
 
-export const widgetUri = "ui://study-hub/dashboard-v3.html";
-export const detailWidgetUri = "ui://study-hub/detail-v3.html";
-export const actionWidgetUri = "ui://study-hub/action-v3.html";
+export const widgetUri = "ui://study-hub/dashboard-v4.html";
+export const detailWidgetUri = "ui://study-hub/detail-v4.html";
+export const actionWidgetUri = "ui://study-hub/action-v4.html";
 
 function buildWidgetHtml(template: "dashboard" | "detail" | "action") {
   const meta: Record<string, unknown> = {

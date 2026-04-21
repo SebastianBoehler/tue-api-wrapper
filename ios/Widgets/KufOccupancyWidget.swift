@@ -32,7 +32,9 @@ struct KufOccupancyProvider: TimelineProvider {
             return KufOccupancyEntry(date: Date(), occupancy: nil, errorMessage: "Backend URL is not configured.")
         }
         do {
-            return KufOccupancyEntry(date: Date(), occupancy: try await client.fetchOccupancy(), errorMessage: nil)
+            let occupancy = try await client.fetchOccupancy()
+            KufOccupancyHistoryStore()?.record(occupancy)
+            return KufOccupancyEntry(date: Date(), occupancy: occupancy, errorMessage: nil)
         } catch {
             return KufOccupancyEntry(date: Date(), occupancy: nil, errorMessage: error.localizedDescription)
         }

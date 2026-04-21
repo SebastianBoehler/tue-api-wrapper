@@ -2,10 +2,17 @@ import SwiftUI
 
 struct TodayView: View {
     var model: AppModel
+    private let kufHistoryStore: KufOccupancyHistoryStore?
 
     @State private var kufOccupancy: KufTrainingOccupancy?
     @State private var kufError: String?
+    @State private var kufHistory: [KufOccupancyHistoryRecord] = []
     @State private var isLoadingKuf = false
+
+    init(model: AppModel, kufHistoryStore: KufOccupancyHistoryStore? = KufOccupancyHistoryStore()) {
+        self.model = model
+        self.kufHistoryStore = kufHistoryStore
+    }
 
     private var nextLecture: LectureEvent? {
         model.events.first
@@ -119,6 +126,17 @@ struct TodayView: View {
                 Spacer()
                 kufValue
             }
+            NavigationLink {
+                KufOccupancyHistoryView(store: kufHistoryStore)
+            } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("KuF trends", systemImage: "chart.bar.xaxis")
+                    Text(kufHistorySummary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 3)
+            }
             NavigationLink("Campus map") {
                 CampusMapView()
             }
@@ -142,6 +160,7 @@ struct TodayView: View {
     }
 
     private func loadAmbientDataIfNeeded() async {
+        loadKufHistory()
         if model.tasksPhase == .idle {
             await model.refreshTasks()
         }
@@ -166,11 +185,25 @@ struct TodayView: View {
         }
 
         do {
-            kufOccupancy = try await client.fetchOccupancy()
+            let occupancy = try await client.fetchOccupancy()
+            kufOccupancy = occupancy
+            kufHistoryStore?.record(occupancy)
+            loadKufHistory()
             kufError = nil
         } catch {
             kufError = error.localizedDescription
         }
+    }
+
+    private func loadKufHistory() {
+        kufHistory = kufHistoryStore?.loadRecords() ?? []
+    }
+
+    private var kufHistorySummary: String {
+        guard let latest = kufHistory.last else {
+            return "No local hourly samples yet"
+        }
+        return "\(kufHistory.count) local samples, latest \(latest.count)"
     }
 }
 

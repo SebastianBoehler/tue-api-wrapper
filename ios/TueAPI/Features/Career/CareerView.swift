@@ -3,6 +3,8 @@ import SwiftUI
 struct CareerView: View {
     var model: AppModel
 
+    private static let anyFilterID = -1
+
     @Environment(\.openURL) private var openURL
     @State private var phase: CareerLoadPhase = .idle
     @State private var filters: CareerSearchFilters?
@@ -11,10 +13,6 @@ struct CareerView: View {
 
     var body: some View {
         List {
-            Section {
-                statusContent
-            }
-
             Section("Search") {
                 TextField("Internship, thesis, working student", text: $request.query)
                     .textInputAutocapitalization(.never)
@@ -24,8 +22,8 @@ struct CareerView: View {
                         Task { await search(resetPage: true) }
                     }
 
-                filterPicker("Project type", selection: $request.projectTypeId, options: filters?.projectTypes ?? [])
-                filterPicker("Industry", selection: $request.industryId, options: filters?.industries ?? [])
+                filterPicker("Project type", selection: projectTypeSelection, options: filters?.projectTypes ?? [])
+                filterPicker("Industry", selection: industrySelection, options: filters?.industries ?? [])
 
                 HStack {
                     Button {
@@ -72,22 +70,8 @@ struct CareerView: View {
     }
 
     @ViewBuilder
-    private var statusContent: some View {
+    private var phaseErrorContent: some View {
         switch phase {
-        case .idle:
-            StatusBanner(
-                title: "Backend required",
-                message: "The bundled backend URL is required to browse Praxisportal listings.",
-                systemImage: "server.rack"
-            )
-        case .loading:
-            ProgressView("Loading Praxisportal")
-        case .loaded:
-            StatusBanner(
-                title: "Praxisportal",
-                message: statusMessage,
-                systemImage: "briefcase"
-            )
         case .unavailable:
             StatusBanner(
                 title: "Backend unavailable",
@@ -96,12 +80,16 @@ struct CareerView: View {
             )
         case .failed(let message):
             StatusBanner(title: "Career unavailable", message: message, systemImage: "exclamationmark.triangle")
+        default:
+            EmptyView()
         }
     }
 
     @ViewBuilder
     private var resultsSection: some View {
         Section("Open roles") {
+            phaseErrorContent
+
             if phase == .loading && response == nil {
                 ForEach(0..<5, id: \.self) { _ in
                     CareerSkeletonRow()
@@ -125,7 +113,7 @@ struct CareerView: View {
                 }
 
                 paginationControls(response)
-            } else {
+            } else if !phaseHasError {
                 ContentUnavailableView(
                     "No listings loaded",
                     systemImage: "briefcase",
@@ -135,23 +123,40 @@ struct CareerView: View {
         }
     }
 
-    private var statusMessage: String {
-        guard let response else {
-            return "Search internships, thesis topics, jobs, and working-student roles."
+    private var phaseHasError: Bool {
+        switch phase {
+        case .unavailable, .failed:
+            true
+        default:
+            false
         }
-        let page = response.page + 1
-        return "\(response.totalHits) live hits. Page \(page) of \(max(response.totalPages, 1))."
+    }
+
+    private var projectTypeSelection: Binding<Int> {
+        filterSelection(\.projectTypeId)
+    }
+
+    private var industrySelection: Binding<Int> {
+        filterSelection(\.industryId)
+    }
+
+    private func filterSelection(_ keyPath: WritableKeyPath<CareerSearchRequest, Int?>) -> Binding<Int> {
+        Binding {
+            request[keyPath: keyPath] ?? Self.anyFilterID
+        } set: { value in
+            request[keyPath: keyPath] = value == Self.anyFilterID ? nil : value
+        }
     }
 
     private func filterPicker(
         _ title: String,
-        selection: Binding<Int?>,
+        selection: Binding<Int>,
         options: [CareerFacetOption]
     ) -> some View {
         Picker(title, selection: selection) {
-            Text("Any").tag(Int?.none)
+            Text("Any").tag(Self.anyFilterID)
             ForEach(options) { option in
-                Text("\(option.label) (\(option.count))").tag(Int?.some(option.id))
+                Text("\(option.label) (\(option.count))").tag(option.id)
             }
         }
     }

@@ -131,10 +131,10 @@ struct UpcomingLecturesView: View {
             if allItems > 0 {
                 Section("Upcoming Deadlines") {
                     ForEach(model.deadlines) { deadline in
-                        DeadlineRow(deadline: deadline)
+                        StudyDeadlineRow(deadline: deadline)
                     }
                     ForEach(model.tasks) { task in
-                        TaskRow(task: task)
+                        StudyIliasTaskRow(task: task)
                     }
                 }
             }
@@ -196,62 +196,6 @@ struct LectureEventRow: View {
             }
         }
         .padding(.vertical, 4)
-    }
-}
-
-// MARK: - Deadline Row (Moodle)
-
-private struct DeadlineRow: View {
-    var deadline: MoodleDeadline
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(deadline.title)
-                .font(.subheadline.weight(.medium))
-                .lineLimit(2)
-            HStack(spacing: 8) {
-                if let courseName = deadline.courseName {
-                    Label(courseName, systemImage: "book.closed")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                if let due = deadline.formattedTime ?? deadline.dueAt {
-                    Label(due, systemImage: "clock")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-            }
-        }
-        .padding(.vertical, 2)
-    }
-}
-
-// MARK: - Task Row (ILIAS)
-
-private struct TaskRow: View {
-    var task: IliasTask
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Image(systemName: "checklist")
-                    .foregroundStyle(Color.accentColor)
-                    .font(.caption)
-                Text(task.title)
-                    .font(.subheadline.weight(.medium))
-                    .lineLimit(2)
-            }
-            if let end = task.end {
-                Label(end, systemImage: "clock")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            } else if let type = task.itemType {
-                Text(type)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.vertical, 2)
     }
 }
 

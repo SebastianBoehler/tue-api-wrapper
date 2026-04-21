@@ -6,66 +6,43 @@ struct AppView: View {
     var body: some View {
         TabView {
             NavigationStack {
-                UpcomingLecturesView(model: model)
+                TodayView(model: model)
+                    .settingsToolbar(model: model)
             }
             .tabItem {
-                Label("Upcoming", systemImage: "calendar")
+                Label("Today", systemImage: "sun.max")
             }
 
             NavigationStack {
                 CalendarScheduleView(model: model)
+                    .settingsToolbar(model: model)
             }
             .tabItem {
-                Label("Calendar", systemImage: "calendar.day.timeline.left")
+                Label("Schedule", systemImage: "calendar.day.timeline.left")
             }
 
             NavigationStack {
-                CoursesView(model: model)
+                StudyView(model: model)
+                    .settingsToolbar(model: model)
             }
             .tabItem {
-                Label("Courses", systemImage: "books.vertical")
+                Label("Study", systemImage: "graduationcap")
             }
 
             NavigationStack {
                 MailView(model: model)
+                    .settingsToolbar(model: model)
             }
             .tabItem {
-                Label("Mail", systemImage: "envelope")
+                Label("Inbox", systemImage: "envelope")
             }
 
             NavigationStack {
-                GradeOverviewView(model: model)
+                DiscoverView(model: model)
+                    .settingsToolbar(model: model)
             }
             .tabItem {
-                Label("Grades", systemImage: "graduationcap")
-            }
-
-            NavigationStack {
-                CareerView(model: model)
-            }
-            .tabItem {
-                Label("Career", systemImage: "briefcase")
-            }
-
-            NavigationStack {
-                CampusMapView()
-            }
-            .tabItem {
-                Label("Campus", systemImage: "map")
-            }
-
-            NavigationStack {
-                TalksView()
-            }
-            .tabItem {
-                Label("Talks", systemImage: "mic")
-            }
-
-            NavigationStack {
-                SettingsView(model: model)
-            }
-            .tabItem {
-                Label("Settings", systemImage: "gear")
+                Label("Discover", systemImage: "sparkle.magnifyingglass")
             }
         }
         .task {

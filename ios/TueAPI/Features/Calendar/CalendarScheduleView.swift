@@ -16,10 +16,14 @@ struct CalendarScheduleView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                calendarStatus
+                calendarError
 
                 if days.isEmpty {
-                    emptyState
+                    if model.phase == .loading {
+                        loadingState
+                    } else {
+                        emptyState
+                    }
                 } else {
                     CalendarDayStrip(
                         days: days,
@@ -46,7 +50,7 @@ struct CalendarScheduleView: View {
                 Button {
                     Task { await model.refreshUpcomingLectures() }
                 } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    refreshButtonLabel
                 }
                 .disabled(model.phase == .loading)
             }
@@ -61,29 +65,27 @@ struct CalendarScheduleView: View {
     }
 
     @ViewBuilder
-    private var calendarStatus: some View {
-        switch model.phase {
-        case .loading:
-            ProgressView("Refreshing Alma timetable")
-        case .loaded(let date, let term):
-            StatusBanner(
-                title: "Calendar updated",
-                message: statusMessage(
-                    "\(term) refreshed \(date.formatted(date: .abbreviated, time: .shortened))."
-                ),
-                systemImage: "calendar.badge.clock"
-            )
-        case .failed(let message):
-            StatusBanner(title: "Calendar refresh failed", message: message, systemImage: "exclamationmark.triangle")
-        case .idle:
-            StatusBanner(
-                title: model.events.isEmpty ? "No cached timetable" : "\(model.events.count) upcoming entries",
-                message: model.events.isEmpty
-                    ? emptyMessage
-                    : statusMessage("Swipe through lecture days and inspect the day as a timeline."),
-                systemImage: model.events.isEmpty ? "calendar.badge.exclamationmark" : "calendar"
-            )
+    private var refreshButtonLabel: some View {
+        if model.phase == .loading {
+            ProgressView()
+                .controlSize(.small)
+                .accessibilityLabel("Refreshing Alma timetable")
+        } else {
+            Label("Refresh", systemImage: "arrow.clockwise")
         }
+    }
+
+    @ViewBuilder
+    private var calendarError: some View {
+        if case .failed(let message) = model.phase {
+            StatusBanner(title: "Calendar refresh failed", message: message, systemImage: "exclamationmark.triangle")
+        }
+    }
+
+    private var loadingState: some View {
+        ProgressView("Refreshing Alma timetable")
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 48)
     }
 
     private var emptyState: some View {
@@ -102,13 +104,6 @@ struct CalendarScheduleView: View {
         } else {
             "Save university credentials in Settings, then refresh Alma."
         }
-    }
-
-    private func statusMessage(_ base: String) -> String {
-        guard let semesterCredits = model.semesterCredits else {
-            return base
-        }
-        return "\(base) \(semesterCredits.displayText)."
     }
 
     private func syncSelectedDay() {

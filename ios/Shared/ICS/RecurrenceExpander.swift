@@ -10,7 +10,7 @@ enum RecurrenceExpander {
         for event in events {
             if let rule = event.recurrenceRule, !rule.isEmpty {
                 output.append(contentsOf: try expandRecurring(event, rule: rule, windowStart: windowStart, windowEnd: windowEnd))
-            } else if windowStart <= event.startDate, event.startDate <= windowEnd {
+            } else if overlapsWindow(start: event.startDate, end: event.endDate, windowStart: windowStart, windowEnd: windowEnd) {
                 output.append(makeLecture(from: event, start: event.startDate))
             }
         }
@@ -57,14 +57,20 @@ enum RecurrenceExpander {
             if let countLimit, generatedCount > countLimit {
                 break
             }
-            guard cursor >= windowStart else { continue }
-
             var occurrence = event
             occurrence.endDate = duration.map { cursor.addingTimeInterval($0) }
+            guard overlapsWindow(start: cursor, end: occurrence.endDate, windowStart: windowStart, windowEnd: windowEnd) else {
+                continue
+            }
             lectures.append(makeLecture(from: occurrence, start: cursor))
         }
 
         return lectures
+    }
+
+    private static func overlapsWindow(start: Date, end: Date?, windowStart: Date, windowEnd: Date) -> Bool {
+        let effectiveEnd = max(end ?? start, start)
+        return start <= windowEnd && effectiveEnd >= windowStart
     }
 
     private static func makeLecture(from event: AlmaCalendarEvent, start: Date) -> LectureEvent {

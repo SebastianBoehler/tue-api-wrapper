@@ -16,7 +16,7 @@ struct CoursesView: View {
             Group {
                 switch selectedMode {
                 case .day:
-                    BrowseLecturesView(model: model, navigationTitle: "Courses")
+                    BrowseLecturesView(model: model, navigationTitle: "Courses", showsStatus: false)
                 case .catalog:
                     ModuleSearchView(model: model, navigationTitle: "Courses")
                 }

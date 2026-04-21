@@ -3,6 +3,7 @@ import SwiftUI
 struct BrowseLecturesView: View {
     var model: AppModel
     var navigationTitle = "Browse"
+    var showsStatus = true
 
     @State private var selectedDate = Date()
     @State private var query = ""
@@ -19,8 +20,10 @@ struct BrowseLecturesView: View {
                 .disabled(model.browsePhase == .loading)
             }
 
-            Section {
-                browseStatus
+            if showsStatus {
+                Section {
+                    browseStatus
+                }
             }
 
             Section("Lectures") {

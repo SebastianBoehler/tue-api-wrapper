@@ -9,6 +9,7 @@ final class AppModel {
 
     var events: [LectureEvent]
     var semesterCredits: SemesterCreditSummary?
+    var timetableRefreshedAt: Date?
     var browseLectures: [AlmaCurrentLecture] = []
     var browseSelectedDate: String?
     var phase: LoadPhase = .idle
@@ -60,6 +61,7 @@ final class AppModel {
         let cachedSnapshot = UpcomingLectureCache.load()
         self.events = Self.upcomingOnly(cachedSnapshot?.events ?? [])
         self.semesterCredits = cachedSnapshot?.semesterCredits
+        self.timetableRefreshedAt = cachedSnapshot?.refreshedAt
         self.hasCredentials = ((try? keychain.load()) ?? nil) != nil
         self.remindersEnabled = UserDefaults.standard.bool(forKey: Self.remindersEnabledKey)
 
@@ -166,6 +168,7 @@ final class AppModel {
             try UpcomingLectureCache.save(snapshot)
             events = Self.upcomingOnly(snapshot.events)
             semesterCredits = snapshot.semesterCredits
+            timetableRefreshedAt = snapshot.refreshedAt
             phase = .loaded(snapshot.refreshedAt, snapshot.sourceTerm)
             WidgetCenter.shared.reloadAllTimelines()
             await rescheduleRemindersIfEnabled()

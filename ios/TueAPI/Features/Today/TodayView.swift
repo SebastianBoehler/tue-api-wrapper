@@ -108,7 +108,7 @@ struct TodayView: View {
             } else {
                 LabeledContent("Saved semester", value: "Not loaded")
             }
-            LabeledContent("Cached lectures", value: "\(model.events.count)")
+            LabeledContent("Timetable refreshed", value: model.timetableRefreshedAt?.formatted(date: .abbreviated, time: .shortened) ?? "Not loaded")
             NavigationLink("Open grades") {
                 GradeOverviewView(model: model)
             }
@@ -220,7 +220,7 @@ private struct TodayHeader: View {
                 .foregroundStyle(.secondary)
 
             LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 10) {
-                TodayMetricTile(title: "Lectures", value: "\(model.events.count)", systemImage: "calendar")
+                TodayMetricTile(title: "Next class", value: nextClassText, systemImage: "calendar")
                 TodayMetricTile(title: "Tasks", value: "\(model.tasks.count + model.deadlines.count)", systemImage: "checklist")
                 TodayMetricTile(title: "Credits", value: creditsText, systemImage: "graduationcap")
                 TodayMetricTile(title: "KuF", value: kufOccupancy.map { "\($0.count)" } ?? "-", systemImage: "dumbbell")
@@ -234,6 +234,15 @@ private struct TodayHeader: View {
             return "Timetable, tasks, study status, campus signals, and mail are one tap away."
         }
         return "Start by saving your university credentials in Settings."
+    }
+
+    private var nextClassText: String {
+        guard let event = model.events.first else { return "-" }
+        if CalendarSchedule.calendar.isDateInToday(event.startDate) {
+            return event.startDate.formatted(date: .omitted, time: .shortened)
+        }
+        if CalendarSchedule.calendar.isDateInTomorrow(event.startDate) { return "Tomorrow" }
+        return event.startDate.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
     }
 
     private var creditsText: String {

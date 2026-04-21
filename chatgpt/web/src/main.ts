@@ -1,6 +1,7 @@
 import "./styles.css";
 import { isCriticalActionView, renderActionTemplate } from "./action-confirmation-render.js";
 import { isModuleDetail, renderModuleDetailTemplate } from "./module-detail-render.js";
+import { connectWidgetResultUpdates, readInitialWidgetResult } from "./widget-host-events.js";
 import type {
   AgendaItem,
   AlmaCourseSearchResponse,
@@ -124,12 +125,12 @@ declare global {
   }
 }
 
-const detailWidgetUri = "ui://study-hub/detail-v1.html";
+const detailWidgetUri = "ui://study-hub/detail-v2.html";
 const isDetailTemplate = document.body.dataset.template === "detail";
 const isActionTemplate = document.body.dataset.template === "action";
 
 const state: WidgetState = {
-  result: window.openai?.toolOutput ?? null,
+  result: readInitialWidgetResult() as WidgetResult,
   activePanel: sanitizePanel(window.openai?.widgetState?.activePanel),
   courseQuery: window.openai?.widgetState?.courseQuery ?? "",
   detailModal: window.openai?.widgetState?.detailModal ?? null,
@@ -1317,25 +1318,5 @@ function bindActions(root: HTMLElement) {
   }
 }
 
-window.addEventListener(
-  "message",
-  (event) => {
-    if (event.source !== window.parent) {
-      return;
-    }
-
-    const message = event.data;
-    if (!message || message.jsonrpc !== "2.0") {
-      return;
-    }
-
-    if (message.method !== "ui/notifications/tool-result") {
-      return;
-    }
-
-    render(message.params?.structuredContent ?? null);
-  },
-  { passive: true }
-);
-
-render(window.openai?.toolOutput ?? null);
+connectWidgetResultUpdates((result) => render(result as WidgetResult));
+render(readInitialWidgetResult() as WidgetResult);

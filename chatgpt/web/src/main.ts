@@ -125,7 +125,7 @@ declare global {
   }
 }
 
-const detailWidgetUri = "ui://study-hub/detail-v2.html";
+const detailWidgetUri = "ui://study-hub/detail-v3.html";
 const isDetailTemplate = document.body.dataset.template === "detail";
 const isActionTemplate = document.body.dataset.template === "action";
 

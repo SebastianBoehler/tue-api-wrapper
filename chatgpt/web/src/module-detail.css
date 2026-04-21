@@ -1,7 +1,7 @@
 .widget-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .widget-tags span {
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 0.35rem 0.65rem;
   color: var(--muted);
   font-size: 0.85rem;

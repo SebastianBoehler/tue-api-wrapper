@@ -1,14 +1,16 @@
 :root {
   color-scheme: light;
-  --tue-red: #A11E3B;
-  --bg: #fbf6ee;
-  --card: rgba(255, 252, 247, 0.95);
-  --ink: #17231f;
-  --muted: #53615c;
-  --line: rgba(23, 35, 31, 0.12);
-  --accent: #0f766e;
-  --accent-soft: rgba(15, 118, 110, 0.08);
-  --shadow: 0 18px 48px rgba(23, 35, 31, 0.1);
+  --tue-red: #9f1838;
+  --bg: #f6f7f8;
+  --card: #ffffff;
+  --surface: #f0f2f4;
+  --ink: #18201f;
+  --muted: #5d666b;
+  --line: #d9dee3;
+  --accent: #9f1838;
+  --accent-soft: #f8e8ed;
+  --focus: #006b5f;
+  --shadow: 0 1px 2px rgba(24, 32, 31, 0.08);
 }
 
 * {
@@ -17,9 +19,7 @@
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.15), transparent 28%),
-    linear-gradient(180deg, #faf4ea, #f6efe3);
+  background: var(--bg);
   color: var(--ink);
   font-family: "Segoe UI", "Helvetica Neue", sans-serif;
 }
@@ -32,15 +32,14 @@ a {
 .widget-stack,
 .widget-empty {
   display: grid;
-  gap: 1rem;
+  gap: 0.9rem;
   padding: 1rem;
 }
 
-.widget-hero,
 .widget-card,
 .metric-card {
   border: 1px solid var(--line);
-  border-radius: 24px;
+  border-radius: 8px;
   background: var(--card);
   box-shadow: var(--shadow);
 }
@@ -49,7 +48,8 @@ a {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.2rem;
+  border-bottom: 1px solid var(--line);
+  padding: 0.35rem 0 1rem;
 }
 
 .widget-hero h1,
@@ -57,7 +57,7 @@ a {
 .widget-empty h1 {
   margin: 0;
   font-size: 1.5rem;
-  line-height: 1;
+  line-height: 1.1;
 }
 
 .widget-kicker {
@@ -65,7 +65,7 @@ a {
   color: var(--accent);
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -92,7 +92,7 @@ a {
 .metric-card {
   display: grid;
   gap: 0.4rem;
-  padding: 1rem;
+  padding: 0.9rem;
 }
 
 .metric-card strong {
@@ -105,9 +105,12 @@ a {
 
 .widget-card-header {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 0.8rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.75rem;
 }
 
 .widget-list {
@@ -132,21 +135,27 @@ a {
 
 .widget-tabs {
   flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+  gap: 0.4rem;
+  padding-bottom: 0.55rem;
 }
 
 .widget-tab {
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(255, 252, 247, 0.75);
+  border-radius: 6px;
+  background: var(--card);
   color: var(--ink);
-  padding: 0.62rem 0.9rem;
+  min-height: 2.2rem;
+  padding: 0.5rem 0.75rem;
   font: inherit;
   cursor: pointer;
 }
 
 .widget-tab.is-active {
-  background: var(--ink);
-  color: #fff7ec;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .widget-summary {
@@ -158,8 +167,8 @@ a {
   display: grid;
   gap: 0.3rem;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--accent-soft);
+  border-radius: 8px;
+  background: var(--surface);
   padding: 0.85rem;
 }
 
@@ -200,11 +209,11 @@ a {
 }
 
 .widget-button {
-  border: 0;
-  border-radius: 999px;
+  border: 1px solid var(--ink);
+  border-radius: 6px;
   padding: 0.7rem 1rem;
   background: var(--ink);
-  color: #fff7ec;
+  color: #ffffff;
   font: inherit;
   cursor: pointer;
 }
@@ -216,8 +225,15 @@ a {
 
 .widget-button.ghost {
   border: 1px solid var(--line);
-  background: transparent;
+  background: var(--card);
   color: var(--ink);
+}
+
+.widget-button:focus-visible,
+.widget-tab:focus-visible,
+.widget-input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .widget-search {
@@ -230,8 +246,8 @@ a {
 .widget-input {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.75);
+  border-radius: 6px;
+  background: var(--card);
   color: var(--ink);
   padding: 0.75rem 0.9rem;
   font: inherit;

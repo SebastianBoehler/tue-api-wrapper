@@ -1,4 +1,5 @@
 .widget-button.danger {
+  border-color: var(--tue-red);
   background: var(--tue-red);
 }
 
@@ -12,7 +13,7 @@
 
 .action-chip {
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 0.45rem 0.75rem;
   color: var(--accent);
   font-size: 0.85rem;
@@ -34,8 +35,8 @@
   display: grid;
   gap: 0.35rem;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--accent-soft);
+  border-radius: 8px;
+  background: var(--surface);
   padding: 0.85rem;
 }
 

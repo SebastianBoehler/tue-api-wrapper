@@ -50,4 +50,38 @@ final class AlmaAcademicHTMLParserTests: XCTestCase {
         XCTAssertEqual(exams[0].cp, "6,0")
         XCTAssertEqual(exams[0].status, "BE")
     }
+
+    func testParsesExamRowsWhenTreeTableClassIsMissing() throws {
+        let html = """
+        <form id="examsReadonly">
+          <table id="examsReadonly:tree">
+            <tbody>
+              <tr>
+                <td class="treeTableCellLevel3"><img class="submitImageTable" alt="Konto"></td>
+                <td><span id = "examsReadonly:0:unDeftxt">Studienbegleitende Leistungen</span></td>
+                <td><span id="examsReadonly:0:elementnr">9055</span></td>
+                <td><span id="examsReadonly:0:attempt">1</span></td>
+                <td><span id="examsReadonly:0:grade">1,0</span></td>
+                <td><span id="examsReadonly:0:bonus">9</span></td>
+                <td><span id="examsReadonly:0:malus">0</span></td>
+                <td><span id="examsReadonly:0:workstatus">BE</span></td>
+                <td><span id="examsReadonly:0:remark"></span></td>
+                <td><span id="examsReadonly:0:release"></span></td>
+              </tr>
+            </tbody>
+          </table>
+        </form>
+        """
+
+        let exams = try AlmaAcademicHTMLParser.parseExamOverview(html, limit: 10)
+
+        XCTAssertEqual(exams.count, 1)
+        XCTAssertEqual(exams[0].level, 3)
+        XCTAssertEqual(exams[0].kind, "Konto")
+        XCTAssertEqual(exams[0].title, "Studienbegleitende Leistungen")
+        XCTAssertEqual(exams[0].number, "9055")
+        XCTAssertEqual(exams[0].grade, "1,0")
+        XCTAssertEqual(exams[0].cp, "9")
+        XCTAssertEqual(exams[0].status, "BE")
+    }
 }

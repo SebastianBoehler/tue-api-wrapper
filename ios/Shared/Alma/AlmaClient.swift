@@ -93,15 +93,14 @@ struct AlmaClient {
     ) async throws -> AlmaAcademicOverview {
         try await login(credentials: credentials)
 
-        async let enrollmentPage = loadAuthenticatedHTMLResponse(
+        let enrollment = try await loadAuthenticatedHTMLResponse(
             enrollmentURL(),
             pageName: "enrollment page"
         )
-        async let examsPage = loadAuthenticatedHTMLResponse(
+        let exams = try await loadAuthenticatedHTMLResponse(
             examOverviewURL(),
             pageName: "exam overview page"
         )
-        let (enrollment, exams) = try await (enrollmentPage, examsPage)
 
         return AlmaAcademicOverview(
             enrollment: try AlmaAcademicHTMLParser.parseEnrollment(enrollment.html),

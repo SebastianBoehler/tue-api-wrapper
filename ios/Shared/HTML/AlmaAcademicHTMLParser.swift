@@ -36,22 +36,27 @@ enum AlmaAcademicHTMLParser {
     }
 
     static func parseExamOverview(_ html: String, limit: Int) throws -> [AlmaExamRecord] {
-        guard let table = firstTable(containingClass: "treeTableWithIcons", in: html) else {
+        let table = firstTable(containingClass: "treeTableWithIcons", in: html)
+        let source = table ?? html
+        let rows = examRows(in: source)
+        guard table != nil || !rows.isEmpty else {
             throw AlmaClientError.timetableMissing("Could not find the Alma exam overview tree table.")
         }
 
-        let rows = HTMLRegex.matches("<tr\\b[^>]*>.*?</tr>", in: table).compactMap { match -> AlmaExamRecord? in
-            guard let range = Range(match.range, in: table) else {
-                return nil
-            }
-            return parseExamRow(String(table[range]))
-        }
         return Array(rows.prefix(max(1, limit)))
     }
 
+    private static func examRows(in html: String) -> [AlmaExamRecord] {
+        HTMLRegex.matches("<tr\\b[^>]*>.*?</tr>", in: html).compactMap { match -> AlmaExamRecord? in
+            guard let range = Range(match.range, in: html) else {
+                return nil
+            }
+            return parseExamRow(String(html[range]))
+        }
+    }
+
     private static func parseExamRow(_ row: String) -> AlmaExamRecord? {
-        guard let level = HTMLRegex.firstCapture("treeTableCellLevel(\\d+)", in: openingTag(named: "tr", in: row) ?? "")
-            .flatMap(Int.init),
+        guard let level = examRowLevel(in: row),
             HTMLRegex.matches("<td\\b[^>]*>", in: row).count >= 10,
             let title = fieldText(in: row, suffixPattern: "(?:defaulttext|unDeftxt)") else {
             return nil
@@ -69,6 +74,13 @@ enum AlmaAcademicHTMLParser {
         )
     }
 
+    private static func examRowLevel(in row: String) -> Int? {
+        let tag = openingTag(named: "tr", in: row) ?? ""
+        return HTMLRegex.firstCapture("treeTableCellLevel(\\d+)", in: tag)
+            .flatMap(Int.init)
+            ?? HTMLRegex.firstCapture("treeTableCellLevel(\\d+)", in: row).flatMap(Int.init)
+    }
+
     private static func enrollmentMessage(in form: String) -> String? {
         let text = HTMLText.stripTags(form)
         let pattern = "Sie haben bisher.+?(?:angemeldet\\.|zugelassen\\.)"
@@ -76,7 +88,7 @@ enum AlmaAcademicHTMLParser {
     }
 
     private static func fieldText(in row: String, suffixPattern: String) -> String? {
-        let pattern = "<([A-Za-z][A-Za-z0-9]*)\\b[^>]*id=(['\"])[^'\"]*:\(suffixPattern)\\2[^>]*>(.*?)</\\1>"
+        let pattern = "<([A-Za-z][A-Za-z0-9]*)\\b[^>]*id\\s*=\\s*(['\"])[^'\"]*:\(suffixPattern)\\2[^>]*>(.*?)</\\1>"
         guard let raw = HTMLRegex.firstCapture(pattern, in: row, group: 3) else {
             return nil
         }

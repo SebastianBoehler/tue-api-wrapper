@@ -6,6 +6,7 @@ import { buildAgendaCourseDetailHref } from "../lib/alma-course-detail";
 import type { AlmaTimetableDay } from "../lib/discovery-types";
 import { formatTimetableDateLabel, formatTimetableTimeLabel, getTimetableDateKey } from "../lib/alma-timetable-ui";
 import type { AgendaItem } from "../lib/types";
+import { cn } from "../lib/utils";
 
 const HOUR_HEIGHT = 72;
 const FALLBACK_EVENT_HEIGHT = 56;
@@ -148,6 +149,20 @@ function getEventTimeLabel(item: AgendaItem) {
   return endLabel ? `${startLabel} - ${endLabel}` : startLabel;
 }
 
+const eventToneClasses = [
+  "border-[#99d7d3] bg-[#e7f7f7] hover:bg-[#dbf1ef]",
+  "border-[#f0c4d0] bg-[#fbeef2] hover:bg-[#f8e4ea]",
+  "border-[#c8d9f6] bg-[#eef4fe] hover:bg-[#e5eefc]",
+  "border-[#d7d4ae] bg-[#f7f4e5] hover:bg-[#f2eedb]",
+  "border-[#d3c8ef] bg-[#f3effc] hover:bg-[#ede7f8]",
+  "border-[#d1e2c4] bg-[#eef6e8] hover:bg-[#e5f0dc]",
+];
+
+function getEventTone(summary: string) {
+  const seed = Array.from(summary).reduce((total, character) => total + character.charCodeAt(0), 0);
+  return eventToneClasses[seed % eventToneClasses.length];
+}
+
 export function AlmaTimetableGrid({
   days,
   occurrences,
@@ -232,11 +247,14 @@ export function AlmaTimetableGrid({
                     <Link
                       key={`${entry.item.summary}-${entry.item.start}`}
                       href={buildAgendaCourseDetailHref(entry.item, selectedTermValue) as Route}
-                      className="absolute flex flex-col gap-1 rounded-[1.5rem] border border-primary/20 bg-primary/8 px-3 py-2 text-left ring-1 ring-primary/5 transition-colors hover:border-primary/40 hover:bg-primary/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      className={cn(
+                        "absolute flex flex-col gap-1.5 rounded-[1.6rem] border px-3 py-2.5 text-left ring-1 ring-black/3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                        getEventTone(entry.item.summary)
+                      )}
                       style={style}
                       title={`Open details for ${entry.item.summary}`}
                     >
-                      <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-primary">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground/75">
                         {getEventTimeLabel(entry.item)}
                       </p>
                       <p className="text-sm font-medium leading-tight text-foreground">
@@ -258,7 +276,7 @@ export function AlmaTimetableGrid({
 
       <div className="flex items-center gap-2 border-t border-border/70 bg-background/70 px-5 py-3 text-xs text-muted-foreground">
         <CalendarDays className="size-3.5" />
-        Blocks are positioned by their Alma start and end times. Overlaps stay visible side by side.
+        Blocks are positioned by Alma start and end times. Overlaps stay visible side by side.
       </div>
     </div>
   );

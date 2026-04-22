@@ -61,7 +61,7 @@ export function AlmaTimetablePanel({
           </CardAction>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <form method="get" action="/agenda" className="grid gap-3 rounded-xl border border-border bg-muted/30 p-4 md:grid-cols-5">
+          <form method="get" action="/agenda" className="grid gap-3 rounded-[1.75rem] border border-border bg-background/80 p-4 md:grid-cols-5">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="agenda_term" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Term</label>
               <select id="agenda_term" name="term" defaultValue={filters.term || view.selected_term_value || ""} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
@@ -93,27 +93,36 @@ export function AlmaTimetablePanel({
             </div>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="agenda_to" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">To</label>
-              <div className="flex gap-2">
-                <input id="agenda_to" name="to_date" type="date" defaultValue={filters.toDate} className="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm" disabled={!view.supports_custom_range} />
-                <Button type="submit">Apply</Button>
-                <a
-                  href="/agenda"
-                  className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-4xl border border-border bg-background px-3 text-sm font-medium transition-all hover:bg-muted hover:text-foreground"
-                >
-                  Reset
-                </a>
-              </div>
+              <input id="agenda_to" name="to_date" type="date" defaultValue={filters.toDate} className="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm" disabled={!view.supports_custom_range} />
+            </div>
+            <div className="md:col-span-5 flex flex-wrap items-center justify-end gap-2">
+              <a
+                href="/agenda"
+                className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-4xl border border-border bg-background px-3 text-sm font-medium transition-all hover:bg-muted hover:text-foreground"
+              >
+                Reset
+              </a>
+              <Button type="submit">Apply</Button>
             </div>
           </form>
 
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {view.selected_term_label ? <Badge variant="secondary">{view.selected_term_label}</Badge> : null}
-            {creditSummary ? <Badge variant="secondary">Saved {formatCredits(creditSummary.total_credits)} CP</Badge> : null}
             {view.selected_week_label ? <Badge variant="outline">{view.selected_week_label}</Badge> : null}
             {view.visible_range_start ? <span>{formatTimetableDateLabel(view.visible_range_start)} to {formatTimetableDateLabel(view.visible_range_end ?? view.visible_range_start)}</span> : null}
             <span>· {view.occurrences.length} items</span>
-            {creditSummary?.unresolved_credit_count ? <span>· {creditSummary.unresolved_credit_count} courses missing CP</span> : null}
+            {creditSummary ? <span>· Saved semester {formatCredits(creditSummary.total_credits)} CP</span> : null}
           </div>
+          {creditSummary?.unresolved_credit_count ? (
+            <p className="text-xs text-muted-foreground">
+              CP metadata is still missing for {creditSummary.unresolved_credit_count} visible modules.
+            </p>
+          ) : null}
+          {!creditSummary?.unresolved_credit_count && creditSummary ? (
+            <p className="text-xs text-muted-foreground">
+              Saved semester totals are reflected from the current Alma course assignments.
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -123,7 +132,7 @@ export function AlmaTimetablePanel({
             <CalendarDays className="size-4 text-primary" />
             Schedule view
           </CardTitle>
-          <CardDescription>Weekly blocks arranged by day and time instead of a plain agenda list.</CardDescription>
+          <CardDescription>Weekly blocks arranged by day and time with course-based accent colors and overlap handling.</CardDescription>
         </CardHeader>
         <CardContent>
           <AlmaTimetableGrid

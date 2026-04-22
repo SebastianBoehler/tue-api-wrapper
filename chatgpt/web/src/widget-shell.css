@@ -1,5 +1,5 @@
 .widget-shell {
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   width: 100%;
   height: min(680px, calc(100vh - 1rem));
   min-height: 420px;

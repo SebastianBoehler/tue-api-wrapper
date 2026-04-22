@@ -4,7 +4,7 @@ import { ErrorPanel } from "../../components/error-panel";
 import { EmptyState } from "../../components/empty-state";
 import { MailMessageList } from "../../components/mail-message-list";
 import { MailDetailPanel } from "../../components/mail-detail-panel";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { parseMailInboxFilters } from "../../lib/mail-query";
@@ -50,10 +50,10 @@ export default async function MailPage({
             </Button>
           </CardAction>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          <span>Account: {inbox.account}</span>
-          <span>Mailbox: {inbox.mailbox}</span>
-        </CardContent>
+        <CardFooter className="border-t border-border/60 flex flex-wrap gap-2 text-xs text-muted-foreground">
+          <span>Account {inbox.account}</span>
+          <span>Mailbox {inbox.mailbox}</span>
+        </CardFooter>
       </Card>
     );
 

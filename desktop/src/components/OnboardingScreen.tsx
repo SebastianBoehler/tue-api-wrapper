@@ -30,21 +30,21 @@ export function OnboardingScreen({
         <p className="eyebrow">Desktop onboarding</p>
         <h1>TUE Study Hub for desktop</h1>
         <p className="lead">
-          Store your university credentials locally with operating-system backed encryption, then run the
-          existing Python API as a managed local sidecar.
+          Connect your university account once, keep the credentials encrypted on-device, and let the desktop
+          app run the local study backend for you.
         </p>
         <div className="bullet-grid">
           <div>
             <strong>Local only</strong>
-            <span>The desktop app talks to a local backend on `127.0.0.1`.</span>
+            <span>The desktop app only talks to a backend running on your own machine.</span>
           </div>
           <div>
             <strong>Encrypted storage</strong>
             <span>Credentials are encrypted before they are written into the app data directory.</span>
           </div>
           <div>
-            <strong>No mock mode</strong>
-            <span>The dashboard only shows live Alma, ILIAS, Moodle, and mail data.</span>
+            <strong>Live data only</strong>
+            <span>The dashboard shows real Alma, ILIAS, Moodle, talks, and mail data.</span>
           </div>
         </div>
       </div>
@@ -82,7 +82,7 @@ export function OnboardingScreen({
         {error ? <p className="inline-error">{error}</p> : null}
 
         <button className="primary-button" type="submit" disabled={saving}>
-          {saving ? "Saving credentials..." : "Save and start backend"}
+          {saving ? "Saving credentials..." : "Save and continue"}
         </button>
       </form>
     </div>

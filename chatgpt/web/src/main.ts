@@ -238,6 +238,27 @@ function formatDate(value: string): string {
   }).format(date);
 }
 
+function formatRelativeStart(value: string): string | null {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const relative = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const diffMinutes = Math.round((date.getTime() - Date.now()) / (1000 * 60));
+
+  if (Math.abs(diffMinutes) < 60) {
+    return relative.format(diffMinutes, "minute");
+  }
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (Math.abs(diffHours) < 48) {
+    return relative.format(diffHours, "hour");
+  }
+
+  return relative.format(Math.round(diffHours / 24), "day");
+}
+
 function formatCredits(value: number | null | undefined): string {
   if (value === null || value === undefined) {
     return "Unavailable";
@@ -271,6 +292,26 @@ function buildAgendaDetail(item: AgendaItem): DetailPayload {
       item.description ? `Notes: ${item.description}` : "Notes: no extra description"
     ]
   };
+}
+
+function renderAgendaRow(item: AgendaItem, accent = "teal"): string {
+  const relativeStart = formatRelativeStart(item.start);
+
+  return `
+    <div class="widget-row widget-agenda-row" data-accent="${accent}">
+      <div class="widget-agenda-time">
+        <strong>${escapeHtml(formatDate(item.start))}</strong>
+        ${relativeStart ? `<span>${escapeHtml(relativeStart)}</span>` : ""}
+      </div>
+      <div class="widget-agenda-content">
+        <strong>${escapeHtml(item.summary)}</strong>
+        <p>${escapeHtml(item.location ?? "Location pending")}</p>
+      </div>
+      <div class="widget-row-actions">
+        ${renderDetailButton(buildAgendaDetail(item))}
+      </div>
+    </div>
+  `;
 }
 
 function buildTaskDetail(item: IliasTaskItem): DetailPayload {
@@ -419,20 +460,7 @@ function renderOverview(dashboard: DashboardPayload): string {
 
   const agenda = dashboard.agenda.items
     .slice(0, 5)
-    .map(
-      (item) => `
-        <div class="widget-row">
-          <div>
-            <strong>${escapeHtml(item.summary)}</strong>
-            <p>${escapeHtml(item.location ?? "Location pending")}</p>
-          </div>
-          <div class="widget-row-actions">
-            <time>${escapeHtml(formatDate(item.start))}</time>
-            ${renderDetailButton(buildAgendaDetail(item))}
-          </div>
-        </div>
-      `
-    )
+    .map((item) => renderAgendaRow(item, "teal"))
     .join("") || renderFallbackRow("No upcoming Alma events found.");
 
   const documents = dashboard.documents.reports
@@ -646,22 +674,10 @@ function renderOverview(dashboard: DashboardPayload): string {
 
 function renderSchedulePanel(): string {
   const data = getSchedulePanelData();
+  const nextItem = data.items[0];
   const rows = data.items
     .slice(0, 10)
-    .map(
-      (item) => `
-        <div class="widget-row">
-          <div>
-            <strong>${escapeHtml(item.summary)}</strong>
-            <p>${escapeHtml(item.location ?? "Location pending")}</p>
-          </div>
-          <div class="widget-row-actions">
-            <time>${escapeHtml(formatDate(item.start))}</time>
-            ${renderDetailButton(buildAgendaDetail(item))}
-          </div>
-        </div>
-      `
-    )
+    .map((item, index) => renderAgendaRow(item, index === 0 ? "teal" : "rose"))
     .join("") || renderFallbackRow("No upcoming Alma events found.");
 
   return `
@@ -678,12 +694,12 @@ function renderSchedulePanel(): string {
       </div>
       <div class="widget-summary">
         <div>
-          <span>Saved semester</span>
-          <strong>${formatCredits(data.currentSemesterCredits)}</strong>
+          <span>Next up</span>
+          <strong>${escapeHtml(nextItem ? formatRelativeStart(nextItem.start) ?? formatDate(nextItem.start) : "Nothing queued")}</strong>
         </div>
         <div>
-          <span>Courses counted</span>
-          <strong>${data.currentSemesterCreditCourses ?? 0}</strong>
+          <span>Saved semester</span>
+          <strong>${formatCredits(data.currentSemesterCredits)}</strong>
         </div>
         <div>
           <span>Visible items</span>
@@ -1097,6 +1113,21 @@ function renderAppShell(content: string): string {
             : ""
         }
       </main>
+
+      ${
+        dashboard?.generatedAt
+          ? `
+            <footer class="widget-footer-meta">
+              Last updated ${escapeHtml(
+                new Intl.DateTimeFormat("de-DE", {
+                  dateStyle: "medium",
+                  timeStyle: "short"
+                }).format(new Date(dashboard.generatedAt))
+              )}
+            </footer>
+          `
+          : ""
+      }
     </div>
   `;
 }

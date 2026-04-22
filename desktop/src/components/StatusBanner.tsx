@@ -7,12 +7,12 @@ export function StatusBanner({ state }: { state: DesktopRuntimeState }) {
   return (
     <div className={`status-banner ${tone}`}>
       <div>
-        <p className="eyebrow">Desktop runtime</p>
+        <p className="eyebrow">Runtime</p>
         <h2>{label}</h2>
       </div>
       <div className="status-meta">
         {state.username ? <span>Signed in as {state.username}</span> : null}
-        {state.backendUrl ? <span>{state.backendUrl}</span> : null}
+        {state.backendUrl ? <span>Local API ready</span> : null}
       </div>
     </div>
   );

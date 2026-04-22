@@ -4,7 +4,7 @@ import { DashboardMailCard } from "../components/dashboard-mail-card";
 import { DashboardTalksCard } from "../components/dashboard-talks-card";
 import { DashboardNotificationsFeedCard } from "../components/dashboard-notifications-feed-card";
 import { ErrorPanel } from "../components/error-panel";
-import { Card, CardContent, CardHeader, CardTitle, CardAction, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardAction, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ListRow, ListRows } from "../components/list-row";
@@ -45,11 +45,6 @@ export default async function HomePage() {
               <CardTitle className="text-2xl">{dashboard.hero.title}</CardTitle>
               <p className="text-sm text-muted-foreground mt-1 max-w-3xl">{dashboard.hero.subtitle}</p>
             </div>
-            <CardAction>
-              <p className="text-xs text-muted-foreground">
-                as of {new Intl.DateTimeFormat("de-DE", { timeStyle: "short" }).format(new Date(dashboard.generatedAt))}
-              </p>
-            </CardAction>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
@@ -61,6 +56,9 @@ export default async function HomePage() {
               ))}
             </div>
           </CardContent>
+          <CardFooter className="border-t border-border/60 text-xs text-muted-foreground">
+            Updated {new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(dashboard.generatedAt))}
+          </CardFooter>
         </Card>
 
         <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)] gap-3">

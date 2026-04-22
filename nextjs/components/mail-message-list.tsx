@@ -72,22 +72,22 @@ export function MailMessageList({
             key={message.uid}
             href={href}
             className={cn(
-              "block rounded-xl transition-colors",
+              "block rounded-[1.4rem] border transition-colors",
               variant === "full"
-                ? "px-4 py-4 ring-1 ring-foreground/10 hover:bg-muted/40"
-                : "px-3 py-2.5 hover:bg-muted/40",
+                ? "px-4 py-4 border-border bg-background/90 hover:bg-muted/35"
+                : "px-3 py-3 border-transparent hover:bg-muted/35",
               message.is_unread && !isSelected ? "bg-primary/5 ring-1 ring-primary/25" : "",
               isSelected
-                ? "bg-sidebar-accent ring-1 ring-[--tue-red]/30"
+                ? "bg-sidebar-accent border-[--tue-red]/30"
                 : "bg-transparent"
             )}
           >
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
-                      "size-2 shrink-0 rounded-full",
+                      "size-2.5 shrink-0 rounded-full",
                       message.is_unread ? "bg-primary" : "bg-transparent"
                     )}
                   />
@@ -106,14 +106,14 @@ export function MailMessageList({
                 <p className="text-xs text-muted-foreground mt-0.5 truncate">
                   {getMailSenderLabel(message)}
                 </p>
+                {message.preview ? (
+                  <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{message.preview}</p>
+                ) : null}
               </div>
               <time className="text-xs text-muted-foreground shrink-0">
                 {formatMailDate(message.received_at, variant === "full")}
               </time>
             </div>
-            {message.preview && variant === "full" ? (
-              <p className="text-sm text-muted-foreground mt-2">{message.preview}</p>
-            ) : null}
           </Link>
         );
       })}

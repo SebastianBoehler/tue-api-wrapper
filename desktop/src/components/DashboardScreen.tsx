@@ -12,6 +12,35 @@ function formatTimestamp(value: string): string {
   }).format(date);
 }
 
+function formatDateRange(start: string, end?: string | null): string {
+  const startDate = new Date(start);
+  if (Number.isNaN(startDate.getTime())) {
+    return "Time pending";
+  }
+
+  const formatter = new Intl.DateTimeFormat("de-DE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  if (!end) {
+    return formatter.format(startDate);
+  }
+
+  const endDate = new Date(end);
+  if (Number.isNaN(endDate.getTime())) {
+    return formatter.format(startDate);
+  }
+
+  return `${formatter.format(startDate)} – ${new Intl.DateTimeFormat("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(endDate)}`;
+}
+
 function formatCredits(value: number | null | undefined): string {
   if (value === null || value === undefined) {
     return "Unavailable";
@@ -36,6 +65,11 @@ export function DashboardScreen({
   onRestart: () => Promise<void>;
   onClearCredentials: () => Promise<void>;
 }) {
+  const studyNote = data?.study.currentSemesterCreditError
+    ?? (data?.study.currentSemesterCreditUnresolved?.length
+      ? `${data.study.currentSemesterCreditUnresolved.length} visible timetable entries still have no CP value.`
+      : "Live Alma values are reflected in the saved semester total.");
+
   return (
     <div className="dashboard-shell">
       <header className="dashboard-header">
@@ -46,7 +80,7 @@ export function DashboardScreen({
         </div>
         <div className="header-actions">
           <button className="secondary-button" onClick={onRefresh} disabled={loading || !state.backendUrl}>
-            {loading ? "Refreshing..." : "Refresh dashboard"}
+            {loading ? "Refreshing..." : "Refresh"}
           </button>
           <button className="secondary-button" onClick={() => void onRestart()}>
             Restart backend
@@ -61,10 +95,11 @@ export function DashboardScreen({
         <div>
           <p className="eyebrow">Current term</p>
           <h2>{data?.termLabel ?? "Waiting for live data"}</h2>
+          <p className="muted hero-note">Keep the most important study surfaces visible without opening the browser tools first.</p>
         </div>
         <div className="hero-meta">
           <span>{state.username ? `Signed in as ${state.username}` : "No user stored"}</span>
-          <span>{data ? `Updated ${formatTimestamp(data.generatedAt)}` : "No dashboard payload yet"}</span>
+          <span>{data ? `Updated ${formatTimestamp(data.generatedAt)}` : "Waiting for live data"}</span>
         </div>
       </section>
 
@@ -83,7 +118,7 @@ export function DashboardScreen({
         <article className="panel">
           <div className="section-heading">
             <h3>Upcoming events</h3>
-            <span>{data?.agenda.items.length ?? 0} visible</span>
+            <span>{data?.agenda.items.length ?? 0} upcoming</span>
           </div>
           <div className="stack-list">
             {(data?.agenda.items ?? []).slice(0, 6).map((item) => (
@@ -92,7 +127,7 @@ export function DashboardScreen({
                   <strong>{item.summary}</strong>
                   <span>{item.location || "Location pending"}</span>
                 </div>
-                <time>{formatTimestamp(item.start)}</time>
+                <time>{formatDateRange(item.start, item.end)}</time>
               </div>
             ))}
           </div>
@@ -143,10 +178,7 @@ export function DashboardScreen({
             <div className="stack-row compact-row">
               <div>
                 <strong>Saved semester credits</strong>
-                <span>
-                  {data?.study.currentSemesterCreditError
-                    ?? `${data?.study.currentSemesterCreditCourses ?? 0} saved courses counted`}
-                </span>
+                <span>{studyNote}</span>
               </div>
               <span>{formatCredits(data?.study.currentSemesterCredits)}</span>
             </div>
@@ -161,7 +193,7 @@ export function DashboardScreen({
               <div key={`${exam.number}-${exam.title}`} className="stack-row compact-row">
                 <div>
                   <strong>{exam.title}</strong>
-                  <span>{exam.number || "No number"}{exam.cp ? ` · ${exam.cp} CP` : ""}</span>
+                  <span>{exam.number || exam.status || "No structured label available"}</span>
                 </div>
                 <span>{exam.grade || exam.status || "Pending"}</span>
               </div>
@@ -181,6 +213,7 @@ export function DashboardScreen({
                   <div>
                     <strong>{item.subject}</strong>
                     <span>{item.from_name || item.from_address || "Unknown sender"}</span>
+                    {item.preview ? <span>{item.preview}</span> : null}
                   </div>
                   <span>{item.is_unread ? "Unread" : "Read"}</span>
                 </div>

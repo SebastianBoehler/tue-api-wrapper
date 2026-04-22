@@ -1,6 +1,6 @@
 import { Dumbbell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { KufTrainingOccupancy } from "../lib/product-types";
 
 function formatUpdatedAt(value: string) {
@@ -38,10 +38,10 @@ export function KufOccupancyCard({ occupancy }: { occupancy: KufTrainingOccupanc
           <p className="text-5xl font-semibold tracking-tight">{occupancy.count}</p>
           <p className="pb-2 text-sm text-muted-foreground">currently training</p>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Updated {formatUpdatedAt(occupancy.retrieved_at)} from the official Hochschulsport counter.
-        </p>
       </CardContent>
+      <CardFooter className="border-t border-border/60 text-xs text-muted-foreground">
+        Updated {formatUpdatedAt(occupancy.retrieved_at)} from the official Hochschulsport counter.
+      </CardFooter>
     </Card>
   );
 }

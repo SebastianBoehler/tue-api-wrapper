@@ -55,6 +55,19 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Testing") {
+                NavigationLink {
+                    StudyAssistantEntryView(model: model)
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Assistant")
+                        Text("Open the on-device study assistant test screen.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
             Section {
                 Toggle("Notify before lectures", isOn: reminderToggle)
 

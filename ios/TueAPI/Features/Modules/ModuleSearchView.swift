@@ -26,36 +26,69 @@ struct ModuleSearchView: View {
                     .focused($isQueryFocused)
                     .onSubmit(submitSearch)
 
-                filterPicker("Degree", selection: $request.degree, options: filters?.degrees ?? [])
-                filterPicker("Subject", selection: $request.subject, options: filters?.subjects ?? [])
-                filterPicker("Course type", selection: $request.elementType, options: filters?.elementTypes ?? [])
-                filterPicker("Language", selection: $request.language, options: filters?.languages ?? [])
-                filterPicker("Faculty", selection: $request.faculty, options: filters?.faculties ?? [])
+                AppFilterMenuButton(
+                    title: "Degree",
+                    anyLabel: "Any degree",
+                    options: filters?.degrees ?? [],
+                    selection: $request.degree,
+                    optionLabel: \.label,
+                    optionValue: \.value,
+                    isLoading: isSearching,
+                    onSelectionChanged: { _ in submitFilterSearch() }
+                )
 
-                HStack {
-                    Button(action: submitSearch) {
-                        HStack(spacing: 8) {
-                            if isSearching {
-                                ProgressView()
-                                    .controlSize(.small)
-                            } else {
-                                Image(systemName: "magnifyingglass")
-                            }
-                            Text(isSearching ? "Searching modules" : "Search modules")
-                        }
-                    }
-                    .disabled(!canSearch)
+                AppFilterMenuButton(
+                    title: "Subject",
+                    anyLabel: "Any subject",
+                    options: filters?.subjects ?? [],
+                    selection: $request.subject,
+                    optionLabel: \.label,
+                    optionValue: \.value,
+                    isLoading: isSearching,
+                    onSelectionChanged: { _ in submitFilterSearch() }
+                )
 
-                    Spacer()
+                AppFilterMenuButton(
+                    title: "Course type",
+                    anyLabel: "Any course type",
+                    options: filters?.elementTypes ?? [],
+                    selection: $request.elementType,
+                    optionLabel: \.label,
+                    optionValue: \.value,
+                    isLoading: isSearching,
+                    onSelectionChanged: { _ in submitFilterSearch() }
+                )
 
-                    Button("Reset") {
-                        request = ModuleSearchRequest()
-                        response = nil
-                        isSearching = false
-                        phase = filters == nil ? .idle : .loaded(0, nil)
-                    }
-                    .disabled(isSearching || (!request.hasCriteria && response == nil))
-                }
+                AppFilterMenuButton(
+                    title: "Language",
+                    anyLabel: "Any language",
+                    options: filters?.languages ?? [],
+                    selection: $request.language,
+                    optionLabel: \.label,
+                    optionValue: \.value,
+                    isLoading: isSearching,
+                    onSelectionChanged: { _ in submitFilterSearch() }
+                )
+
+                AppFilterMenuButton(
+                    title: "Faculty",
+                    anyLabel: "Any faculty",
+                    options: filters?.faculties ?? [],
+                    selection: $request.faculty,
+                    optionLabel: \.label,
+                    optionValue: \.value,
+                    isLoading: isSearching,
+                    onSelectionChanged: { _ in submitFilterSearch() }
+                )
+
+                AppSearchActionRow(
+                    searchTitle: "Search modules",
+                    isSearching: isSearching,
+                    isSearchDisabled: !canSearch,
+                    isResetDisabled: isSearching || (!request.hasCriteria && response == nil),
+                    onSearch: submitSearch,
+                    onReset: resetSearch
+                )
             }
 
             Section("Results") {
@@ -153,19 +186,6 @@ struct ModuleSearchView: View {
         Task { await search() }
     }
 
-    private func filterPicker(
-        _ title: String,
-        selection: Binding<String?>,
-        options: [ModuleSearchOption]
-    ) -> some View {
-        Picker(title, selection: selection) {
-            Text("Any").tag(String?.none)
-            ForEach(options) { option in
-                Text(option.label).tag(String?.some(option.value))
-            }
-        }
-    }
-
     private func loadFilters(force: Bool) async {
         if filters != nil && !force {
             return
@@ -210,23 +230,39 @@ struct ModuleSearchView: View {
     }
 
     private func statusTitle(returned: Int, hasSearchResponse: Bool) -> String {
+        let visibleCount = response?.results.count ?? returned
         if !hasSearchResponse {
             return "Filters loaded"
         }
-        return returned == 0 ? "No modules" : "\(returned) modules"
+        return visibleCount == 0 ? "No modules" : "\(visibleCount) modules"
     }
 
     private func statusMessage(returned: Int, total: Int?, hasSearchResponse: Bool) -> String {
+        let visibleCount = response?.results.count ?? returned
         if !hasSearchResponse {
             return "Public Alma module filters are ready, including degrees, subjects, course types, languages, and faculties."
         }
-        if returned == 0 {
+        if visibleCount == 0 {
             return "No public Alma module-description matches for these criteria."
         }
-        if let total {
-            return "Showing \(returned) of \(total) public Alma module-description matches."
+        if let total, total >= visibleCount {
+            return "Showing \(visibleCount) of \(total) public Alma module-description matches."
         }
-        return "Showing \(returned) public Alma module-description matches."
+        return "Showing \(visibleCount) public Alma module-description matches."
+    }
+
+    private func submitFilterSearch() {
+        guard filters != nil, !isSearching else { return }
+        isQueryFocused = false
+        Task { await search() }
+    }
+
+    private func resetSearch() {
+        request = ModuleSearchRequest()
+        response = nil
+        isSearching = false
+        isQueryFocused = false
+        phase = filters == nil ? .idle : .loaded(0, nil)
     }
 }
 

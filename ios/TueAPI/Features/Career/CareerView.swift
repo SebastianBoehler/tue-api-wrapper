@@ -3,8 +3,6 @@ import SwiftUI
 struct CareerView: View {
     var model: AppModel
 
-    private static let anyFilterID = -1
-
     @Environment(\.openURL) private var openURL
     @State private var phase: CareerLoadPhase = .idle
     @State private var filters: CareerSearchFilters?
@@ -22,25 +20,36 @@ struct CareerView: View {
                         Task { await search(resetPage: true) }
                     }
 
-                filterPicker("Project type", selection: projectTypeSelection, options: filters?.projectTypes ?? [])
-                filterPicker("Industry", selection: industrySelection, options: filters?.industries ?? [])
+                AppFilterMenuButton(
+                    title: "Project type",
+                    anyLabel: "Any project type",
+                    options: filters?.projectTypes ?? [],
+                    selection: $request.projectTypeId,
+                    optionLabel: \.label,
+                    optionValue: \.id,
+                    isLoading: phase.isLoading,
+                    onSelectionChanged: { _ in submitFilterSearch() }
+                )
 
-                HStack {
-                    Button {
-                        Task { await search(resetPage: true) }
-                    } label: {
-                        Label("Search", systemImage: "magnifyingglass")
-                    }
-                    .disabled(phase.isLoading)
+                AppFilterMenuButton(
+                    title: "Industry",
+                    anyLabel: "Any industry",
+                    options: filters?.industries ?? [],
+                    selection: $request.industryId,
+                    optionLabel: \.label,
+                    optionValue: \.id,
+                    isLoading: phase.isLoading,
+                    onSelectionChanged: { _ in submitFilterSearch() }
+                )
 
-                    Spacer()
-
-                    Button("Reset") {
-                        request = CareerSearchRequest()
-                        Task { await search(resetPage: true) }
-                    }
-                    .disabled(phase.isLoading)
-                }
+                AppSearchActionRow(
+                    searchTitle: "Search",
+                    isSearching: phase.isLoading,
+                    isSearchDisabled: phase.isLoading,
+                    isResetDisabled: phase.isLoading || (!hasActiveFiltersOrQuery && request.page == 0),
+                    onSearch: { Task { await search(resetPage: true) } },
+                    onReset: resetSearch
+                )
             }
 
             resultsSection
@@ -132,33 +141,10 @@ struct CareerView: View {
         }
     }
 
-    private var projectTypeSelection: Binding<Int> {
-        filterSelection(\.projectTypeId)
-    }
-
-    private var industrySelection: Binding<Int> {
-        filterSelection(\.industryId)
-    }
-
-    private func filterSelection(_ keyPath: WritableKeyPath<CareerSearchRequest, Int?>) -> Binding<Int> {
-        Binding {
-            request[keyPath: keyPath] ?? Self.anyFilterID
-        } set: { value in
-            request[keyPath: keyPath] = value == Self.anyFilterID ? nil : value
-        }
-    }
-
-    private func filterPicker(
-        _ title: String,
-        selection: Binding<Int>,
-        options: [CareerFacetOption]
-    ) -> some View {
-        Picker(title, selection: selection) {
-            Text("Any").tag(Self.anyFilterID)
-            ForEach(options) { option in
-                Text("\(option.label) (\(option.count))").tag(option.id)
-            }
-        }
+    private var hasActiveFiltersOrQuery: Bool {
+        !request.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || request.projectTypeId != nil
+            || request.industryId != nil
     }
 
     @ViewBuilder
@@ -247,9 +233,20 @@ struct CareerView: View {
     }
 
     private func applySearchResponse(_ fetchedResponse: CareerSearchResponse) {
+        filters = fetchedResponse.filters
         response = fetchedResponse
         request.page = fetchedResponse.page
         request.perPage = fetchedResponse.perPage
+    }
+
+    private func submitFilterSearch() {
+        guard filters != nil, !phase.isLoading else { return }
+        Task { await search(resetPage: true) }
+    }
+
+    private func resetSearch() {
+        request = CareerSearchRequest()
+        Task { await search(resetPage: true) }
     }
 }
 

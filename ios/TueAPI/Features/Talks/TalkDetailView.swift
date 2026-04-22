@@ -13,6 +13,12 @@ struct TalkDetailView: View {
                 LabeledContent("Location", value: talk.location ?? "Location pending")
             }
 
+            if talk.location?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+                Section("Quick navigation") {
+                    CampusNavigationActions(talk: talk)
+                }
+            }
+
             if !talk.tags.isEmpty {
                 Section("Tags") {
                     ForEach(talk.tags) { tag in

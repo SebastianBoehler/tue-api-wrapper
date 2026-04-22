@@ -59,7 +59,7 @@ struct CampusMapView: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .padding(.horizontal, 16)
-                .padding(.bottom, max(74, proxy.safeAreaInsets.bottom + 18))
+                .padding(.bottom, 8)
             }
             .background(Color(uiColor: .systemGroupedBackground))
         }

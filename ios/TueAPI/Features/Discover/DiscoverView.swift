@@ -28,6 +28,18 @@ struct DiscoverView: View {
             }
         }
         .navigationTitle(selectedScope.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if selectedScope == .campus {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        KufOccupancyHistoryView()
+                    } label: {
+                        Label("KuF trends", systemImage: "chart.bar.xaxis")
+                    }
+                }
+            }
+        }
     }
 }
 

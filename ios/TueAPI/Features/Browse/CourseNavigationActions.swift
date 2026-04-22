@@ -2,26 +2,40 @@ import CoreLocation
 import MapKit
 import SwiftUI
 
-struct CourseNavigationActions: View {
-    var course: CourseDetailReference
+struct CampusNavigationActions: View {
+    private let location: String?
+    private let destinationLabel: String
+    private let progressLabel: String
 
     @State private var phase: CourseNavigationPhase = .idle
 
     private let resolver = CampusLectureDestinationResolver()
 
+    init(course: CourseDetailReference) {
+        location = course.location
+        destinationLabel = "lecture"
+        progressLabel = "Finding lecture building"
+    }
+
+    init(talk: Talk) {
+        location = talk.location
+        destinationLabel = "talk"
+        progressLabel = "Finding talk location"
+    }
+
     var body: some View {
-        if let location = course.location?.nilIfBlank {
+        if let location = location?.nilIfBlank {
             Button {
                 openMaps(for: location, directions: true)
             } label: {
-                Label("Navigate to lecture", systemImage: "location.north.line")
+                Label("Navigate to \(destinationLabel)", systemImage: "location.north.line")
             }
             .disabled(phase == .loading)
 
             Button {
                 openMaps(for: location, directions: false)
             } label: {
-                Label("Show lecture on map", systemImage: "map")
+                Label("Show \(destinationLabel) on map", systemImage: "map")
             }
             .disabled(phase == .loading)
 
@@ -31,7 +45,7 @@ struct CourseNavigationActions: View {
             case .idle:
                 EmptyView()
             case .loading:
-                ProgressView("Finding lecture building")
+                ProgressView(progressLabel)
             case .failed(let message):
                 Text(message)
                     .font(.footnote)
@@ -57,6 +71,14 @@ struct CourseNavigationActions: View {
                 phase = .failed(error.localizedDescription)
             }
         }
+    }
+}
+
+struct CourseNavigationActions: View {
+    var course: CourseDetailReference
+
+    var body: some View {
+        CampusNavigationActions(course: course)
     }
 }
 

@@ -7,23 +7,12 @@ struct CalendarTimelineView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             AppSurfaceCard {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(CalendarSchedule.dayTitle(day))
-                            .font(.title3.weight(.semibold))
-                        Text(daySummary)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer(minLength: 0)
-                    if let firstEvent = events.first {
-                        Text(firstEvent.startDate.formatted(.dateTime.hour().minute()))
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(Color.accentColor)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 7)
-                            .background(Color.accentColor.opacity(0.08), in: Capsule())
-                    }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(CalendarSchedule.dayTitle(day))
+                        .font(.title3.weight(.semibold))
+                    Text(daySummary)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -78,23 +67,27 @@ private struct CalendarAgendaCard: View {
     let isHappeningNow: Bool
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            VStack(alignment: .leading, spacing: 6) {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(event.compactTimeRangeText)
-                    .font(.headline.weight(.semibold))
+                    .font(.subheadline.weight(.semibold))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                 if let relativeStartText {
                     Text(relativeStartText)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(event.calendarAccentColor)
                 }
             }
-            .frame(width: 88, alignment: .leading)
+            .frame(width: 92, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top) {
                     Text(event.title)
                         .font(.headline)
                         .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 8)
                     if isHappeningNow {
                         CalendarStatusBadge(text: "Now", tint: event.calendarAccentColor)
@@ -103,24 +96,15 @@ private struct CalendarAgendaCard: View {
                     }
                 }
 
-                HStack(spacing: 10) {
-                    Label(event.timeRangeText, systemImage: "clock")
-                    if let location = event.location?.trimmedOrNil {
-                        Label(location, systemImage: "mappin.and.ellipse")
-                    }
-                }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-                if let detail = event.detailPreview {
-                    Text(detail)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                if let location = event.compactLocationText {
+                    CalendarMetadataRow(systemImage: "mappin.and.ellipse", text: location)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(16)
+        .padding(.vertical, 16)
+        .padding(.trailing, 16)
+        .padding(.leading, 26)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(event.calendarAccentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(alignment: .leading) {
@@ -140,6 +124,25 @@ private struct CalendarAgendaCard: View {
             return nil
         }
         return RelativeDateTimeFormatter().localizedString(for: event.startDate, relativeTo: Date())
+    }
+}
+
+private struct CalendarMetadataRow: View {
+    let systemImage: String
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: systemImage)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 14, alignment: .center)
+
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 
@@ -193,11 +196,21 @@ extension LectureEvent {
         return "\(formatter.string(from: startDate)) – \(formatter.string(from: endDate))"
     }
 
-    var detailPreview: String? {
-        guard let detail = detail?.trimmedOrNil else {
+    var compactLocationText: String? {
+        guard let location = location?.trimmedOrNil else {
             return nil
         }
-        let collapsed = detail.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-        return collapsed.isEmpty ? nil : collapsed
+        let normalizedLineBreaks = location.replacingOccurrences(of: "\n", with: ", ")
+        let collapsedWhitespace = normalizedLineBreaks.replacingOccurrences(
+            of: "\\s+",
+            with: " ",
+            options: .regularExpression
+        )
+        let normalizedCommas = collapsedWhitespace.replacingOccurrences(
+            of: "\\s*,\\s*",
+            with: ", ",
+            options: .regularExpression
+        )
+        return normalizedCommas.trimmedOrNil
     }
 }

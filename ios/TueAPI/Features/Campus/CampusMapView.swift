@@ -11,7 +11,7 @@ struct CampusMapView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            VStack(spacing: 0) {
+            ZStack(alignment: .bottom) {
                 Map(position: $mapPosition, selection: $selectedHappening) {
                     UserAnnotation()
 
@@ -34,7 +34,8 @@ struct CampusMapView: View {
                         .tag(happening)
                     }
                 }
-                .frame(height: max(360, proxy.size.height * 0.58))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea(edges: .bottom)
                 .mapControls {
                     MapCompass()
                     MapScaleView()
@@ -48,19 +49,16 @@ struct CampusMapView: View {
                     .padding(.trailing, 16)
                 }
 
-                ScrollView {
-                    CampusMapBottomSheet(
-                        selectedSection: $selectedSection,
-                        statusLine: statusLine,
-                        store: store,
-                        focusLandmark: focusLandmark(_:),
-                        focusHappening: focusHappening(_:),
-                        openPost: { isShowingPostSheet = true }
-                    )
-                    .padding(16)
-                    .padding(.bottom, 124)
-                }
-                .background(Color(uiColor: .systemGroupedBackground))
+                CampusMapBottomSheet(
+                    selectedSection: $selectedSection,
+                    statusLine: statusLine,
+                    store: store,
+                    focusLandmark: focusLandmark(_:),
+                    focusHappening: focusHappening(_:),
+                    openPost: { isShowingPostSheet = true }
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, max(104, proxy.safeAreaInsets.bottom + 72))
             }
             .background(Color(uiColor: .systemGroupedBackground))
         }

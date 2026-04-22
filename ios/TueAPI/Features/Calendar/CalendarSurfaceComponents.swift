@@ -20,10 +20,14 @@ struct CalendarDayStrip: View {
     var eventsForDay: (Date) -> [LectureEvent]
     var selectDay: (Date) -> Void
 
+    private var contextualDays: [Date] {
+        CalendarSchedule.contextualDays(from: days)
+    }
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                ForEach(days, id: \.self) { day in
+                ForEach(contextualDays, id: \.self) { day in
                     let dayEvents = eventsForDay(day)
                     Button {
                         selectDay(day)
@@ -31,11 +35,13 @@ struct CalendarDayStrip: View {
                         CalendarDayChip(
                             day: day,
                             isSelected: CalendarSchedule.isSameDay(day, selectedDay),
+                            isEnabled: !dayEvents.isEmpty,
                             eventCount: dayEvents.count,
                             previewColors: Array(dayEvents.prefix(3).map(\.calendarAccentColor))
                         )
                     }
                     .buttonStyle(.plain)
+                    .disabled(dayEvents.isEmpty)
                 }
             }
             .padding(.horizontal, 2)
@@ -46,6 +52,7 @@ struct CalendarDayStrip: View {
 struct CalendarDayChip: View {
     var day: Date
     var isSelected: Bool
+    var isEnabled = true
     var eventCount: Int
     var previewColors: [Color]
 
@@ -63,16 +70,22 @@ struct CalendarDayChip: View {
                 .font(.title3.weight(.bold))
 
             HStack(spacing: 4) {
-                ForEach(Array(previewColors.enumerated()), id: \.offset) { _, color in
-                    Circle()
-                        .fill(isSelected ? Color.white.opacity(0.92) : color)
-                        .frame(width: 6, height: 6)
-                }
+                if isEnabled {
+                    ForEach(Array(previewColors.enumerated()), id: \.offset) { _, color in
+                        Circle()
+                            .fill(isSelected ? Color.white.opacity(0.92) : color)
+                            .frame(width: 6, height: 6)
+                    }
 
-                if eventCount > previewColors.count {
-                    Text("+\(eventCount - previewColors.count)")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(isSelected ? Color.white.opacity(0.92) : .secondary)
+                    if eventCount > previewColors.count {
+                        Text("+\(eventCount - previewColors.count)")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(isSelected ? Color.white.opacity(0.92) : .secondary)
+                    }
+                } else {
+                    Capsule()
+                        .fill(Color.secondary.opacity(0.18))
+                        .frame(width: 14, height: 4)
                 }
             }
 
@@ -93,15 +106,18 @@ struct CalendarDayChip: View {
 
     private var textColor: Color {
         if isSelected { return .white }
+        if !isEnabled { return .secondary }
         return isToday ? .accentColor : .primary
     }
 
     private var backgroundStyle: Color {
-        isSelected ? .accentColor : Color(uiColor: .secondarySystemBackground)
+        if isSelected { return .accentColor }
+        return isEnabled ? Color(uiColor: .secondarySystemBackground) : Color(uiColor: .tertiarySystemBackground)
     }
 
     private var borderColor: Color {
         if isSelected { return .accentColor }
+        if !isEnabled { return Color.primary.opacity(0.04) }
         if isToday { return .accentColor.opacity(0.45) }
         return Color.primary.opacity(0.06)
     }

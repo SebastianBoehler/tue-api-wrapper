@@ -186,6 +186,40 @@ enum CalendarSchedule {
         return days.first { $0 >= today } ?? days.first
     }
 
+    static func contextualDays(from days: [Date]) -> [Date] {
+        guard let firstDay = days.first, let lastDay = days.last else {
+            return []
+        }
+
+        let span = calendar.dateComponents([.day], from: firstDay, to: lastDay).day ?? 0
+
+        if span <= 21 {
+            return stride(from: 0, through: span, by: 1).compactMap { offset in
+                calendar.date(byAdding: .day, value: offset, to: firstDay)
+            }
+        }
+
+        var previousDay = firstDay
+        var contextualDays = [firstDay]
+
+        for day in days.dropFirst() {
+            let gap = calendar.dateComponents([.day], from: previousDay, to: day).day ?? 0
+
+            if gap > 1 && gap <= 4 {
+                for offset in 1..<gap {
+                    if let fillerDay = calendar.date(byAdding: .day, value: offset, to: previousDay) {
+                        contextualDays.append(fillerDay)
+                    }
+                }
+            }
+
+            contextualDays.append(day)
+            previousDay = day
+        }
+
+        return contextualDays
+    }
+
     static func isSameDay(_ lhs: Date, _ rhs: Date) -> Bool {
         calendar.isDate(lhs, inSameDayAs: rhs)
     }

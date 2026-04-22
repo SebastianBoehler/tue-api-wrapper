@@ -12,41 +12,114 @@ struct MailView: View {
     @State private var searchText = ""
     @State private var unreadOnly = false
 
-    var body: some View {
-        List {
-            Section {
-                statusContent
-            }
-
-            Section("Filters") {
-                Picker("Mailbox", selection: $selectedMailbox) {
-                    Text("Inbox").tag("INBOX")
-                    ForEach(mailboxes.filter { $0.name != "INBOX" }) { mailbox in
-                        Text(mailboxTitle(mailbox)).tag(mailbox.name)
-                    }
-                }
-
-                Toggle("Unread only", isOn: $unreadOnly)
-
-                TextField("Search subject, sender, preview", text: $searchText)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .submitLabel(.search)
-                    .onSubmit {
-                        Task { await refreshInbox() }
-                    }
-
-                Button {
-                    Task { await refreshInbox() }
-                } label: {
-                    Label("Apply filters", systemImage: "line.3.horizontal.decrease.circle")
-                }
-                .disabled(phase.isLoading)
-            }
-
-            messagesSection
+    private var topStatusLine: MailStatusLine? {
+        if !model.hasCredentials {
+            return MailStatusLine(
+                text: "Save university credentials in Settings before reading mail.",
+                systemImage: "lock",
+                tint: .secondary
+            )
         }
-        .navigationTitle("Mail")
+        if phase == .loading && inbox == nil {
+            return MailStatusLine(
+                text: "Loading your mailbox.",
+                tint: .accentColor,
+                isLoading: true
+            )
+        }
+        if case .failed(let message) = phase {
+            return MailStatusLine(
+                text: message,
+                systemImage: "exclamationmark.triangle",
+                tint: .orange
+            )
+        }
+        return nil
+    }
+
+    private var footerTimestamp: String? {
+        guard case .loaded(let date) = phase else { return nil }
+        return "Last updated \(date.formatted(date: .abbreviated, time: .shortened))"
+    }
+
+    private var approvalHighlight: (message: MailMessageSummary, notice: MailUniversityApprovalNotice)? {
+        guard let message = inbox?.messages.first(where: { $0.universityApprovalNotice != nil }),
+              let notice = message.universityApprovalNotice else {
+            return nil
+        }
+        return (message, notice)
+    }
+
+    private var mailboxOptions: [MailboxSummary] {
+        var ordered: [MailboxSummary] = [
+            MailboxSummary(
+                name: "INBOX",
+                label: "Inbox",
+                specialUse: nil,
+                messageCount: nil,
+                unreadCount: inbox?.mailbox == "INBOX" ? inbox?.unreadCount : mailboxes.first(where: { $0.name == "INBOX" })?.unreadCount
+            )
+        ]
+        ordered.append(contentsOf: mailboxes.filter { $0.name != "INBOX" })
+
+        var seen = Set<String>()
+        return ordered.filter { mailbox in
+            seen.insert(mailbox.label).inserted
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                MailHeader(subtitle: headerSubtitle)
+
+                if let topStatusLine {
+                    AppInlineStatusLine(
+                        text: topStatusLine.text,
+                        systemImage: topStatusLine.systemImage,
+                        tint: topStatusLine.tint,
+                        isLoading: topStatusLine.isLoading
+                    )
+                }
+
+                MailFilterSurface(
+                    mailboxOptions: mailboxOptions,
+                    selectedMailbox: $selectedMailbox,
+                    searchText: $searchText,
+                    unreadOnly: $unreadOnly,
+                    isLoading: phase.isLoading,
+                    mailboxTitle: mailboxTitle(_:),
+                    applySearch: { Task { await refreshInbox() } }
+                )
+
+                if let approvalHighlight {
+                    NavigationLink(
+                        value: MailMessageSelection(
+                            uid: approvalHighlight.message.uid,
+                            mailbox: inbox?.mailbox ?? selectedMailbox,
+                            subject: approvalHighlight.message.subject
+                        )
+                    ) {
+                        MailApprovalCard(notice: approvalHighlight.notice)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                messagesContent
+
+                if let footerTimestamp {
+                    Text(footerTimestamp)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+                }
+            }
+            .padding(16)
+            .padding(.bottom, 124)
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: MailMessageSelection.self) { selection in
             MailMessageDetailView(selection: selection)
         }
@@ -76,66 +149,61 @@ struct MailView: View {
         }
     }
 
-    @ViewBuilder
-    private var statusContent: some View {
-        switch phase {
-        case .idle:
-            StatusBanner(
-                title: model.hasCredentials ? "Mail ready" : "Credentials needed",
-                message: model.hasCredentials
-                    ? "Mail is fetched directly from Uni Tuebingen over IMAP."
-                    : "Save university credentials in Settings before reading mail.",
-                systemImage: model.hasCredentials ? "envelope" : "lock"
-            )
-        case .loading:
-            ProgressView("Loading mail")
-        case .loaded(let date):
-            StatusBanner(
-                title: inboxTitle,
-                message: "Updated \(date.formatted(date: .abbreviated, time: .shortened)). \(unreadText)",
-                systemImage: "envelope.open"
-            )
-        case .failed(let message):
-            StatusBanner(title: "Mail unavailable", message: message, systemImage: "exclamationmark.triangle")
+    private var headerSubtitle: String {
+        if inbox != nil {
+            return "\(unreadText) in \(inboxTitle)"
         }
+        return model.hasCredentials ? "Direct Uni Tübingen IMAP access" : "Credentials required"
     }
 
     @ViewBuilder
-    private var messagesSection: some View {
-        Section("Messages") {
-            if phase == .loading && inbox == nil {
+    private var messagesContent: some View {
+        if phase == .loading && inbox == nil {
+            VStack(spacing: 12) {
                 ForEach(0..<5, id: \.self) { _ in
-                    MailSkeletonRow()
+                    MailSkeletonCard()
                 }
-                .redacted(reason: .placeholder)
-            } else if let inbox, inbox.messages.isEmpty {
+            }
+        } else if let inbox, inbox.messages.isEmpty {
+            AppSurfaceCard {
                 ContentUnavailableView(
                     "No messages",
                     systemImage: unreadOnly ? "envelope.badge" : "tray",
                     description: Text("Change the mailbox or filters, then refresh.")
                 )
-            } else if let inbox {
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 28)
+            }
+        } else if let inbox {
+            VStack(spacing: 12) {
                 ForEach(inbox.messages) { message in
-                    NavigationLink(value: MailMessageSelection(
-                        uid: message.uid,
-                        mailbox: inbox.mailbox,
-                        subject: message.subject
-                    )) {
+                    NavigationLink(
+                        value: MailMessageSelection(
+                            uid: message.uid,
+                            mailbox: inbox.mailbox,
+                            subject: message.subject
+                        )
+                    ) {
                         MailMessageRow(message: message)
                     }
+                    .buttonStyle(.plain)
                 }
-            } else {
+            }
+        } else {
+            AppSurfaceCard {
                 ContentUnavailableView(
                     "Mail not loaded",
                     systemImage: "envelope",
                     description: Text("Refresh after saving university credentials in Settings.")
                 )
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 28)
             }
         }
     }
 
     private var inboxTitle: String {
-        guard let inbox else { return "Mail" }
+        guard let inbox else { return "Inbox" }
         if let mailbox = mailboxes.first(where: { $0.name == inbox.mailbox }) {
             return mailbox.label
         }
@@ -143,8 +211,8 @@ struct MailView: View {
     }
 
     private var unreadText: String {
-        guard let inbox else { return "" }
-        return inbox.unreadCount == 1 ? "1 unread message." : "\(inbox.unreadCount) unread messages."
+        guard let inbox else { return "Mail not loaded" }
+        return inbox.unreadCount == 1 ? "1 unread message" : "\(inbox.unreadCount) unread messages"
     }
 
     private func refreshAll() async {
@@ -181,22 +249,8 @@ struct MailView: View {
 
     private func mailboxTitle(_ mailbox: MailboxSummary) -> String {
         if let unreadCount = mailbox.unreadCount, unreadCount > 0 {
-            return "\(mailbox.label) (\(unreadCount))"
+            return "\(mailbox.label) \(unreadCount)"
         }
         return mailbox.label
-    }
-}
-
-private struct MailSkeletonRow: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Sender")
-                .font(.subheadline)
-            Text("Subject")
-                .font(.headline)
-            Text("Preview text for the message")
-                .font(.footnote)
-        }
-        .padding(.vertical, 4)
     }
 }

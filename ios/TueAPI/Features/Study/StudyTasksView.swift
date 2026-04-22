@@ -3,16 +3,102 @@ import SwiftUI
 struct StudyTasksView: View {
     var model: AppModel
 
-    var body: some View {
-        List {
-            Section {
-                statusContent
-            }
+    private var isRefreshing: Bool {
+        model.tasksPhase == .loading || (model.tasksPhase == .idle && model.deadlines.isEmpty && model.tasks.isEmpty)
+    }
 
-            deadlinesSection
-            tasksSection
+    private var topStatusLine: StudyTasksStatusLine? {
+        if isRefreshing {
+            return StudyTasksStatusLine(
+                text: "Refreshing ILIAS tasks and Moodle deadlines.",
+                tint: .accentColor,
+                isLoading: true
+            )
         }
+        switch model.tasksPhase {
+        case .unavailable:
+            return StudyTasksStatusLine(
+                text: "Save university credentials before loading study tasks.",
+                systemImage: "lock",
+                tint: .secondary
+            )
+        case .failed(let message):
+            return StudyTasksStatusLine(
+                text: message,
+                systemImage: "exclamationmark.triangle",
+                tint: .orange
+            )
+        default:
+            return nil
+        }
+    }
+
+    private var footerTimestamp: String? {
+        guard case .loaded(let date) = model.tasksPhase else { return nil }
+        return "Last updated \(date.formatted(date: .abbreviated, time: .shortened))"
+    }
+
+    private var primaryEmptyState: StudyEmptyState? {
+        guard model.deadlines.isEmpty, model.tasks.isEmpty else { return nil }
+        guard !isRefreshing else { return nil }
+        switch model.tasksPhase {
+        case .unavailable:
+            return StudyEmptyState(
+                title: "Credentials needed",
+                systemImage: "key",
+                message: "Save your university credentials to load ILIAS tasks and Moodle deadlines."
+            )
+        case .failed:
+            return StudyEmptyState(
+                title: "Tasks unavailable",
+                systemImage: "exclamationmark.triangle",
+                message: "Refresh to try loading your study data again."
+            )
+        default:
+            return nil
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                if let topStatusLine {
+                    AppInlineStatusLine(
+                        text: topStatusLine.text,
+                        systemImage: topStatusLine.systemImage,
+                        tint: topStatusLine.tint,
+                        isLoading: topStatusLine.isLoading
+                    )
+                }
+
+                if let primaryEmptyState {
+                    AppSurfaceCard {
+                        ContentUnavailableView(
+                            primaryEmptyState.title,
+                            systemImage: primaryEmptyState.systemImage,
+                            description: Text(primaryEmptyState.message)
+                        )
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 28)
+                    }
+                } else {
+                    deadlinesCard
+                    iliasTasksCard
+                }
+
+                if let footerTimestamp {
+                    Text(footerTimestamp)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+                }
+            }
+            .padding(16)
+            .padding(.bottom, 124)
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle("Tasks")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -20,7 +106,7 @@ struct StudyTasksView: View {
                 } label: {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
-                .disabled(model.tasksPhase == .loading)
+                .disabled(isRefreshing)
             }
         }
         .task {
@@ -33,40 +119,15 @@ struct StudyTasksView: View {
         }
     }
 
-    @ViewBuilder
-    private var statusContent: some View {
-        switch model.tasksPhase {
-        case .idle:
-            StatusBanner(
-                title: "Tasks ready",
-                message: "Refresh to load ILIAS tasks and Moodle deadlines from your university account.",
-                systemImage: "checklist"
-            )
-        case .loading:
-            ProgressView("Loading study tasks")
-        case .loaded(let date):
-            StatusBanner(
-                title: "Tasks updated",
-                message: "Updated \(date.formatted(date: .abbreviated, time: .shortened)).",
-                systemImage: "checkmark.circle"
-            )
-        case .unavailable:
-            StatusBanner(
-                title: "Tasks unavailable",
-                message: "Save university credentials before loading tasks.",
-                systemImage: "key"
-            )
-        case .failed(let message):
-            StatusBanner(title: "Tasks failed", message: message, systemImage: "exclamationmark.triangle")
-        }
-    }
+    private var deadlinesCard: some View {
+        AppSurfaceCard {
+            sectionHeader("Deadlines", systemImage: "calendar.badge.clock", count: model.deadlines.count)
 
-    @ViewBuilder
-    private var deadlinesSection: some View {
-        Section("Deadlines") {
-            if model.tasksPhase == .loading && model.deadlines.isEmpty {
-                ForEach(0..<3, id: \.self) { _ in
-                    StudyDeadlineSkeletonRow()
+            if isRefreshing && model.deadlines.isEmpty {
+                VStack(spacing: 14) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        StudyDeadlineSkeletonRow()
+                    }
                 }
             } else if model.deadlines.isEmpty {
                 ContentUnavailableView(
@@ -74,20 +135,30 @@ struct StudyTasksView: View {
                     systemImage: "calendar.badge.checkmark",
                     description: Text("No actionable Moodle deadlines are visible right now.")
                 )
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
             } else {
-                ForEach(model.deadlines) { deadline in
-                    StudyDeadlineRow(deadline: deadline)
+                VStack(spacing: 14) {
+                    ForEach(Array(model.deadlines.enumerated()), id: \.element.id) { index, deadline in
+                        StudyDeadlineRow(deadline: deadline)
+                        if index < model.deadlines.count - 1 {
+                            Divider()
+                        }
+                    }
                 }
             }
         }
     }
 
-    @ViewBuilder
-    private var tasksSection: some View {
-        Section("ILIAS tasks") {
-            if model.tasksPhase == .loading && model.tasks.isEmpty {
-                ForEach(0..<3, id: \.self) { _ in
-                    StudyIliasTaskSkeletonRow()
+    private var iliasTasksCard: some View {
+        AppSurfaceCard {
+            sectionHeader("ILIAS tasks", systemImage: "checklist", count: model.tasks.count)
+
+            if isRefreshing && model.tasks.isEmpty {
+                VStack(spacing: 14) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        StudyIliasTaskSkeletonRow()
+                    }
                 }
             } else if model.tasks.isEmpty {
                 ContentUnavailableView(
@@ -95,11 +166,49 @@ struct StudyTasksView: View {
                     systemImage: "checklist",
                     description: Text("No current task rows are visible in ILIAS.")
                 )
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
             } else {
-                ForEach(model.tasks) { task in
-                    StudyIliasTaskRow(task: task)
+                VStack(spacing: 14) {
+                    ForEach(Array(model.tasks.enumerated()), id: \.element.id) { index, task in
+                        StudyIliasTaskRow(task: task)
+                        if index < model.tasks.count - 1 {
+                            Divider()
+                        }
+                    }
                 }
             }
         }
     }
+
+    private func sectionHeader(_ title: String, systemImage: String, count: Int) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+
+            Spacer()
+
+            if count > 0 {
+                Text("\(count)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color(uiColor: .secondarySystemBackground), in: Capsule())
+            }
+        }
+    }
+}
+
+private struct StudyTasksStatusLine {
+    var text: String
+    var systemImage: String?
+    var tint: Color
+    var isLoading = false
+}
+
+private struct StudyEmptyState {
+    let title: String
+    let systemImage: String
+    let message: String
 }

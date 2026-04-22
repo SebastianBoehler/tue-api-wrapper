@@ -7,16 +7,18 @@ struct StudyView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Study area", selection: $selectedScope) {
-                ForEach(StudyScope.allCases) { scope in
-                    Text(scope.title).tag(scope)
+            VStack(spacing: 0) {
+                Picker("Study area", selection: $selectedScope) {
+                    ForEach(StudyScope.allCases) { scope in
+                        Text(scope.title).tag(scope)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 10)
             }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-            .padding(.vertical, 10)
-
-            Divider()
+            .background(Color(uiColor: .systemGroupedBackground))
 
             switch selectedScope {
             case .tasks:
@@ -27,7 +29,9 @@ struct StudyView: View {
                 CoursesView(model: model)
             }
         }
+        .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(selectedScope.title)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

@@ -23,6 +23,11 @@ struct AlmaClient {
     ) async throws -> LectureSnapshot {
         try await login(credentials: credentials)
         let page = try await loadText(timetableURL())
+        let enrollment = try await loadAuthenticatedHTMLResponse(
+            enrollmentURL(),
+            pageName: "enrollment page"
+        )
+        let enrollmentState = try AlmaAcademicHTMLParser.parseEnrollment(enrollment.html)
         let terms = try AlmaHTMLParser.extractTerms(from: page)
         guard let term = terms.first(where: \.isSelected) ?? terms.first else {
             throw AlmaClientError.timetableMissing("Could not determine the selected Alma term.")
@@ -44,7 +49,8 @@ struct AlmaClient {
             refreshedAt: now,
             sourceTerm: term.label,
             events: Array(lectures.prefix(limit)),
-            semesterCredits: SemesterCreditCounter.summarize(events)
+            semesterCredits: SemesterCreditCounter.summarize(events),
+            personName: enrollmentState.personName
         )
     }
 

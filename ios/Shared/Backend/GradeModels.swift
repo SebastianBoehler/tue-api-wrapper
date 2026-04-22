@@ -6,9 +6,11 @@ struct AlmaEnrollmentState: Decodable {
     var selectedTerm: String?
     var availableTerms: [String: String]
     var message: String?
+    var personName: String?
 
     enum CodingKeys: String, CodingKey {
         case message
+        case personName = "person_name"
         case selectedTerm = "selected_term"
         case availableTerms = "available_terms"
     }

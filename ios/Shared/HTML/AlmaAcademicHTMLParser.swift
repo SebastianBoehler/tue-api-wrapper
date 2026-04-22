@@ -31,7 +31,8 @@ enum AlmaAcademicHTMLParser {
         return AlmaEnrollmentState(
             selectedTerm: selectedTerm,
             availableTerms: terms,
-            message: enrollmentMessage(in: form)
+            message: enrollmentMessage(in: form),
+            personName: personName(in: html)
         )
     }
 
@@ -85,6 +86,21 @@ enum AlmaAcademicHTMLParser {
         let text = HTMLText.stripTags(form)
         let pattern = "Sie haben bisher.+?(?:angemeldet\\.|zugelassen\\.)"
         return HTMLRegex.firstCapture("(\(pattern))", in: text)
+    }
+
+    private static func personName(in html: String) -> String? {
+        for heading in blocks(named: "h2", in: html) {
+            let text = HTMLText.stripTags(heading)
+            guard text.localizedCaseInsensitiveContains("Personendaten:") else {
+                continue
+            }
+
+            let cleaned = text
+                .replacingOccurrences(of: "Personendaten:", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return cleaned.isEmpty ? nil : cleaned
+        }
+        return nil
     }
 
     private static func fieldText(in row: String, suffixPattern: String) -> String? {

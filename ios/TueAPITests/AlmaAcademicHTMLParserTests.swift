@@ -11,6 +11,7 @@ final class AlmaAcademicHTMLParserTests: XCTestCase {
           </select>
           <p>Sie haben bisher fuer diesen Studiengang keine Anmeldung zugelassen.</p>
         </form>
+        <h2>Personendaten: Sebastian Böhler</h2>
         """
 
         let enrollment = try AlmaAcademicHTMLParser.parseEnrollment(html)
@@ -18,6 +19,7 @@ final class AlmaAcademicHTMLParserTests: XCTestCase {
         XCTAssertEqual(enrollment.selectedTerm, "Summer 2025")
         XCTAssertEqual(enrollment.availableTerms["Winter 2024/25"], "20241")
         XCTAssertEqual(enrollment.message, "Sie haben bisher fuer diesen Studiengang keine Anmeldung zugelassen.")
+        XCTAssertEqual(enrollment.personName, "Sebastian Böhler")
     }
 
     func testParsesExamOverviewRows() throws {

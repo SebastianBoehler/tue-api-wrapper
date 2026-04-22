@@ -6,7 +6,7 @@ struct TueAPIApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AppView(model: model)
+            AppRootView(model: model)
         }
     }
 }

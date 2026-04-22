@@ -49,6 +49,7 @@ struct LectureSnapshot: Codable, Equatable {
     var sourceTerm: String
     var events: [LectureEvent]
     var semesterCredits: SemesterCreditSummary?
+    var personName: String?
 }
 
 struct SemesterCreditSummary: Codable, Equatable {

@@ -13,21 +13,59 @@ struct CalendarScheduleView: View {
         return days.first { CalendarSchedule.isSameDay($0, selectedDay) } ?? days.first
     }
 
+    private var topStatusLine: CalendarStatusLine? {
+        if !model.hasCredentials {
+            return CalendarStatusLine(
+                text: "Save Alma credentials in Settings to load your timetable.",
+                systemImage: "lock",
+                tint: .secondary
+            )
+        }
+        if model.phase == .loading && days.isEmpty {
+            return CalendarStatusLine(
+                text: "Refreshing your timetable.",
+                tint: .accentColor,
+                isLoading: true
+            )
+        }
+        if case .failed(let message) = model.phase {
+            return CalendarStatusLine(
+                text: message,
+                systemImage: "exclamationmark.triangle",
+                tint: .orange
+            )
+        }
+        return nil
+    }
+
+    private var footerTimestamp: String? {
+        guard topStatusLine == nil, let refreshedAt = model.timetableRefreshedAt else {
+            return nil
+        }
+        return "Last updated \(refreshedAt.formatted(date: .abbreviated, time: .shortened))"
+    }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                calendarError
+            LazyVStack(alignment: .leading, spacing: 18) {
+                CalendarHeader(subtitle: headerSubtitle)
+
+                if let topStatusLine {
+                    AppInlineStatusLine(
+                        text: topStatusLine.text,
+                        systemImage: topStatusLine.systemImage,
+                        tint: topStatusLine.tint,
+                        isLoading: topStatusLine.isLoading
+                    )
+                }
 
                 if days.isEmpty {
-                    if model.phase == .loading {
-                        loadingState
-                    } else {
-                        emptyState
-                    }
+                    emptyState
                 } else {
                     CalendarDayStrip(
                         days: days,
                         selectedDay: visibleDay ?? days[0],
+                        eventsForDay: { CalendarSchedule.events(on: $0, from: model.events) },
                         selectDay: { selectedDay = $0 }
                     )
 
@@ -38,10 +76,20 @@ struct CalendarScheduleView: View {
                         )
                     }
                 }
+
+                if let footerTimestamp {
+                    Text(footerTimestamp)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+                }
             }
-            .padding()
+            .padding(16)
+            .padding(.bottom, 124)
         }
-        .navigationTitle("Calendar")
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: LectureEvent.self) { event in
             CourseDetailView(event: event, model: model)
         }
@@ -50,7 +98,13 @@ struct CalendarScheduleView: View {
                 Button {
                     Task { await model.refreshUpcomingLectures() }
                 } label: {
-                    refreshButtonLabel
+                    if model.phase == .loading {
+                        ProgressView()
+                            .controlSize(.small)
+                            .accessibilityLabel("Refreshing Alma timetable")
+                    } else {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                    }
                 }
                 .disabled(model.phase == .loading)
             }
@@ -64,43 +118,37 @@ struct CalendarScheduleView: View {
         }
     }
 
-    @ViewBuilder
-    private var refreshButtonLabel: some View {
-        if model.phase == .loading {
-            ProgressView()
-                .controlSize(.small)
-                .accessibilityLabel("Refreshing Alma timetable")
-        } else {
-            Label("Refresh", systemImage: "arrow.clockwise")
+    private var headerSubtitle: String {
+        let details = [model.currentTermLabel, days.isEmpty ? nil : "\(days.count) calendar days"]
+            .compactMap { $0 }
+        if !details.isEmpty {
+            return details.joined(separator: " · ")
         }
+        return model.hasCredentials ? "Upcoming lectures" : "Save Alma credentials in Settings."
     }
 
     @ViewBuilder
-    private var calendarError: some View {
-        if case .failed(let message) = model.phase {
-            StatusBanner(title: "Calendar refresh failed", message: message, systemImage: "exclamationmark.triangle")
-        }
-    }
-
-    private var loadingState: some View {
-        ProgressView("Refreshing Alma timetable")
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 48)
-    }
-
     private var emptyState: some View {
-        ContentUnavailableView(
-            "No calendar entries",
-            systemImage: "calendar.badge.exclamationmark",
-            description: Text(emptyMessage)
-        )
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 48)
+        if model.phase == .loading {
+            AppInlineStatusLine(
+                text: "Refreshing your timetable.",
+                tint: .accentColor,
+                isLoading: true
+            )
+        } else {
+            ContentUnavailableView(
+                "No calendar entries",
+                systemImage: "calendar.badge.exclamationmark",
+                description: Text(emptyMessage)
+            )
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 56)
+        }
     }
 
     private var emptyMessage: String {
         if model.hasCredentials {
-            "Refresh Alma to load upcoming timetable entries into the calendar."
+            "Refresh Alma to load upcoming timetable entries."
         } else {
             "Save university credentials in Settings, then refresh Alma."
         }
@@ -111,73 +159,6 @@ struct CalendarScheduleView: View {
             return
         }
         selectedDay = CalendarSchedule.defaultDay(from: days)
-    }
-}
-
-private struct CalendarDayStrip: View {
-    var days: [Date]
-    var selectedDay: Date
-    var selectDay: (Date) -> Void
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(days, id: \.self) { day in
-                    Button {
-                        selectDay(day)
-                    } label: {
-                        CalendarDayChip(
-                            day: day,
-                            isSelected: CalendarSchedule.isSameDay(day, selectedDay)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 2)
-        }
-    }
-}
-
-private struct CalendarDayChip: View {
-    var day: Date
-    var isSelected: Bool
-
-    private var isToday: Bool {
-        CalendarSchedule.calendar.isDateInToday(day)
-    }
-
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(day.formatted(.dateTime.weekday(.abbreviated)))
-                .font(.caption)
-
-            ZStack(alignment: .bottom) {
-                Text(day.formatted(.dateTime.day()))
-                    .font(.headline)
-                    .padding(.bottom, isToday ? 6 : 0)
-
-                if isToday {
-                    Circle()
-                        .fill(isSelected ? Color.white : Color.accentColor)
-                        .frame(width: 5, height: 5)
-                }
-            }
-            .frame(height: 28)
-
-            Text(day.formatted(.dateTime.month(.abbreviated)))
-                .font(.caption2)
-        }
-        .frame(width: 68, height: 74)
-        .foregroundStyle(isSelected ? Color.white : (isToday ? Color.accentColor : Color.primary))
-        .background(isSelected ? Color.accentColor : Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-        .overlay {
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(
-                    isSelected ? Color.accentColor : (isToday ? Color.accentColor.opacity(0.6) : Color.secondary.opacity(0.18)),
-                    lineWidth: isToday && !isSelected ? 1.5 : 1
-                )
-        }
     }
 }
 

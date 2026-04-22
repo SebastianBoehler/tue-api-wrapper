@@ -8,10 +8,10 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("University login") {
-                TextField("Username", text: $username)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                SecureField("Password", text: $password)
+                UniversityCredentialsFields(
+                    username: $username,
+                    password: $password
+                )
             }
 
             Section {

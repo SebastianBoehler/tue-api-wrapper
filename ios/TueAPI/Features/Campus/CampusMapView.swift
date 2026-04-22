@@ -3,223 +3,136 @@ import SwiftUI
 
 struct CampusMapView: View {
     @State private var store = CampusHappeningStore()
+    @StateObject private var locationController = CampusLocationController()
+    @State private var selectedSection: CampusMapSection = .places
     @State private var selectedHappening: CampusHappening?
     @State private var isShowingPostSheet = false
-    @State private var mapPosition = MapCameraPosition.region(
-        MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 48.5236, longitude: 9.0576),
-            span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)
-        )
-    )
+    @State private var mapPosition = MapCameraPosition.region(Self.defaultRegion)
 
     var body: some View {
-        VStack(spacing: 0) {
-            Map(position: $mapPosition, selection: $selectedHappening) {
-                ForEach(CampusLandmark.important) { landmark in
-                    Marker(
-                        landmark.name,
-                        systemImage: landmark.symbolName,
-                        coordinate: landmark.coordinate
-                    )
-                    .tint(.blue)
-                }
+        GeometryReader { proxy in
+            VStack(spacing: 0) {
+                Map(position: $mapPosition, selection: $selectedHappening) {
+                    UserAnnotation()
 
-                ForEach(store.happenings) { happening in
-                    Marker(
-                        happening.title,
-                        systemImage: happening.category.symbolName,
-                        coordinate: happening.coordinate
-                    )
-                    .tint(happening.category.tint)
-                    .tag(happening)
-                }
-            }
-            .frame(minHeight: 260)
-            .mapControls {
-                MapCompass()
-                MapScaleView()
-            }
-
-            List {
-                Section {
-                    statusContent
-                }
-
-                Section("Places") {
                     ForEach(CampusLandmark.important) { landmark in
-                        LandmarkRow(landmark: landmark)
-                            .onTapGesture {
-                                mapPosition = .region(landmark.focusRegion)
-                            }
+                        Marker(
+                            landmark.name,
+                            systemImage: landmark.symbolName,
+                            coordinate: landmark.coordinate
+                        )
+                        .tint(.blue)
                     }
+
+                    ForEach(store.happenings) { happening in
+                        Marker(
+                            happening.title,
+                            systemImage: happening.category.symbolName,
+                            coordinate: happening.coordinate
+                        )
+                        .tint(happening.category.tint)
+                        .tag(happening)
+                    }
+                }
+                .frame(height: max(360, proxy.size.height * 0.58))
+                .mapControls {
+                    MapCompass()
+                    MapScaleView()
+                }
+                .overlay(alignment: .topTrailing) {
+                    CampusMapFloatingControls(
+                        focusUser: focusUser,
+                        openPost: { isShowingPostSheet = true }
+                    )
+                    .padding(.top, 16)
+                    .padding(.trailing, 16)
                 }
 
-                Section("Happenings") {
-                    if store.happenings.isEmpty {
-                        ContentUnavailableView(
-                            "No happenings yet",
-                            systemImage: "map",
-                            description: Text("Post a study session, lunch plan, pickup sport, or campus meetup.")
-                        )
-                    } else {
-                        ForEach(store.happenings) { happening in
-                            HappeningRow(happening: happening)
-                                .onTapGesture {
-                                    selectedHappening = happening
-                                    mapPosition = .region(happening.focusRegion)
-                                }
-                        }
-                        .onDelete(perform: store.delete)
-                    }
+                ScrollView {
+                    CampusMapBottomSheet(
+                        selectedSection: $selectedSection,
+                        statusLine: statusLine,
+                        store: store,
+                        focusLandmark: focusLandmark(_:),
+                        focusHappening: focusHappening(_:),
+                        openPost: { isShowingPostSheet = true }
+                    )
+                    .padding(16)
+                    .padding(.bottom, 124)
                 }
+                .background(Color(uiColor: .systemGroupedBackground))
             }
+            .background(Color(uiColor: .systemGroupedBackground))
         }
         .navigationTitle("Campus")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    isShowingPostSheet = true
-                } label: {
-                    Label("Post happening", systemImage: "plus")
-                }
-            }
-        }
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $isShowingPostSheet) {
             PostHappeningSheet(store: store)
         }
+        .task {
+            locationController.requestAuthorizationIfNeeded()
+        }
+        .onChange(of: selectedHappening) { _, newValue in
+            if newValue != nil {
+                selectedSection = .happenings
+            }
+        }
     }
 
-    @ViewBuilder
-    private var statusContent: some View {
+    private var statusLine: CampusMapStatusLine? {
         switch store.phase {
-        case .idle:
-            StatusBanner(
-                title: "Campus map",
-                message: "Important campus places are pinned. Posts are saved on this device after Maps finds the location.",
-                systemImage: "mappin.and.ellipse"
-            )
         case .saving:
-            ProgressView("Finding location")
+            return CampusMapStatusLine(
+                text: "Finding location for your post.",
+                tint: .accentColor,
+                isLoading: true
+            )
         case .saved:
-            StatusBanner(title: "Posted", message: "The happening is pinned on the map.", systemImage: "checkmark.circle")
+            return CampusMapStatusLine(
+                text: "Happening posted on the map.",
+                systemImage: "checkmark.circle",
+                tint: .accentColor
+            )
         case .failed(let message):
-            StatusBanner(title: "Could not post", message: message, systemImage: "exclamationmark.triangle")
+            return CampusMapStatusLine(
+                text: message,
+                systemImage: "exclamationmark.triangle",
+                tint: .orange
+            )
+        case .idle:
+            return locationController.permissionStatusLine
         }
     }
-}
 
-private struct LandmarkRow: View {
-    var landmark: CampusLandmark
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(landmark.name, systemImage: landmark.symbolName)
-                .font(.headline)
-            Text(landmark.detail)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+    private func focusUser() {
+        locationController.refreshLocation()
+        guard let coordinate = locationController.lastLocation else {
+            return
         }
-        .padding(.vertical, 4)
+        mapPosition = .region(
+            MKCoordinateRegion(
+                center: coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.008, longitudeDelta: 0.008)
+            )
+        )
     }
-}
 
-private struct HappeningRow: View {
-    var happening: CampusHappening
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Label(happening.title, systemImage: happening.category.symbolName)
-                    .font(.headline)
-                Spacer()
-                Text(happening.category.label)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(happening.category.tint)
-            }
-            Label(happening.locationName, systemImage: "mappin.and.ellipse")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            if let note = happening.note {
-                Text(note)
-                    .font(.subheadline)
-            }
-            Text(happening.startsAt.formatted(date: .abbreviated, time: .shortened))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.vertical, 4)
+    private func focusLandmark(_ landmark: CampusLandmark) {
+        selectedHappening = nil
+        selectedSection = .places
+        mapPosition = .region(landmark.focusRegion)
     }
-}
 
-private struct PostHappeningSheet: View {
-    var store: CampusHappeningStore
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var title = ""
-    @State private var locationName = ""
-    @State private var note = ""
-    @State private var category: HappeningCategory = .social
-    @State private var startsAt = Date()
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("Happening") {
-                    TextField("Coffee after lecture", text: $title)
-                    Picker("Type", selection: $category) {
-                        ForEach(HappeningCategory.allCases) { category in
-                            Label(category.label, systemImage: category.symbolName)
-                                .tag(category)
-                        }
-                    }
-                    DatePicker("Starts", selection: $startsAt)
-                }
-
-                Section("Location") {
-                    TextField("Neue Aula, Morgenstelle, room name", text: $locationName)
-                    Text("Use a location Maps can find around Tübingen.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("Details") {
-                    TextField("What should others know?", text: $note, axis: .vertical)
-                        .lineLimit(3, reservesSpace: true)
-                }
-
-                if case .failed(let message) = store.phase {
-                    Section {
-                        StatusBanner(title: "Could not post", message: message, systemImage: "exclamationmark.triangle")
-                    }
-                }
-            }
-            .navigationTitle("Post")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Post") {
-                        Task {
-                            await store.post(
-                                title: title,
-                                locationName: locationName,
-                                note: note,
-                                category: category,
-                                startsAt: startsAt
-                            )
-                            if case .saved = store.phase {
-                                dismiss()
-                            }
-                        }
-                    }
-                    .disabled(store.phase == .saving)
-                }
-            }
-        }
+    private func focusHappening(_ happening: CampusHappening) {
+        selectedHappening = happening
+        selectedSection = .happenings
+        mapPosition = .region(happening.focusRegion)
     }
+
+    private static let defaultRegion = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 48.5236, longitude: 9.0576),
+        span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)
+    )
 }
 
 private extension CampusLandmark {

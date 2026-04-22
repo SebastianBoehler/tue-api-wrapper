@@ -10,6 +10,8 @@ final class AppModel {
     var events: [LectureEvent]
     var semesterCredits: SemesterCreditSummary?
     var timetableRefreshedAt: Date?
+    var profileName: String?
+    var almaSourceTerm: String?
     var browseLectures: [AlmaCurrentLecture] = []
     var browseSelectedDate: String?
     var phase: LoadPhase = .idle
@@ -37,6 +39,10 @@ final class AppModel {
         AppConfig.portalAPIBaseURLString
     }
 
+    var currentTermLabel: String? {
+        almaSourceTerm
+    }
+
     // Tasks and deadlines are fetched on-device with Keychain credentials.
     var tasks: [IliasTask] = []
     var deadlines: [MoodleDeadline] = []
@@ -62,6 +68,8 @@ final class AppModel {
         self.events = Self.upcomingOnly(cachedSnapshot?.events ?? [])
         self.semesterCredits = cachedSnapshot?.semesterCredits
         self.timetableRefreshedAt = cachedSnapshot?.refreshedAt
+        self.profileName = cachedSnapshot?.personName
+        self.almaSourceTerm = cachedSnapshot?.sourceTerm
         self.hasCredentials = ((try? keychain.load()) ?? nil) != nil
         self.remindersEnabled = UserDefaults.standard.bool(forKey: Self.remindersEnabledKey)
 
@@ -147,6 +155,8 @@ final class AppModel {
         do {
             try keychain.delete()
             hasCredentials = false
+            profileName = nil
+            almaSourceTerm = nil
             phase = .idle
         } catch {
             phase = .failed(error.localizedDescription)
@@ -169,6 +179,8 @@ final class AppModel {
             events = Self.upcomingOnly(snapshot.events)
             semesterCredits = snapshot.semesterCredits
             timetableRefreshedAt = snapshot.refreshedAt
+            profileName = snapshot.personName
+            almaSourceTerm = snapshot.sourceTerm
             phase = .loaded(snapshot.refreshedAt, snapshot.sourceTerm)
             WidgetCenter.shared.reloadAllTimelines()
             await rescheduleRemindersIfEnabled()

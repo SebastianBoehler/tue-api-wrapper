@@ -58,6 +58,21 @@ struct CampusMapBottomSheet: View {
                 )
             }
 
+            NavigationLink {
+                KufOccupancyHistoryView()
+            } label: {
+                Label("Open KuF trends", systemImage: "chart.bar.xaxis")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 11)
+                    .background(
+                        Color(uiColor: .secondarySystemBackground),
+                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    )
+            }
+            .buttonStyle(.plain)
+
             switch selectedSection {
             case .places:
                 CampusPlacesScroller(focusLandmark: focusLandmark)

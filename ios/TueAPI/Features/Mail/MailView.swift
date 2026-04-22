@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MailView: View {
     var model: AppModel
+    var mailBadgeStore: MailBadgeStore
 
     private let mailService = OnDeviceMailService()
 
@@ -227,6 +228,7 @@ struct MailView: View {
             let (fetchedMailboxes, fetchedInbox) = try await (mailboxFetch, inboxFetch)
             mailboxes = fetchedMailboxes
             inbox = fetchedInbox
+            mailBadgeStore.update(from: fetchedMailboxes, fallbackInbox: fetchedInbox)
             phase = .loaded(Date())
         } catch {
             phase = .failed(error.localizedDescription)
@@ -241,6 +243,9 @@ struct MailView: View {
                 query: searchText,
                 unreadOnly: unreadOnly
             )
+            if let inbox {
+                mailBadgeStore.update(from: inbox)
+            }
             phase = .loaded(Date())
         } catch {
             phase = .failed(error.localizedDescription)

@@ -57,8 +57,9 @@ struct CampusMapView: View {
                     focusHappening: focusHappening(_:),
                     openPost: { isShowingPostSheet = true }
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .padding(.horizontal, 16)
-                .padding(.bottom, max(104, proxy.safeAreaInsets.bottom + 72))
+                .padding(.bottom, max(74, proxy.safeAreaInsets.bottom + 18))
             }
             .background(Color(uiColor: .systemGroupedBackground))
         }

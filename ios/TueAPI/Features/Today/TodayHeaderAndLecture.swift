@@ -4,6 +4,7 @@ struct TodayIdentityHeader: View {
     let profileName: String?
     let termLabel: String?
     let hasCredentials: Bool
+    let unreadMailText: String?
 
     private var displayName: String {
         profileName ?? "Today"
@@ -34,6 +35,17 @@ struct TodayIdentityHeader: View {
                 Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+
+                if let unreadMailText {
+                    Label(unreadMailText, systemImage: "envelope.badge.fill")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .lineLimit(1)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.accentColor.opacity(0.1), in: Capsule())
+                        .padding(.top, 4)
+                }
             }
 
             Spacer(minLength: 0)

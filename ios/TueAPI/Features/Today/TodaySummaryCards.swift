@@ -143,9 +143,9 @@ struct TodayCampusPulseCard: View {
                 }
 
                 NavigationLink {
-                    TalksView()
+                    KufOccupancyHistoryView()
                 } label: {
-                    TodayQuickActionLabel(title: "Talks", systemImage: "person.3")
+                    TodayQuickActionLabel(title: "KuF trends", systemImage: "chart.bar.xaxis")
                 }
             }
         }

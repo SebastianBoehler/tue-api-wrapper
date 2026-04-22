@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TodayView: View {
     var model: AppModel
+    var mailBadgeStore: MailBadgeStore
     private let kufHistoryStore: KufOccupancyHistoryStore?
 
     @State private var kufOccupancy: KufTrainingOccupancy?
@@ -63,8 +64,13 @@ struct TodayView: View {
         return "Last updated \(refreshedAt.formatted(date: .abbreviated, time: .shortened))"
     }
 
-    init(model: AppModel, kufHistoryStore: KufOccupancyHistoryStore? = KufOccupancyHistoryStore()) {
+    init(
+        model: AppModel,
+        mailBadgeStore: MailBadgeStore,
+        kufHistoryStore: KufOccupancyHistoryStore? = KufOccupancyHistoryStore()
+    ) {
         self.model = model
+        self.mailBadgeStore = mailBadgeStore
         self.kufHistoryStore = kufHistoryStore
     }
 
@@ -74,7 +80,8 @@ struct TodayView: View {
                 TodayIdentityHeader(
                     profileName: model.profileName,
                     termLabel: model.currentTermLabel,
-                    hasCredentials: model.hasCredentials
+                    hasCredentials: model.hasCredentials,
+                    unreadMailText: mailBadgeStore.unreadSummaryText
                 )
 
                 if let topStatusLine {
@@ -160,6 +167,7 @@ private extension TodayView {
     func refreshToday() async {
         await model.refreshUpcomingLectures()
         await model.refreshTasks()
+        await mailBadgeStore.refreshIfNeeded(hasCredentials: model.hasCredentials, force: true)
         await refreshKuf()
     }
 

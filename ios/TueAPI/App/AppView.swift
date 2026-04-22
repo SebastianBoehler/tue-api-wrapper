@@ -2,11 +2,13 @@ import SwiftUI
 
 struct AppView: View {
     var model: AppModel
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var mailBadgeStore = MailBadgeStore()
 
     var body: some View {
         TabView {
             NavigationStack {
-                TodayView(model: model)
+                TodayView(model: model, mailBadgeStore: mailBadgeStore)
                     .settingsToolbar(model: model)
             }
             .tabItem {
@@ -30,12 +32,13 @@ struct AppView: View {
             }
 
             NavigationStack {
-                MailView(model: model)
+                MailView(model: model, mailBadgeStore: mailBadgeStore)
                     .settingsToolbar(model: model)
             }
             .tabItem {
                 Label("Inbox", systemImage: "envelope")
             }
+            .badge(mailBadgeStore.tabBadgeCount)
 
             NavigationStack {
                 DiscoverView(model: model)
@@ -47,6 +50,18 @@ struct AppView: View {
         }
         .task {
             await model.refreshReminderStatus()
+            await mailBadgeStore.refreshIfNeeded(hasCredentials: model.hasCredentials, force: true)
+        }
+        .onChange(of: scenePhase) {
+            guard scenePhase == .active else { return }
+            Task {
+                await mailBadgeStore.refreshIfNeeded(hasCredentials: model.hasCredentials)
+            }
+        }
+        .onChange(of: model.hasCredentials) {
+            Task {
+                await mailBadgeStore.refreshIfNeeded(hasCredentials: model.hasCredentials, force: true)
+            }
         }
     }
 }

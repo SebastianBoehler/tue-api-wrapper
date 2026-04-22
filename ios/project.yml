@@ -32,6 +32,7 @@ targets:
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
         LSRequiresIPhoneOS: true
+        NSLocationWhenInUseUsageDescription: "Your location is used to show your position on the campus map and help you navigate around Tübingen."
         NSSupportsLiveActivities: true
         UIApplicationSupportsIndirectInputEvents: true
         UILaunchScreen: {}

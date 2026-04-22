@@ -1,6 +1,6 @@
 import Foundation
 
-struct AlmaCourseRegistrationSupport: Decodable {
+struct BackendAlmaCourseRegistrationSupport: Decodable {
     var detailURL: String
     var title: String?
     var number: String?
@@ -22,7 +22,7 @@ struct AlmaCourseRegistrationSupport: Decodable {
     }
 }
 
-private struct AlmaCourseRegistrationResponse: Decodable {
+private struct BackendAlmaCourseRegistrationResponse: Decodable {
     var finalURL: String
     var status: String?
     var messages: [String]
@@ -35,13 +35,13 @@ private struct AlmaCourseRegistrationResponse: Decodable {
 }
 
 extension BackendClient {
-    func fetchAlmaCourseRegistrationSupport(detailURL: URL) async throws -> AlmaCourseRegistrationSupport {
+    func fetchAlmaCourseRegistrationSupport(detailURL: URL) async throws -> BackendAlmaCourseRegistrationSupport {
         let url = try makeURL(
             path: "api/alma/course-registration/support",
             queryItems: [URLQueryItem(name: "url", value: detailURL.absoluteString)]
         )
         let data = try await get(url)
-        return try JSONDecoder().decode(AlmaCourseRegistrationSupport.self, from: data)
+        return try JSONDecoder().decode(BackendAlmaCourseRegistrationSupport.self, from: data)
     }
 
     func registerForAlmaCourse(detailURL: URL) async throws -> CriticalActionResult {
@@ -50,7 +50,7 @@ extension BackendClient {
             queryItems: [URLQueryItem(name: "url", value: detailURL.absoluteString)]
         )
         let data = try await post(url)
-        let response = try JSONDecoder().decode(AlmaCourseRegistrationResponse.self, from: data)
+        let response = try JSONDecoder().decode(BackendAlmaCourseRegistrationResponse.self, from: data)
         return CriticalActionResult(
             status: response.status ?? "submitted",
             message: response.messages.first,

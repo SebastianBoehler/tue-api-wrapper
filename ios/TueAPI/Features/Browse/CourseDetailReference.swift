@@ -144,14 +144,6 @@ struct PortalStatusRow: View {
     }
 }
 
-struct CoursePortalStatusPayload: Decodable {
-    var portalStatuses: [CoursePortalStatus]
-
-    enum CodingKeys: String, CodingKey {
-        case portalStatuses = "portal_statuses"
-    }
-}
-
 struct CoursePortalStatus: Decodable, Identifiable {
     var portal: String
     var status: String
@@ -189,6 +181,8 @@ struct CoursePortalStatus: Decodable, Identifiable {
     var displayStatus: String {
         if signedUp == true { return "Signed up" }
         if signedUp == false { return "Not signed up" }
+        if status == "registration_available" { return "Registration available" }
+        if status == "not_available" { return "No signup action" }
         if status == "error" { return "Unavailable" }
         return "Unknown"
     }
@@ -196,6 +190,8 @@ struct CoursePortalStatus: Decodable, Identifiable {
     var systemImage: String {
         if signedUp == true { return "checkmark.circle.fill" }
         if signedUp == false { return "xmark.circle" }
+        if status == "registration_available" { return "person.badge.plus" }
+        if status == "not_available" { return "minus.circle" }
         return status == "error" ? "exclamationmark.triangle" : "questionmark.circle"
     }
 

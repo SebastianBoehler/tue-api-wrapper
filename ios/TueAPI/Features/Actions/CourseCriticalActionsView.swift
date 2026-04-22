@@ -62,32 +62,42 @@ struct CourseCriticalActionsView: View {
             phase = .failed("This course does not expose an Alma detail URL.")
             return
         }
-        guard let client = BackendClient(baseURLString: model.portalAPIBaseURLString) else {
-            phase = .failed("The legacy/dev backend URL is required before preparing critical actions.")
-            return
-        }
 
         do {
-            let support = try await client.fetchAlmaCourseRegistrationSupport(detailURL: detailURL)
+            let (client, credentials) = try model.almaAccessContext(for: "prepare Alma registration")
+            let support = try await client.inspectCourseRegistration(
+                detailURL: detailURL,
+                credentials: credentials
+            )
             guard support.supported else {
                 phase = .failed(support.message ?? "This Alma detail page does not expose registration.")
+                return
+            }
+            let options = try await client.prepareCourseRegistration(
+                detailURL: detailURL,
+                credentials: credentials
+            )
+            guard options.options.count == 1 else {
+                phase = .failed(
+                    "Multiple Alma registration paths are available for this course. Open Alma directly to choose one."
+                )
                 return
             }
 
             intent = CriticalActionIntent(
                 kind: .almaCourseRegistration,
                 portal: "Alma",
-                title: support.title ?? course.title,
+                title: course.title,
                 actionLabel: "Register for Alma course",
-                targetURL: URL(string: support.detailURL),
-                endpoint: "/api/alma/course-registration",
-                method: "POST",
+                targetURL: options.detailURL,
+                endpoint: "Authenticated Alma form flow",
+                method: "On-device",
                 sideEffects: [
-                    "Submits a course-registration request for your signed-in university account.",
-                    "Uses this Alma detail page as the registration target.",
-                    "If Alma exposes multiple registration paths, the legacy/dev backend stops and reports that a path must be selected."
+                    "Submits a course-registration request for your signed-in university account from this device.",
+                    "Uses this Alma detail page and the university credentials stored in the device Keychain.",
+                    "No shared backend credential or server-side Alma session is involved."
                 ],
-                requiredInputs: support.status.map { ["Current Alma status: \($0)"] } ?? [],
+                requiredInputs: registrationInputs(status: support.status, option: options.options[0]),
                 confirmButtonTitle: "Proceed with registration"
             )
             phase = .ready
@@ -97,24 +107,39 @@ struct CourseCriticalActionsView: View {
     }
 
     private func submit(_ intent: CriticalActionIntent) async {
-        guard let client = BackendClient(baseURLString: model.portalAPIBaseURLString) else {
-            actionError = "The legacy/dev backend URL is required before submitting critical actions."
+        guard let detailURL = course.detailURL else {
+            actionError = "This course does not expose an Alma detail URL."
             return
         }
-        guard intent.kind == .almaCourseRegistration, let targetURL = intent.targetURL else {
+        guard intent.kind == .almaCourseRegistration else {
             actionError = "This action intent is incomplete. Prepare it again."
             return
         }
 
         phase = .submitting
         do {
-            let result = try await client.registerForAlmaCourse(detailURL: targetURL)
+            let (client, credentials) = try model.almaAccessContext(for: "submit Alma registration")
+            let result = try await client.registerForCourse(
+                detailURL: detailURL,
+                credentials: credentials
+            )
             self.intent = nil
             actionError = nil
-            phase = .completed(result.displayMessage)
+            phase = .completed(result.messages.first ?? "Alma registration submitted.")
         } catch {
             actionError = error.localizedDescription
             phase = .ready
         }
+    }
+
+    private func registrationInputs(
+        status: String?,
+        option: AlmaCourseRegistrationOption
+    ) -> [String] {
+        var inputs: [String] = ["Registration path: \(option.label)"]
+        if let status {
+            inputs.insert("Current Alma status: \(status)", at: 0)
+        }
+        return inputs
     }
 }

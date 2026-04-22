@@ -35,7 +35,7 @@ struct CourseDetailView: View {
                 }
             }
 
-            Section("Signup status") {
+            Section("Alma signup status") {
                 portalStatusContent
             }
 
@@ -135,7 +135,7 @@ struct CourseDetailView: View {
     private var portalStatusContent: some View {
         switch portalStatusPhase {
         case .idle, .loading:
-            ProgressView("Loading portal status")
+            ProgressView("Loading Alma signup status")
         case .unavailable(let message):
             StatusBanner(title: "Status lookup unavailable", message: message, systemImage: "network.slash")
         case .failed(let message):
@@ -155,7 +155,7 @@ struct CourseDetailView: View {
 
     private var statusLookupID: String {
         [
-            model.portalAPIBaseURLString,
+            model.baseURLString,
             course.id,
             course.detailURL?.absoluteString ?? "",
             course.title
@@ -163,63 +163,49 @@ struct CourseDetailView: View {
     }
 
     private func loadPortalStatuses() async {
-        let backend = model.portalAPIBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !backend.isEmpty else {
-            portalStatusPhase = .unavailable("The legacy/dev backend URL is required to check Alma, ILIAS, and Moodle status until this lookup is ported on-device.")
-            return
-        }
-        guard let baseURL = URL(string: backend),
-              ["http", "https"].contains(baseURL.scheme?.lowercased() ?? "") else {
-            portalStatusPhase = .failed("The portal status backend URL is invalid.")
-            return
-        }
-        guard let url = courseStatusURL(baseURL: baseURL) else {
-            portalStatusPhase = .failed("Could not build the portal status request.")
+        guard let detailURL = course.detailURL else {
+            portalStatusPhase = .unavailable("This course entry does not expose an Alma detail page, so signup status cannot be checked on-device.")
             return
         }
 
         portalStatusPhase = .loading
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw PortalStatusError.server("The backend did not return an HTTP response.")
-            }
-            guard (200..<300).contains(httpResponse.statusCode) else {
-                let detail = BackendClient.errorDetail(from: data)
-                if let message = BackendCredentialConfiguration.message(
-                    statusCode: httpResponse.statusCode,
-                    detail: detail,
-                    feature: .portalStatus
-                ) {
-                    portalStatusPhase = .unavailable(message)
-                    return
-                }
-                let suffix = detail.map { ": \($0)" } ?? "."
-                throw PortalStatusError.server("The backend returned HTTP \(httpResponse.statusCode)\(suffix)")
-            }
-            let payload = try JSONDecoder().decode(CoursePortalStatusPayload.self, from: data)
-            portalStatusPhase = .loaded(payload.portalStatuses)
+            let (client, credentials) = try model.almaAccessContext(for: "check Alma signup status")
+            let support = try await client.inspectCourseRegistration(
+                detailURL: detailURL,
+                credentials: credentials
+            )
+            portalStatusPhase = .loaded([almaPortalStatus(from: support)])
         } catch {
             portalStatusPhase = .failed(error.localizedDescription)
         }
     }
 
-    private func courseStatusURL(baseURL: URL) -> URL? {
-        var components = URLComponents(
-            url: baseURL.appending(path: "api/course-detail"),
-            resolvingAgainstBaseURL: false
+    private func almaPortalStatus(from support: AlmaCourseRegistrationSupport) -> CoursePortalStatus {
+        let signedUp: Bool?
+        switch support.status {
+        case "registered":
+            signedUp = true
+        case "not_registered":
+            signedUp = false
+        default:
+            signedUp = nil
+        }
+
+        let status = support.status
+            ?? (support.supported ? "registration_available" : "not_available")
+
+        return CoursePortalStatus(
+            portal: "alma",
+            status: status,
+            signedUp: signedUp,
+            title: course.title,
+            url: support.detailURL.absoluteString,
+            matchReason: "Authenticated Alma detail page",
+            score: support.supported ? 100 : nil,
+            message: support.message ?? support.messages.first,
+            error: nil
         )
-        var items: [URLQueryItem] = []
-        if let detailURL = course.detailURL {
-            items.append(URLQueryItem(name: "url", value: detailURL.absoluteString))
-        } else {
-            items.append(URLQueryItem(name: "title", value: course.title))
-        }
-        if let semester = course.semester {
-            items.append(URLQueryItem(name: "term", value: semester))
-        }
-        components?.queryItems = items
-        return components?.url
     }
 }
 

@@ -1,7 +1,7 @@
 import Foundation
 
 struct AlmaClient {
-    private let baseURL: URL
+    let baseURL: URL
     private let session: URLSession
 
     init(baseURL: URL) {
@@ -114,7 +114,7 @@ struct AlmaClient {
         )
     }
 
-    private func login(credentials: AlmaCredentials) async throws {
+    func login(credentials: AlmaCredentials) async throws {
         let response = try await loadHTMLResponse(startPageURL())
         var form = try AlmaHTMLParser.extractLoginForm(from: response.html, pageURL: response.url)
         form.payload["asdf"] = credentials.username
@@ -138,7 +138,7 @@ struct AlmaClient {
         try await loadHTMLResponse(url).html
     }
 
-    private func loadAuthenticatedHTMLResponse(
+    func loadAuthenticatedHTMLResponse(
         _ url: URL,
         pageName: String
     ) async throws -> (html: String, url: URL) {
@@ -149,13 +149,13 @@ struct AlmaClient {
         return response
     }
 
-    private func loadHTMLResponse(_ url: URL) async throws -> (html: String, url: URL) {
+    func loadHTMLResponse(_ url: URL) async throws -> (html: String, url: URL) {
         var request = URLRequest(url: url)
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         return try await loadHTMLResponse(request)
     }
 
-    private func loadHTMLResponse(_ request: URLRequest) async throws -> (html: String, url: URL) {
+    func loadHTMLResponse(_ request: URLRequest) async throws -> (html: String, url: URL) {
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw AlmaClientError.server("Alma did not return an HTTP response.")
@@ -227,7 +227,7 @@ struct AlmaClient {
         return url
     }
 
-    private var userAgent: String {
+    var userAgent: String {
         "tue-api-wrapper-ios/0.1 (+https://alma.uni-tuebingen.de/)"
     }
 }

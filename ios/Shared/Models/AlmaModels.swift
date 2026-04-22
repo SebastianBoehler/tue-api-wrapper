@@ -64,6 +64,7 @@ enum AlmaClientError: LocalizedError {
     case loginFormMissing
     case loginFailed(String)
     case unauthenticated
+    case courseRegistration(String)
     case timetableMissing(String)
     case unsupportedRecurrence(String)
     case server(String)
@@ -78,6 +79,8 @@ enum AlmaClientError: LocalizedError {
             message
         case .unauthenticated:
             "The Alma session is not authenticated."
+        case .courseRegistration(let message):
+            message
         case .timetableMissing(let message):
             message
         case .unsupportedRecurrence(let rule):

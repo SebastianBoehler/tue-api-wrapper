@@ -13,7 +13,12 @@ struct CriticalActionConfirmationSheet: View {
                 Section("Action") {
                     LabeledContent("Portal", value: intent.portal)
                     LabeledContent("Action", value: intent.actionLabel)
-                    LabeledContent("Method", value: "\(intent.method) \(intent.endpoint)")
+                    LabeledContent(
+                        "Submission",
+                        value: [intent.method, intent.endpoint]
+                            .filter { !$0.isEmpty }
+                            .joined(separator: " · ")
+                    )
                     if let targetURL = intent.targetURL {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Target")
@@ -67,7 +72,7 @@ struct CriticalActionConfirmationSheet: View {
                     }
                     .disabled(isSubmitting)
                 } footer: {
-                    Text("Cancel leaves Alma, ILIAS, and Moodle unchanged. Proceed submits this legacy/dev backend action.")
+                    Text("Cancel leaves Alma unchanged. Proceed submits the Alma registration request from this device using your saved university session.")
                 }
             }
             .navigationTitle("Confirm Action")

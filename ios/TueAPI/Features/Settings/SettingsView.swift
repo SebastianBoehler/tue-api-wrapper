@@ -4,6 +4,7 @@ struct SettingsView: View {
     @Bindable var model: AppModel
     @State private var username = ""
     @State private var password = ""
+    @State private var activeSheet: SettingsSheet?
 
     var body: some View {
         Form {
@@ -68,6 +69,19 @@ struct SettingsView: View {
                 }
             }
 
+            Section("Feedback") {
+                Button {
+                    activeSheet = .appFeedback
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Send app feedback")
+                        Text("Create a public GitHub issue from the iOS app without exposing repo credentials in the client.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
             Section {
                 Toggle("Notify before lectures", isOn: reminderToggle)
 
@@ -91,6 +105,12 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .appFeedback:
+                AppFeedbackSheet(portalAPIBaseURLString: model.portalAPIBaseURLString)
+            }
+        }
     }
 
     private var reminderToggle: Binding<Bool> {
@@ -116,4 +136,10 @@ struct SettingsView: View {
             }
         }
     }
+}
+
+private enum SettingsSheet: String, Identifiable {
+    case appFeedback
+
+    var id: String { rawValue }
 }

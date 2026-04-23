@@ -14,6 +14,7 @@ from .api_routes_alma_assignments import router as alma_assignments_router
 from .api_routes_alma_registration import router as alma_registration_router
 from .api_routes_edit_actions import router as edit_actions_router
 from .api_routes_extended import router as extended_router
+from .api_routes_feedback import router as feedback_router
 from .api_routes_mail import router as mail_router
 from .api_routes_moodle import router as moodle_router
 from .api_routes_products import router as products_router
@@ -32,7 +33,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-for router in (alma_assignments_router, alma_registration_router, edit_actions_router, extended_router, mail_router, moodle_router, products_router):
+for router in (
+    alma_assignments_router,
+    alma_registration_router,
+    edit_actions_router,
+    extended_router,
+    feedback_router,
+    mail_router,
+    moodle_router,
+    products_router,
+):
     app.include_router(router)
 
 portal_service = PortalService()

@@ -60,9 +60,10 @@ struct BackendClient {
     private static let maxErrorDetailLength = 600
 
     let baseURL: URL
+    let session: URLSession
 
     /// Returns nil when the URL string is empty or invalid.
-    init?(baseURLString: String) {
+    init?(baseURLString: String, session: URLSession = .shared) {
         let trimmed = baseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty,
               let url = URL(string: trimmed),
@@ -70,6 +71,7 @@ struct BackendClient {
             return nil
         }
         self.baseURL = url
+        self.session = session
     }
 
     // MARK: - ILIAS
@@ -114,7 +116,12 @@ struct BackendClient {
     }
 
     func get(_ url: URL) async throws -> Data {
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let request = URLRequest(url: url)
+        return try await execute(request)
+    }
+
+    func execute(_ request: URLRequest) async throws -> Data {
+        let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else {
             throw BackendClientError.server(0, nil)
         }

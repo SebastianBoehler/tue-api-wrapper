@@ -61,13 +61,6 @@ extension BackendClient {
     func post(_ url: URL) async throws -> Data {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw BackendClientError.server(0, nil)
-        }
-        guard (200..<300).contains(http.statusCode) else {
-            throw BackendClientError.server(http.statusCode, BackendClient.errorDetail(from: data))
-        }
-        return data
+        return try await execute(request)
     }
 }

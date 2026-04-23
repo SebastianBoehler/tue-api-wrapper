@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/next.js-15-000000?logo=nextdotjs&logoColor=white" alt="Next.js 15" />
   <img src="https://img.shields.io/badge/node-20-5FA04E?logo=nodedotjs&logoColor=white" alt="Node 20" />
   <a href="./LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-22C55E.svg" alt="MIT License" />
+    <img src="https://img.shields.io/badge/license-BUSL--1.1-E97312.svg" alt="Business Source License 1.1" />
   </a>
 </p>
 
@@ -193,7 +193,7 @@ Note for the current macOS toolchain in this repo: plain `go build` or `go run` 
 
 ### 5. Generate the iOS app
 
-The iOS workspace lives in [`ios/`](./ios/). It does not call the Next.js or FastAPI surfaces for native data flows; it logs in to Alma directly, reads Uni Tuebingen mail directly over TLS IMAP, stores credentials in Keychain from Settings, parses the Alma timetable iCalendar feed in Swift, browses public current lectures, and caches upcoming lectures for WidgetKit widgets and Live Activities.
+The iOS workspace lives in [`ios/`](./ios/). Credentialed study data stays on-device: the app logs in to Alma directly, reads Uni Tuebingen mail directly over TLS IMAP, stores credentials in Keychain from Settings, parses the Alma timetable iCalendar feed in Swift, browses public current lectures, and caches upcoming lectures for WidgetKit widgets and Live Activities. Public discovery surfaces and the in-app feedback sheet can call the shared FastAPI backend.
 
 ```bash
 npm run generate:ios
@@ -236,6 +236,8 @@ Desktop packaging and release details are documented in [`desktop/README.md`](./
 | `PORT` | Optional | Port for the Python backend, defaults to `8000` |
 | `PORTAL_API_BASE_URL` | For Next.js and ChatGPT | Base URL of the Python backend |
 | `APP_BASE_URL` | For deployed ChatGPT app | Public origin used for widget metadata and hosted app resources |
+| `GITHUB_FEEDBACK_TOKEN` | For iOS feedback issue creation | GitHub token with issue-write access for `POST /api/feedback/issues` |
+| `GITHUB_FEEDBACK_REPOSITORY` | Optional | Target repository for app feedback issues, defaults to `SebastianBoehler/tue-api-wrapper` |
 
 Legacy `ALMA_*` and `ILIAS_*` credential variables are still accepted for compatibility, but `UNI_USERNAME` and `UNI_PASSWORD` are the canonical setup.
 
@@ -341,6 +343,23 @@ HAR exports, cookies, signed URLs, and downloaded PDFs may contain sensitive dat
 
 ## License
 
-This repository is licensed under the MIT License. See [`LICENSE`](./LICENSE).
+This repository is source-available under the Business Source License 1.1 with
+a repo-specific academic Additional Use Grant. See [`LICENSE`](./LICENSE).
+
+This is a source-available license model, not an OSI-approved open-source
+license.
+
+The Additional Use Grant allows production use only for non-commercial course,
+lecture, seminar, or supervised group-project work at the University of
+Tuebingen when that academic use is taught by, coordinated by, or expressly
+authorized in writing by Sebastian Boehler.
+
+Commercial use, managed or hosted offerings, campus-wide deployments, and use
+by other universities or institutions require a separate written license. See
+[`COMMERCIAL-LICENSING.md`](./COMMERCIAL-LICENSING.md).
+
+Versions or copies that were already distributed under the MIT License before
+April 23, 2026 remain available under MIT. This license change applies to
+versions first distributed under the new license on or after April 23, 2026.
 
 The license applies to the code and documentation in this repository. It does not grant rights to third-party systems, trademarks, or data exposed by Alma, ILIAS, Moodle, or the University of Tuebingen.

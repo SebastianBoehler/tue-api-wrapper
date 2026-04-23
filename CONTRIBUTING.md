@@ -9,6 +9,9 @@ This repository mixes request-contract discovery, parsing, backend APIs, CLI too
 Please read:
 
 - [`README.md`](./README.md)
+- [`LICENSE`](./LICENSE)
+- [`COMMERCIAL-LICENSING.md`](./COMMERCIAL-LICENSING.md)
+- [`CLA.md`](./CLA.md)
 - [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md)
 - [`SECURITY.md`](./SECURITY.md)
 
@@ -22,6 +25,22 @@ If your change touches live Alma or ILIAS behavior, include enough context in th
 - improve packaging, CI, or local developer ergonomics
 - improve the Next.js or ChatGPT surfaces
 - improve docs, onboarding, or examples
+
+## License and contributor terms
+
+This repository is source-available under the Business Source License 1.1 with
+an academic Additional Use Grant scoped in [`LICENSE`](./LICENSE).
+
+It is source-available, not OSI-approved open source.
+
+If you want to use this project outside that academic scope, especially for
+commercial, hosted, campus-wide, or cross-university use, you need a separate
+license. See [`COMMERCIAL-LICENSING.md`](./COMMERCIAL-LICENSING.md).
+
+To keep future relicensing and commercial licensing possible, contributions are
+accepted only under the contributor terms in [`CLA.md`](./CLA.md). By opening a
+pull request or otherwise intentionally submitting a contribution for inclusion,
+you agree to that CLA.
 
 ## Development setup
 
@@ -89,6 +108,7 @@ Before opening a PR, please make sure:
 - the relevant tests pass locally
 - new behavior is documented when needed
 - secrets and local artifacts are not included
+- the CLA acknowledgment in the PR template is checked truthfully
 - the PR description explains the problem, approach, and validation
 
 Useful PR descriptions usually answer:

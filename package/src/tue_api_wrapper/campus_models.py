@@ -9,13 +9,16 @@ class CampusMenu:
     menu_line: str | None
     menu_date: str | None
     items: list[str]
+    meats: list[str]
     student_price: str | None
     guest_price: str | None
     pupil_price: str | None
     icons: list[str]
+    filters_include: list[str]
     allergens: list[str]
     additives: list[str]
     co2: str | None
+    photo: dict[str, str] | None
 
 
 @dataclass(slots=True)

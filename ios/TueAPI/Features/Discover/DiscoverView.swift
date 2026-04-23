@@ -20,7 +20,7 @@ struct DiscoverView: View {
 
             switch selectedScope {
             case .campus:
-                CampusMapView()
+                CampusDiscoverView(model: model)
             case .people:
                 PeopleDirectoryView()
             case .talks:

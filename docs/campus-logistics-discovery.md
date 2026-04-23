@@ -62,6 +62,40 @@ Important findings:
   - `locations`
   - `meal sources`
 
+### Exact Wilhelmstraße contract
+
+HAR verification date: 2026-04-06
+Live recheck date: 2026-04-23
+
+- Public page: `https://www.my-stuwe.de/mensa/mensa-wilhelmstrasse-tuebingen/`
+- Page HTML exposes `data-canteen='611'`
+- Observed HAR request:
+  - `GET https://www.my-stuwe.de//wp-json/mealplans/v1/canteens/611?lang=de&v=...`
+  - headers included `accept: application/json, text/plain, */*`, `referer: https://www.my-stuwe.de/mensa/mensa-wilhelmstrasse-tuebingen/`, and `x-requested-with: XMLHttpRequest`
+- Live public route also works without the cache-busting `v` query:
+  - `GET https://www.my-stuwe.de/wp-json/mealplans/v1/canteens/611?lang=de`
+- Response contract:
+  - top-level JSON object keyed by canteen id, here `"611"`
+  - canteen payload fields:
+    - `canteenId`
+    - `canteen`
+    - `menus`
+  - menu payload fields observed live:
+    - `id`
+    - `menuLine`
+    - `menuDate`
+    - `menu`
+    - `meats`
+    - `studentPrice`
+    - `guestPrice`
+    - `pupilPrice`
+    - `icons`
+    - `filtersInclude`
+    - `allergens`
+    - `additives`
+    - `co2`
+    - `photo`
+
 ## Highest-Value Food Features
 
 ### 1. Multi-canteen menu API

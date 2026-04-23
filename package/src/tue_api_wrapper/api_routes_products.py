@@ -151,17 +151,20 @@ def praxisportal_project(project_id: int) -> dict[str, object]:
 
 
 @router.get("/api/campus/canteens")
-def campus_canteens() -> list[object]:
+def campus_canteens(menu_date: str | None = Query(None, alias="date", pattern=r"^\d{4}-\d{2}-\d{2}$")) -> list[object]:
     try:
-        return serialize(campus_client.fetch_tuebingen_canteens())
+        return serialize(campus_client.fetch_tuebingen_canteens(menu_date=menu_date))
     except Exception as error:  # pragma: no cover - exercised via FastAPI surface
         raise _translate_public_error(error) from error
 
 
 @router.get("/api/campus/canteens/{canteen_id}")
-def campus_canteen(canteen_id: int) -> dict[str, object]:
+def campus_canteen(
+    canteen_id: int,
+    menu_date: str | None = Query(None, alias="date", pattern=r"^\d{4}-\d{2}-\d{2}$"),
+) -> dict[str, object]:
     try:
-        return serialize(campus_client.fetch_canteen(canteen_id))
+        return serialize(campus_client.fetch_canteen(canteen_id, menu_date=menu_date))
     except Exception as error:  # pragma: no cover - exercised via FastAPI surface
         raise _translate_public_error(error) from error
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from functools import lru_cache
 from urllib.parse import parse_qs, unquote, urljoin, urlparse
 
@@ -70,6 +71,32 @@ def parse_canteen_page(html: str, page_url: str) -> tuple[str | None, str | None
     map_url = map_link["href"] if map_link is not None else None
     address = _decode_map_address(map_url)
     return title, address, map_url
+
+
+def _normalize_string_list(values: object) -> list[str]:
+    if not isinstance(values, list):
+        return []
+    return [str(item).strip() for item in values if str(item).strip()]
+
+
+def _normalize_photo_payload(value: object) -> dict[str, str] | None:
+    if not isinstance(value, dict):
+        return None
+    normalized = {
+        str(key).strip(): str(item).strip()
+        for key, item in value.items()
+        if str(key).strip() and str(item).strip()
+    }
+    return normalized or None
+
+
+def filter_canteen_menus(canteen: CampusCanteen, menu_date: str | None = None) -> CampusCanteen:
+    if not menu_date:
+        return canteen
+    return replace(
+        canteen,
+        menus=[menu for menu in canteen.menus if menu.menu_date == menu_date],
+    )
 
 
 def parse_building_directory_page(html: str, source_url: str) -> CampusBuildingDirectory:
@@ -154,23 +181,23 @@ class CampusClient:
     def __init__(self, *, timeout: int = DEFAULT_TIMEOUT_SECONDS) -> None:
         self.timeout = timeout
 
-    def fetch_tuebingen_canteens(self) -> list[CampusCanteen]:
+    def fetch_tuebingen_canteens(self, menu_date: str | None = None) -> list[CampusCanteen]:
         response = requests.get(f"{MEALPLAN_API_URL}/canteens", params={"lang": "de"}, timeout=self.timeout)
         response.raise_for_status()
         payload = response.json()
         return [
-            self._build_canteen(payload[str(canteen_id)], canteen_id)
+            filter_canteen_menus(self._build_canteen(payload[str(canteen_id)], canteen_id), menu_date)
             for canteen_id in TUEBINGEN_CANTEEN_PAGES
             if str(canteen_id) in payload
         ]
 
-    def fetch_canteen(self, canteen_id: int) -> CampusCanteen:
+    def fetch_canteen(self, canteen_id: int, menu_date: str | None = None) -> CampusCanteen:
         response = requests.get(f"{MEALPLAN_API_URL}/canteens/{canteen_id}", params={"lang": "de"}, timeout=self.timeout)
         response.raise_for_status()
         payload = response.json()
         if str(canteen_id) not in payload:
             raise ValueError(f"Canteen {canteen_id} was not returned by the mealplan API.")
-        return self._build_canteen(payload[str(canteen_id)], canteen_id)
+        return filter_canteen_menus(self._build_canteen(payload[str(canteen_id)], canteen_id), menu_date)
 
     @lru_cache(maxsize=1)
     def fetch_buildings(self) -> CampusBuildingDirectory:
@@ -197,14 +224,17 @@ class CampusClient:
                 id=str(entry.get("id", "")),
                 menu_line=(str(entry.get("menuLine", "")).strip() or None),
                 menu_date=(str(entry.get("menuDate", "")).strip() or None),
-                items=[str(item).strip() for item in entry.get("menu", []) if str(item).strip()],
+                items=_normalize_string_list(entry.get("menu", [])),
+                meats=_normalize_string_list(entry.get("meats", [])),
                 student_price=(str(entry.get("studentPrice", "")).strip() or None),
                 guest_price=(str(entry.get("guestPrice", "")).strip() or None),
                 pupil_price=(str(entry.get("pupilPrice", "")).strip() or None),
-                icons=[str(item).strip() for item in entry.get("icons", []) if str(item).strip()],
-                allergens=[str(item).strip() for item in entry.get("allergens", []) if str(item).strip()],
-                additives=[str(item).strip() for item in entry.get("additives", []) if str(item).strip()],
+                icons=_normalize_string_list(entry.get("icons", [])),
+                filters_include=_normalize_string_list(entry.get("filtersInclude", [])),
+                allergens=_normalize_string_list(entry.get("allergens", [])),
+                additives=_normalize_string_list(entry.get("additives", [])),
                 co2=(str(entry.get("co2", "")).strip() or None),
+                photo=_normalize_photo_payload(entry.get("photo")),
             )
             for entry in payload.get("menus", [])
         ]

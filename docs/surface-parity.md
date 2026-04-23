@@ -50,6 +50,12 @@ Status legend:
 - The Go CLI now exposes most backend route groups through JSON-first commands. Native Go implementations still only exist for selected stable flows.
 - The Python CLI remains useful for legacy/local flows but should not be the primary target for new product parity unless a workflow is automation-heavy.
 
+## StudyOS Platform Direction
+
+- This repo should stay the university systems layer for downstream StudyOS products: connectors, normalized contracts, change detection, and preview-first actions.
+- Tutoring, explainers, flashcards, quizzes, podcasts, and adaptive study coaching belong in downstream learning products, not here.
+- The current StudyOS-aligned backlog is tracked in [`docs/superpowers/plans/2026-04-23-studyos-data-layer-backlog.md`](./superpowers/plans/2026-04-23-studyos-data-layer-backlog.md).
+
 ## Recommended Parity Work
 
 1. Bring study-service documents to iOS next. These are high-value mobile use cases and can start read-only: study-service summary, current PDF, and report list.

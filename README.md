@@ -51,6 +51,22 @@ University systems often expose useful data only through brittle browser flows. 
 
 The upstream systems remain the source of truth. This repo focuses on cleaner access, stable contracts, and better tooling around them.
 
+## StudyOS Role
+
+This repository is the university systems layer for downstream StudyOS-style products.
+
+It should own:
+
+- authenticated Alma, ILIAS, Moodle, mail, and future TIMMS connectors
+- normalized contracts for schedules, tasks, grades, documents, and campus context
+- public campus, directory, food, and events data
+- preview-first critical actions for official portal workflows
+- shared contracts that web, ChatGPT, desktop, iOS, CLI, and downstream apps can consume consistently
+
+It should not become the tutoring or learning-artifact product layer. Flashcards, quizzes, explainers, podcasts, spaced repetition, and adaptive study coaching belong in downstream learning applications built on top of these contracts.
+
+The current StudyOS-aligned backlog for this repo is tracked in [`docs/superpowers/plans/2026-04-23-studyos-data-layer-backlog.md`](./docs/superpowers/plans/2026-04-23-studyos-data-layer-backlog.md).
+
 ## What works today
 
 - Alma: timetable export, current lectures, exam overview, portal messages feed refresh, study-service documents, study planner parsing, public module search, module detail fetching, and combined course detail bundles
@@ -286,11 +302,13 @@ Additional desktop workflows:
 - [`chatgpt/README.md`](./chatgpt/README.md)
 - [`desktop/README.md`](./desktop/README.md)
 - [`cli/README.md`](./cli/README.md)
+- [`docs/surface-parity.md`](./docs/surface-parity.md)
 - [`docs/alma-ilias-discovery.md`](./docs/alma-ilias-discovery.md)
 - [`docs/moodle-discovery.md`](./docs/moodle-discovery.md)
 - [`docs/mail-discovery.md`](./docs/mail-discovery.md)
 - [`docs/timms-discovery.md`](./docs/timms-discovery.md)
 - [`docs/campus-logistics-discovery.md`](./docs/campus-logistics-discovery.md)
+- [`docs/superpowers/plans/2026-04-23-studyos-data-layer-backlog.md`](./docs/superpowers/plans/2026-04-23-studyos-data-layer-backlog.md)
 
 ## Contributing
 

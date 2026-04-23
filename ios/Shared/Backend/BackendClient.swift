@@ -107,7 +107,12 @@ struct BackendClient {
     // MARK: - Private
 
     func makeURL(path: String, queryItems: [URLQueryItem]) throws -> URL {
-        var components = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false)
+        let requestURL = baseURL.appending(path: path)
+        guard !queryItems.isEmpty else {
+            return requestURL
+        }
+
+        var components = URLComponents(url: requestURL, resolvingAgainstBaseURL: false)
         components?.queryItems = queryItems
         guard let url = components?.url else {
             throw BackendClientError.invalidURL

@@ -54,10 +54,12 @@ struct AppFeedbackSheet: View {
                         .disabled(phase.isSubmitted)
                 }
 
-                Section("Technical Context") {
+                Section {
                     LabeledContent("App version", value: context.versionLabel)
                     LabeledContent("OS", value: context.systemVersion)
                     LabeledContent("Device", value: context.deviceModel)
+                } header: {
+                    Text("Technical Context")
                 } footer: {
                     Text("The issue is created through the shared backend using a server-side GitHub token. Your university Keychain credentials are not sent with this form.")
                 }

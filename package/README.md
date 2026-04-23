@@ -31,6 +31,7 @@ The API starts on `http://127.0.0.1:8000` and exposes:
 - `GET /api/mail/messages/{uid}`
 - `GET /api/search`
 - `GET /api/items/{id}`
+- `POST /api/feedback/issues`
 - `GET /api/alma/*`
 - `GET /api/ilias/*`
 - `GET /api/moodle/*`
@@ -76,6 +77,15 @@ export UNI_PASSWORD='your-password'
 Mail uses the same `UNI_USERNAME` / `UNI_PASSWORD` pair by default. `MAIL_USERNAME` / `MAIL_PASSWORD` remains available only as an optional override if a mailbox ever needs separate values.
 
 Authenticated API endpoints return HTTP 503 when the backend process is missing the required university credentials.
+
+The iOS in-app feedback sheet uses `POST /api/feedback/issues`. Configure it with:
+
+```bash
+export GITHUB_FEEDBACK_TOKEN='github-token-with-issues-write'
+export GITHUB_FEEDBACK_REPOSITORY='SebastianBoehler/tue-api-wrapper'
+```
+
+`GITHUB_FEEDBACK_REPOSITORY` is optional and defaults to this repository. The backend stamps created issues with a hidden `tue-api-ios-feedback` source marker so follow-up automation can filter them reliably.
 
 These env-backed authenticated routes are not production multi-user auth. Native iOS private-data flows should use on-device Keychain credentials, and ChatGPT private-data flows should use Apps SDK OAuth plus a per-user credential-linking design if the university portals cannot delegate with OAuth/OIDC.
 

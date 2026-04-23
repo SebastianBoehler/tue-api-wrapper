@@ -1,6 +1,12 @@
 # ChatGPT App
 
-This folder contains a ChatGPT Apps SDK scaffold for the unified Alma + ILIAS study hub.
+This folder contains a ChatGPT Apps SDK scaffold for the unified Alma + ILIAS study hub, including dashboard widgets and public Alma detail rendering.
+
+## Preview
+
+The current widget bundle rendering a public Alma module detail:
+
+![ChatGPT widget preview](../docs/assets/previews/chatgpt-widget-preview.png)
 
 ## Tool surface
 

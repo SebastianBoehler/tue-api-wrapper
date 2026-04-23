@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./docs/assets/overview-screenshot.png" alt="tue-api-wrapper dashboard preview" width="100%" />
+  <img src="./docs/assets/overview-screenshot.png" alt="tue-api-wrapper web course planner preview" width="100%" />
 </p>
 
 <h1 align="center">tue-api-wrapper</h1>
@@ -7,7 +7,7 @@
 <p align="center">
   Unified Alma, ILIAS, Moodle, and mail access for the University of Tuebingen.
   <br />
-  One contract layer, multiple surfaces: Python API, Go CLI, Next.js dashboard, ChatGPT app, Electron desktop, and native iOS.
+  One contract layer, multiple surfaces: Python API, Go CLI, Next.js dashboard, ChatGPT app, Electron desktop, and native iOS with an on-device assistant.
 </p>
 
 <p align="center">
@@ -73,7 +73,7 @@ The current StudyOS-aligned backlog for this repo is tracked in [`docs/superpowe
 - ILIAS: root navigation, memberships, task overview, content parsing, forum topics, exercise assignments, authenticated search, info-page resolution, and related learning-space matching for course detail pages
 - Moodle: dashboard, calendar, courses, categories, grades, messages, and notifications
 - Mail: read-only mailbox, inbox, and message access over IMAP through the backend, plus direct on-device IMAP in iOS
-- Shared delivery surfaces: Python package, FastAPI backend, Go CLI, Next.js dashboard, ChatGPT MCP app, Electron desktop shell, and native iOS app
+- Shared delivery surfaces: Python package, FastAPI backend, Go CLI, Next.js dashboard, ChatGPT MCP app, Electron desktop shell, and native iOS app with an on-device assistant test surface
 
 The repo is live-data oriented. When upstream authentication or university systems fail, the tools return explicit errors instead of mock data.
 
@@ -110,19 +110,21 @@ Typical development flow:
 | FastAPI backend | Shared JSON API for app surfaces | `http://127.0.0.1:8000/docs` |
 | Go CLI | Small JSON-first CLI for stable authenticated flows | `cd go && go build ./cmd/tue` |
 | Next.js app | Student-facing dashboard UI | `cd nextjs && npm run dev` |
-| ChatGPT app | MCP server plus widget-based study assistant | `cd chatgpt && npm run dev` |
+| ChatGPT app | MCP server plus widget-based study assistant and Alma detail widgets | `cd chatgpt && npm run dev` |
 | Electron desktop app | Local desktop shell with encrypted credential storage and managed backend | `cd desktop && npm run dev` |
-| iOS app | Native Alma timetable and on-device mail client with Keychain credentials, WidgetKit widgets, and Live Activities | `npm run generate:ios` |
+| iOS app | Native Alma timetable and mail client with Keychain credentials, WidgetKit widgets, Live Activities, feedback sheet, and an on-device assistant | `npm run generate:ios` |
 
 ## Preview
 
-Study hub overview:
+The header image shows the current web course planner surface.
 
-![Study hub overview](./docs/assets/previews/study-hub-overview-preview.png)
+ChatGPT app:
 
-Agenda timetable:
+![ChatGPT widget preview](./docs/assets/previews/chatgpt-widget-preview.png)
 
-![Agenda timetable](./docs/assets/previews/agenda-timetable-grid-preview.png)
+iOS app:
+
+![iOS app today overview](./docs/assets/previews/ios-today-preview.png)
 
 ## Quick start
 
@@ -193,7 +195,7 @@ Note for the current macOS toolchain in this repo: plain `go build` or `go run` 
 
 ### 5. Generate the iOS app
 
-The iOS workspace lives in [`ios/`](./ios/). Credentialed study data stays on-device: the app logs in to Alma directly, reads Uni Tuebingen mail directly over TLS IMAP, stores credentials in Keychain from Settings, parses the Alma timetable iCalendar feed in Swift, browses public current lectures, and caches upcoming lectures for WidgetKit widgets and Live Activities. Public discovery surfaces and the in-app feedback sheet can call the shared FastAPI backend.
+The iOS workspace lives in [`ios/`](./ios/). Credentialed study data stays on-device: the app logs in to Alma directly, reads Uni Tuebingen mail directly over TLS IMAP, stores credentials in Keychain from Settings, parses the Alma timetable iCalendar feed in Swift, browses public current lectures, caches upcoming lectures for WidgetKit widgets and Live Activities, and exposes an on-device study assistant test screen. Public discovery surfaces and the in-app feedback sheet can call the shared FastAPI backend.
 
 ```bash
 npm run generate:ios

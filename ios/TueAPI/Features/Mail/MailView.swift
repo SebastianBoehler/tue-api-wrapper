@@ -21,13 +21,6 @@ struct MailView: View {
                 tint: .secondary
             )
         }
-        if phase == .loading && inbox == nil {
-            return MailStatusLine(
-                text: "Loading your mailbox.",
-                tint: .accentColor,
-                isLoading: true
-            )
-        }
         if case .failed(let message) = phase {
             return MailStatusLine(
                 text: message,

@@ -1,13 +1,11 @@
-#if canImport(FoundationModels)
 import SwiftUI
 
-@available(iOS 26.0, *)
-struct StudyAssistantView: View {
-    @State private var viewModel: StudyAssistantViewModel
+struct MLXStudyAssistantView: View {
+    @State private var viewModel: MLXStudyAssistantViewModel
     @FocusState private var isComposerFocused: Bool
 
-    init(configuration: StudyAssistantConfiguration) {
-        _viewModel = State(initialValue: StudyAssistantViewModel(configuration: configuration))
+    init(configuration: StudyAssistantConfiguration, fallbackReason: String) {
+        _viewModel = State(initialValue: MLXStudyAssistantViewModel(configuration: configuration, fallbackReason: fallbackReason))
     }
 
     var body: some View {
@@ -16,12 +14,12 @@ struct StudyAssistantView: View {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     headerCard
 
-                    if messagesShouldShowSuggestions {
+                    if viewModel.messages.count <= 1 {
                         suggestionRow
                     }
 
                     ForEach(viewModel.messages) { message in
-                        StudyAssistantChatBubble(message: message, pendingText: "Thinking on device.")
+                        StudyAssistantChatBubble(message: message)
                             .id(message.id)
                     }
                 }
@@ -40,9 +38,6 @@ struct StudyAssistantView: View {
                     .disabled(viewModel.isSending)
                 }
             }
-            .task {
-                viewModel.prepare()
-            }
             .onChange(of: viewModel.messages) {
                 guard let id = viewModel.messages.last?.id else { return }
                 withAnimation(.snappy(duration: 0.24)) {
@@ -55,11 +50,15 @@ struct StudyAssistantView: View {
     private var headerCard: some View {
         AppSurfaceCard {
             VStack(alignment: .leading, spacing: 8) {
-                Text("On-device assistant test")
+                Text("Local MLX assistant")
                     .font(.system(.title2, design: .rounded, weight: .bold))
 
-                Text("The model runs on device. Live university data comes from a small Swift tool set wired to Alma, ILIAS, Moodle, and the public talks feed.")
+                Text(viewModel.fallbackReason)
                     .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Text("Model: \(MLXStudyAssistantService.defaultModelID)")
+                    .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
             }
 
@@ -71,24 +70,20 @@ struct StudyAssistantView: View {
                 )
             }
 
-            if let availabilityMessage = viewModel.availabilityMessage {
-                AppInlineStatusLine(
-                    text: availabilityMessage,
-                    systemImage: "exclamationmark.triangle",
-                    tint: .orange
-                )
-            } else if let statusMessage = viewModel.statusMessage {
+            if let statusMessage = viewModel.statusMessage {
                 AppInlineStatusLine(
                     text: statusMessage,
                     tint: .accentColor,
                     isLoading: viewModel.isSending
                 )
             }
-        }
-    }
 
-    private var messagesShouldShowSuggestions: Bool {
-        viewModel.messages.count <= 1
+            if let downloadProgress = viewModel.downloadProgress, downloadProgress.totalUnitCount > 0 {
+                ProgressView(value: downloadProgress.fractionCompleted) {
+                    Text("Model download")
+                }
+            }
+        }
     }
 
     private var suggestionRow: some View {
@@ -115,23 +110,19 @@ struct StudyAssistantView: View {
             Divider()
 
             HStack(alignment: .bottom, spacing: 12) {
-                TextField(
-                    "Ask about grades, due work, courses, or talks",
-                    text: $viewModel.draft,
-                    axis: .vertical
-                )
-                .textInputAutocapitalization(.sentences)
-                .autocorrectionDisabled()
-                .focused($isComposerFocused)
-                .lineLimit(1...5)
-                .submitLabel(.send)
-                .onSubmit {
-                    guard viewModel.canSend else { return }
-                    isComposerFocused = false
-                    Task {
-                        await viewModel.sendCurrentDraft()
+                TextField("Ask using local Qwen", text: $viewModel.draft, axis: .vertical)
+                    .textInputAutocapitalization(.sentences)
+                    .autocorrectionDisabled()
+                    .focused($isComposerFocused)
+                    .lineLimit(1...5)
+                    .submitLabel(.send)
+                    .onSubmit {
+                        guard viewModel.canSend else { return }
+                        isComposerFocused = false
+                        Task {
+                            await viewModel.sendCurrentDraft()
+                        }
                     }
-                }
 
                 Button {
                     isComposerFocused = false
@@ -158,4 +149,3 @@ struct StudyAssistantView: View {
         "Any upcoming AI talks?"
     ]
 }
-#endif

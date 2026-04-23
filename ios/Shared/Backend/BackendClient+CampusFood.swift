@@ -2,12 +2,19 @@ import Foundation
 
 extension BackendClient {
     func fetchCampusFoodPlan(on date: Date) async throws -> [CampusFoodPlanCanteen] {
+        let targetDate = CampusFoodDateEncoding.string(from: date)
         let url = try makeURL(
             path: "api/campus/canteens",
-            queryItems: [URLQueryItem(name: "date", value: CampusFoodDateEncoding.string(from: date))]
+            queryItems: [URLQueryItem(name: "date", value: targetDate)]
         )
         let data = try await get(url)
-        return try JSONDecoder().decode([CampusFoodPlanCanteen].self, from: data)
+        return try JSONDecoder()
+            .decode([CampusFoodPlanCanteen].self, from: data)
+            .map { canteen in
+                var canteen = canteen
+                canteen.menus = canteen.menus.filter { $0.menuDate == targetDate }
+                return canteen
+            }
     }
 }
 

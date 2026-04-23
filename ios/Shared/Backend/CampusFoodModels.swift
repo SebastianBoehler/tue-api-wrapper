@@ -18,6 +18,16 @@ struct CampusFoodPlanCanteen: Decodable, Identifiable {
         case mapURL = "map_url"
         case menus
     }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        canteenID = try container.decode(String.self, forKey: .canteenID)
+        canteen = try container.decode(String.self, forKey: .canteen)
+        pageURL = try container.decodeIfPresent(String.self, forKey: .pageURL)
+        address = try container.decodeIfPresent(String.self, forKey: .address)
+        mapURL = try container.decodeIfPresent(String.self, forKey: .mapURL)
+        menus = try container.decodeIfPresent([CampusFoodMenu].self, forKey: .menus) ?? []
+    }
 }
 
 struct CampusFoodMenu: Decodable, Identifiable {
@@ -51,6 +61,24 @@ struct CampusFoodMenu: Decodable, Identifiable {
         case additives
         case co2
         case photo
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        menuLine = try container.decodeIfPresent(String.self, forKey: .menuLine)
+        menuDate = try container.decodeIfPresent(String.self, forKey: .menuDate)
+        items = try container.decodeIfPresent([String].self, forKey: .items) ?? []
+        meats = try container.decodeIfPresent([String].self, forKey: .meats) ?? []
+        studentPrice = try container.decodeIfPresent(String.self, forKey: .studentPrice)
+        guestPrice = try container.decodeIfPresent(String.self, forKey: .guestPrice)
+        pupilPrice = try container.decodeIfPresent(String.self, forKey: .pupilPrice)
+        icons = try container.decodeIfPresent([String].self, forKey: .icons) ?? []
+        filtersInclude = try container.decodeIfPresent([String].self, forKey: .filtersInclude) ?? []
+        allergens = try container.decodeIfPresent([String].self, forKey: .allergens) ?? []
+        additives = try container.decodeIfPresent([String].self, forKey: .additives) ?? []
+        co2 = try container.decodeIfPresent(String.self, forKey: .co2)
+        photo = try container.decodeIfPresent(CampusFoodMenuPhoto.self, forKey: .photo)
     }
 }
 

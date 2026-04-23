@@ -21,6 +21,8 @@ struct DiscoverView: View {
             switch selectedScope {
             case .campus:
                 CampusMapView()
+            case .people:
+                PeopleDirectoryView()
             case .talks:
                 TalksView()
             case .career:
@@ -45,6 +47,7 @@ struct DiscoverView: View {
 
 private enum DiscoverScope: String, CaseIterable, Identifiable {
     case campus
+    case people
     case talks
     case career
 
@@ -54,6 +57,8 @@ private enum DiscoverScope: String, CaseIterable, Identifiable {
         switch self {
         case .campus:
             "Campus"
+        case .people:
+            "People"
         case .talks:
             "Talks"
         case .career:

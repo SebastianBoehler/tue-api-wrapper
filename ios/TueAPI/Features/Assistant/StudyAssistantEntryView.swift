@@ -9,38 +9,41 @@ struct StudyAssistantEntryView: View {
 
     var body: some View {
         Group {
+#if targetEnvironment(simulator)
+            MLXStudyAssistantView(
+                configuration: assistantConfiguration,
+                fallbackReason: "The iOS Simulator does not provide Apple Intelligence model assets, so this screen is using local MLX instead."
+            )
+#else
 #if canImport(FoundationModels)
             if #available(iOS 26.0, *), SystemLanguageModel.default.isAvailable {
                 StudyAssistantView(
-                    configuration: StudyAssistantConfiguration(
-                        almaBaseURLString: model.baseURLString,
-                        portalAPIBaseURLString: model.portalAPIBaseURLString,
-                        hasCredentials: model.hasCredentials
-                    )
+                    configuration: assistantConfiguration
                 )
             } else {
                 MLXStudyAssistantView(
-                    configuration: StudyAssistantConfiguration(
-                        almaBaseURLString: model.baseURLString,
-                        portalAPIBaseURLString: model.portalAPIBaseURLString,
-                        hasCredentials: model.hasCredentials
-                    ),
+                    configuration: assistantConfiguration,
                     fallbackReason: appleFallbackReason
                 )
             }
 #else
             MLXStudyAssistantView(
-                configuration: StudyAssistantConfiguration(
-                    almaBaseURLString: model.baseURLString,
-                    portalAPIBaseURLString: model.portalAPIBaseURLString,
-                    hasCredentials: model.hasCredentials
-                ),
+                configuration: assistantConfiguration,
                 fallbackReason: "Apple Foundation Models is not available in this build."
             )
+#endif
 #endif
         }
         .navigationTitle("Assistant")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var assistantConfiguration: StudyAssistantConfiguration {
+        StudyAssistantConfiguration(
+            almaBaseURLString: model.baseURLString,
+            portalAPIBaseURLString: model.portalAPIBaseURLString,
+            hasCredentials: model.hasCredentials
+        )
     }
 
 #if canImport(FoundationModels)

@@ -7,9 +7,8 @@ extension AppModel {
             throw AlmaClientError.invalidURL
         }
         guard let credentials = try keychain.load() else {
-            throw AlmaClientError.courseRegistration("Save university credentials before trying to \(feature).")
+            throw AlmaClientError.courseRegistration("Connect your university account before trying to \(feature).")
         }
         return (AlmaClient(baseURL: baseURL), credentials)
     }
 }
-

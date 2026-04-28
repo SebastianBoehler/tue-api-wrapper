@@ -30,7 +30,7 @@ struct UpcomingLecturesView: View {
 
             deadlinesSection
         }
-        .navigationTitle("TUE API")
+        .navigationTitle("Schedule")
         .navigationDestination(for: LectureEvent.self) { event in
             CourseDetailView(event: event, model: model)
         }
@@ -72,7 +72,7 @@ struct UpcomingLecturesView: View {
                     ContentUnavailableView(
                         "No cached lectures",
                         systemImage: "calendar.badge.exclamationmark",
-                        description: Text("Save credentials, then refresh Alma to cache upcoming timetable entries.")
+                        description: Text("Connect your university account, then refresh Alma to cache upcoming timetable entries.")
                     )
                 }
             } else {
@@ -148,10 +148,10 @@ struct UpcomingLecturesView: View {
         switch model.phase {
         case .idle:
             StatusBanner(
-                title: model.hasCredentials ? "Ready for Alma" : "Credentials needed",
+                title: model.hasCredentials ? "Ready for Alma" : "Login required",
                 message: model.hasCredentials
                     ? statusMessage("Refresh to fetch the current Alma timetable directly.")
-                    : "Store your university login in Keychain before refreshing.",
+                    : "Connect your university account before refreshing.",
                 systemImage: model.hasCredentials ? "checkmark.seal" : "key"
             )
         case .loading:

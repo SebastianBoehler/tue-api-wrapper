@@ -16,7 +16,7 @@ struct MailView: View {
     private var topStatusLine: MailStatusLine? {
         if !model.hasCredentials {
             return MailStatusLine(
-                text: "Save university credentials in Settings before reading mail.",
+                text: "Connect your university account in Settings to read mail.",
                 systemImage: "lock",
                 tint: .secondary
             )
@@ -147,7 +147,7 @@ struct MailView: View {
         if inbox != nil {
             return "\(unreadText) in \(inboxTitle)"
         }
-        return model.hasCredentials ? "Direct Uni Tübingen IMAP access" : "Credentials required"
+        return model.hasCredentials ? "Uni Tuebingen mailbox" : "Login required"
     }
 
     @ViewBuilder
@@ -188,7 +188,7 @@ struct MailView: View {
                 ContentUnavailableView(
                     "Mail not loaded",
                     systemImage: "envelope",
-                    description: Text("Refresh after saving university credentials in Settings.")
+                    description: Text("Refresh after connecting your university account in Settings.")
                 )
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 28)

@@ -54,10 +54,10 @@ struct GradeOverviewView: View {
         switch phase {
         case .idle:
             StatusBanner(
-                title: model.hasCredentials ? "On-device grades" : "Credentials needed",
+                title: model.hasCredentials ? "On-device grades" : "Login required",
                 message: model.hasCredentials
-                    ? "Grades load directly from Alma and Moodle with the credentials stored in Keychain."
-                    : "Save university credentials in Settings before refreshing grades.",
+                    ? "Grades load from Alma and Moodle using the university login saved on this device."
+                    : "Connect your university account in Settings to refresh grades.",
                 systemImage: model.hasCredentials ? "lock.shield" : "key"
             )
         case .loading:

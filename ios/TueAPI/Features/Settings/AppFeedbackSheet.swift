@@ -18,10 +18,10 @@ struct AppFeedbackSheet: View {
                     }
                 }
 
-                Section("Before You Submit") {
+                Section("Privacy") {
                     StatusBanner(
-                        title: "Public GitHub issue",
-                        message: "This sends feedback to the repository issue tracker. Do not include credentials, student IDs, grades, or other personal data.",
+                        title: "Public feedback issue",
+                        message: "Do not include login details, student IDs, grades, or other personal data.",
                         systemImage: "exclamationmark.shield"
                     )
                 }
@@ -61,7 +61,7 @@ struct AppFeedbackSheet: View {
                 } header: {
                     Text("Technical Context")
                 } footer: {
-                    Text("The issue is created through the shared backend using a server-side GitHub token. Your university Keychain credentials are not sent with this form.")
+                    Text("Your university login details are never attached to feedback.")
                 }
             }
             .navigationTitle("Send Feedback")
@@ -106,7 +106,7 @@ struct AppFeedbackSheet: View {
             VStack(alignment: .leading, spacing: 12) {
                 StatusBanner(
                     title: "Feedback sent",
-                    message: "GitHub issue #\(response.issueNumber) was created for the repo.",
+                    message: "Feedback issue #\(response.issueNumber) was created.",
                     systemImage: "checkmark.circle"
                 )
 

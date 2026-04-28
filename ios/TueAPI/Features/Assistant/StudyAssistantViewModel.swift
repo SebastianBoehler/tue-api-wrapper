@@ -22,7 +22,7 @@ final class StudyAssistantViewModel {
         self.messages = [
             StudyAssistantMessage(
                 role: .assistant,
-                text: "Ask about your grades, current study status, courses, or upcoming talks. This test screen uses Apple’s on-device model and a small set of live university tools."
+                text: "Ask about your grades, current study status, courses, or upcoming talks. The assistant uses Apple’s on-device model with a small set of live university tools."
             )
         ]
     }

@@ -64,7 +64,7 @@ struct MLXStudyAssistantView: View {
 
             if !viewModel.configuration.hasCredentials {
                 AppInlineStatusLine(
-                    text: "Credentials are missing. Questions about grades, tasks, deadlines, or lectures will fail until you save them in Settings.",
+                    text: "Connect your university account in Settings to answer questions about grades, tasks, deadlines, or lectures.",
                     systemImage: "lock.slash",
                     tint: .orange
                 )

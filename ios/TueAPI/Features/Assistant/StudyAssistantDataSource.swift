@@ -19,7 +19,7 @@ enum StudyAssistantDataError: LocalizedError {
         case .invalidAlmaURL:
             "The Alma base URL in Settings is invalid."
         case .missingCredentials:
-            "Save university credentials in Settings before using study snapshot or grades."
+            "Connect your university account in Settings before using study snapshot or grades."
         case .missingPortalBackend:
             "The bundled portal backend URL is not available in this build."
         }

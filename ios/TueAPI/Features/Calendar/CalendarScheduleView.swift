@@ -16,7 +16,7 @@ struct CalendarScheduleView: View {
     private var topStatusLine: CalendarStatusLine? {
         if !model.hasCredentials {
             return CalendarStatusLine(
-                text: "Save Alma credentials in Settings to load your timetable.",
+                text: "Connect your university account in Settings to load your timetable.",
                 systemImage: "lock",
                 tint: .secondary
             )
@@ -124,7 +124,7 @@ struct CalendarScheduleView: View {
         if !details.isEmpty {
             return details.joined(separator: " · ")
         }
-        return model.hasCredentials ? "Upcoming lectures" : "Save Alma credentials in Settings."
+        return model.hasCredentials ? "Upcoming lectures" : "Connect your university account in Settings."
     }
 
     @ViewBuilder
@@ -150,7 +150,7 @@ struct CalendarScheduleView: View {
         if model.hasCredentials {
             "Refresh Alma to load upcoming timetable entries."
         } else {
-            "Save university credentials in Settings, then refresh Alma."
+            "Connect your university account in Settings, then refresh Alma."
         }
     }
 

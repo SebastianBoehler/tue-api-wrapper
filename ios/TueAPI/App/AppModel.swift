@@ -171,7 +171,7 @@ final class AppModel {
                 throw AlmaClientError.invalidURL
             }
             guard let credentials = try keychain.load() else {
-                throw AlmaClientError.loginFailed("Save university credentials before refreshing Alma.")
+                throw AlmaClientError.loginFailed("Connect your university account before refreshing Alma.")
             }
 
             let snapshot = try await AlmaClient(baseURL: baseURL).fetchUpcomingLectures(credentials: credentials)

@@ -94,8 +94,8 @@ struct CourseCriticalActionsView: View {
                 method: "On-device",
                 sideEffects: [
                     "Submits a course-registration request for your signed-in university account from this device.",
-                    "Uses this Alma detail page and the university credentials stored in the device Keychain.",
-                    "No shared backend credential or server-side Alma session is involved."
+                    "Uses this Alma detail page and the university login saved on this device.",
+                    "The shared backend does not handle your Alma session."
                 ],
                 requiredInputs: registrationInputs(status: support.status, option: options.options[0]),
                 confirmButtonTitle: "Proceed with registration"

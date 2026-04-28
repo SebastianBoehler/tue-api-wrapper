@@ -16,14 +16,14 @@ struct SettingsView: View {
             }
 
             Section {
-                Button("Save in Keychain") {
+                Button("Save login") {
                     model.saveCredentials(username: username, password: password)
                     password = ""
                 }
                 .disabled(username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
 
                 if model.hasCredentials {
-                    Button("Delete credentials", role: .destructive) {
+                    Button("Remove login", role: .destructive) {
                         model.deleteCredentials()
                         password = ""
                     }
@@ -32,8 +32,8 @@ struct SettingsView: View {
 
             Section {
                 StatusBanner(
-                    title: model.hasCredentials ? "Credentials stored" : "Nothing stored",
-                    message: model.hasCredentials ? "The app can refresh Alma and read mail directly. Widgets only read cached lecture data." : "Credentials stay in this app's Keychain item.",
+                    title: model.hasCredentials ? "University account connected" : "University account not connected",
+                    message: model.hasCredentials ? "Study Hub can refresh Alma, Moodle, ILIAS, and mail on this device. Widgets only read cached lecture data." : "Connect your account to sync your timetable, tasks, grades, and university mail.",
                     systemImage: model.hasCredentials ? "lock.shield" : "lock"
                 )
             }
@@ -44,9 +44,9 @@ struct SettingsView: View {
                     .autocorrectionDisabled()
                     .keyboardType(.URL)
             } header: {
-                Text("Alma endpoint")
+                Text("Alma connection")
             } footer: {
-                Text("Default: https://alma.uni-tuebingen.de. Timetable refreshes still call Alma directly.")
+                Text("Default Alma address: https://alma.uni-tuebingen.de.")
             }
 
             Section("Widget cache") {
@@ -56,13 +56,13 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section("Testing") {
+            Section("Assistant") {
                 NavigationLink {
                     StudyAssistantEntryView(model: model)
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Assistant")
-                        Text("Open the on-device study assistant test screen.")
+                        Text("Ask questions about your timetable, tasks, grades, and campus resources.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -75,7 +75,7 @@ struct SettingsView: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Send app feedback")
-                        Text("Create a public GitHub issue from the iOS app without exposing repo credentials in the client.")
+                        Text("Report an issue or suggest a feature without including university login details.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -101,7 +101,7 @@ struct SettingsView: View {
             } header: {
                 Text("Lecture reminders")
             } footer: {
-                Text("The app schedules local notifications from cached Alma timetable entries. No backend, remote push token, or push notification server is used.")
+                Text("Reminders are scheduled on this device from cached Alma timetable entries.")
             }
         }
         .navigationTitle("Settings")

@@ -55,7 +55,7 @@ struct StudyAssistantView: View {
     private var headerCard: some View {
         AppSurfaceCard {
             VStack(alignment: .leading, spacing: 8) {
-                Text("On-device assistant test")
+                Text("On-device assistant")
                     .font(.system(.title2, design: .rounded, weight: .bold))
 
                 Text("The model runs on device. Live university data comes from a small Swift tool set wired to Alma, ILIAS, Moodle, and the public talks feed.")
@@ -65,7 +65,7 @@ struct StudyAssistantView: View {
 
             if !viewModel.configuration.hasCredentials {
                 AppInlineStatusLine(
-                    text: "Credentials are missing. Questions about grades, tasks, deadlines, or lectures will fail until you save them in Settings.",
+                    text: "Connect your university account in Settings to answer questions about grades, tasks, deadlines, or lectures.",
                     systemImage: "lock.slash",
                     tint: .orange
                 )

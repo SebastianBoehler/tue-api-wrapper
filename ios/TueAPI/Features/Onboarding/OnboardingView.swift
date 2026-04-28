@@ -24,10 +24,10 @@ struct OnboardingView: View {
                 AppSurfaceCard {
                     VStack(alignment: .leading, spacing: 16) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Connect your account")
+                            Text("University login")
                                 .font(.title3.weight(.semibold))
 
-                            Text("Use the credentials you already use for Alma. TueAPI stores them in the device Keychain.")
+                            Text("Use the same login you use for Alma. Your details stay in the device Keychain.")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -45,14 +45,14 @@ struct OnboardingView: View {
                             )
                         } else {
                             AppInlineStatusLine(
-                                text: "You can update or remove credentials later in Settings.",
+                                text: "You can update or remove this login in Settings.",
                                 systemImage: "lock.shield",
                                 tint: .accentColor
                             )
                         }
 
                         Button(action: saveCredentials) {
-                            Text("Save and Continue")
+                            Text("Continue")
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 15)
@@ -66,7 +66,7 @@ struct OnboardingView: View {
                 }
 
                 AppSurfaceCard {
-                    Text("What this unlocks")
+                    Text("What you get after sign-in")
                         .font(.headline)
 
                     OnboardingCapabilityRow(
@@ -111,10 +111,10 @@ struct OnboardingView: View {
             }
             .frame(width: 52, height: 52)
 
-            Text("Set up TueAPI")
+            Text("Connect your university account")
                 .font(.system(.largeTitle, design: .rounded, weight: .bold))
 
-            Text("Add your university credentials before you start. The app only opens the main experience after your account is connected.")
+            Text("Sign in once to bring your timetable, courses, tasks, grades, and university mail into Study Hub.")
                 .font(.body)
                 .foregroundStyle(.secondary)
 

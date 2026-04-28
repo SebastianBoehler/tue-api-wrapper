@@ -88,7 +88,7 @@ struct BrowseLecturesView: View {
         if model.hasCredentials {
             return "Load Alma lectures with public and authenticated results when Alma exposes both."
         }
-        return "Load public Alma lectures. Save credentials in Settings to include authenticated results."
+        return "Load public Alma lectures. Connect your university account in Settings to include signed-in results."
     }
 
     private func loadedMessage(date: String?, scope: BrowseResultScope) -> String {
@@ -98,12 +98,12 @@ struct BrowseLecturesView: View {
             return "Alma returned public results\(dateText)."
         case .publicAndAuthenticated(let count):
             if count == 0 {
-                return "Authenticated browse ran\(dateText); no additional private rows were found."
+                return "Signed-in browse ran\(dateText); no additional rows were found."
             }
-            let label = count == 1 ? "1 authenticated-only row" : "\(count) authenticated-only rows"
+            let label = count == 1 ? "1 sign-in-only row" : "\(count) sign-in-only rows"
             return "Merged public and authenticated Alma results\(dateText), including \(label)."
         case .publicOnlyAuthenticatedFailed(let message):
-            return "Public results loaded\(dateText). Authenticated browse failed: \(message)"
+            return "Public results loaded\(dateText). Signed-in browse failed: \(message)"
         }
     }
 

@@ -18,7 +18,7 @@ struct StudyTasksView: View {
         switch model.tasksPhase {
         case .unavailable:
             return StudyTasksStatusLine(
-                text: "Save university credentials before loading study tasks.",
+                text: "Connect your university account to load study tasks.",
                 systemImage: "lock",
                 tint: .secondary
             )
@@ -44,9 +44,9 @@ struct StudyTasksView: View {
         switch model.tasksPhase {
         case .unavailable:
             return StudyEmptyState(
-                title: "Credentials needed",
+                title: "Login required",
                 systemImage: "key",
-                message: "Save your university credentials to load ILIAS tasks and Moodle deadlines."
+                message: "Connect your university account to load ILIAS tasks and Moodle deadlines."
             )
         case .failed:
             return StudyEmptyState(

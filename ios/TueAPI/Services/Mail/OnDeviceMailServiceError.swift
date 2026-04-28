@@ -8,7 +8,7 @@ enum OnDeviceMailServiceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .credentialsMissing:
-            "Save university credentials in Settings before reading mail."
+            "Connect your university account in Settings to read mail."
         case .invalidUID:
             "The selected mail message identifier is invalid."
         case .emptyMessage(let uid):

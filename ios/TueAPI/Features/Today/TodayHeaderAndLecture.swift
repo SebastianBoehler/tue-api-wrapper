@@ -16,7 +16,7 @@ struct TodayIdentityHeader: View {
         }
         return hasCredentials
             ? "Your university overview"
-            : "Connect Alma, Moodle, and ILIAS in Settings."
+            : "Connect your university account in Settings."
     }
 
     var body: some View {
@@ -171,7 +171,7 @@ struct TodayNextLectureCard: View {
                     description: Text(
                         hasCredentials
                             ? "Refresh Alma to load your upcoming timetable."
-                            : "Save university credentials in Settings, then refresh Alma."
+                            : "Connect your university account in Settings, then refresh Alma."
                     )
                 )
             }

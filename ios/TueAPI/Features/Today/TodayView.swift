@@ -36,7 +36,7 @@ struct TodayView: View {
     private var topStatusLine: TodayStatusLine? {
         if !model.hasCredentials {
             return TodayStatusLine(
-                text: "Add university credentials in Settings to load Alma, Moodle, and ILIAS.",
+                text: "Connect your university account in Settings to load Alma, Moodle, and ILIAS.",
                 systemImage: "lock",
                 tint: .secondary
             )

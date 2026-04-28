@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from .models import CalendarOccurrence
+from .models import CalendarOccurrence, CalendarRoomDetails
 
 
 @dataclass(frozen=True)
@@ -26,6 +26,17 @@ class AlmaTimetableFormRequest:
     page_url: str
     action_url: str
     payload: dict[str, str]
+
+
+@dataclass(frozen=True)
+class AlmaTimetableRoomEntry:
+    summary: str
+    weekday: int | None
+    start_time: str | None
+    end_time: str | None
+    start_date: date | None
+    end_date: date | None
+    room_details: CalendarRoomDetails
 
 
 @dataclass(frozen=True)

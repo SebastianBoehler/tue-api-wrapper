@@ -13,6 +13,24 @@ from .ilias_client import IliasClient
 from .mail_client import MailClient
 
 DEFAULT_DASHBOARD_TERM = "Sommer 2026"
+RELATIVE_DASHBOARD_TERMS = {
+    "",
+    "aktuell",
+    "aktuelles semester",
+    "current",
+    "current semester",
+    "current term",
+    "default",
+    "dieses semester",
+    "this semester",
+    "this term",
+}
+
+
+def normalize_dashboard_term(term_label: str | None = None) -> str:
+    raw = (term_label or "").strip()
+    key = " ".join(raw.casefold().replace("_", " ").replace("-", " ").split())
+    return DEFAULT_DASHBOARD_TERM if key in RELATIVE_DASHBOARD_TERMS else raw
 
 
 def serialize(value: Any) -> Any:
@@ -91,6 +109,7 @@ class PortalService:
         }
 
     def build_dashboard(self, *, term_label: str = DEFAULT_DASHBOARD_TERM, limit: int = 8) -> dict[str, Any]:
+        term_label = normalize_dashboard_term(term_label)
         alma = self._alma_client()
         ilias = self._ilias_client()
         mail = self._mail_panel(limit=limit)
@@ -212,6 +231,7 @@ class PortalService:
         }
 
     def build_search_index(self, *, term_label: str = DEFAULT_DASHBOARD_TERM) -> list[dict[str, Any]]:
+        term_label = normalize_dashboard_term(term_label)
         dashboard = self.build_dashboard(term_label=term_label, limit=12)
         items: list[dict[str, Any]] = []
 

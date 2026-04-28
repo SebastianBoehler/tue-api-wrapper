@@ -7,6 +7,7 @@ struct LectureEvent: Codable, Identifiable, Hashable {
     var endDate: Date?
     var location: String?
     var detail: String?
+    var roomDetails: LectureRoomDetails? = nil
 
     var timeRangeText: String {
         guard let endDate else {

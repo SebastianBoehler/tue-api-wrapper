@@ -20,7 +20,7 @@ from .config import AlmaError, AlmaParseError
 from .course_detail_linking import build_unified_course_detail, resolve_alma_course_detail
 from .ilias_feature_client import fetch_ilias_info_page, fetch_ilias_search_filters, search_ilias
 from .moodle_auth import build_moodle_client
-from .portal_service import PortalService, serialize
+from .portal_service import PortalService, normalize_dashboard_term, serialize
 
 router = APIRouter()
 portal_service = PortalService()
@@ -140,7 +140,7 @@ def alma_timetable_view(
     try:
         view = fetch_timetable_view(
             _alma_client(),
-            term=term.strip() or None,
+            term=normalize_dashboard_term(term),
             week=week.strip() or None,
             from_date=from_date.strip() or None,
             to_date=to_date.strip() or None,

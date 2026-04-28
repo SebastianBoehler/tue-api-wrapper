@@ -20,8 +20,51 @@ def _clean_text(value: str) -> str:
     return " ".join(value.split())
 
 
+def _field_suffixes(field_name: str) -> tuple[str, ...]:
+    parts = field_name.split(":")
+    suffixes = [f":{parts[-1]}"]
+    if len(parts) > 1:
+        suffixes.insert(0, ":" + ":".join(parts[1:]))
+    return tuple(dict.fromkeys(suffixes))
+
+
+def _matches_field_name(expected_name: str):
+    suffixes = _field_suffixes(expected_name)
+
+    def matches(value: str | None) -> bool:
+        if not value:
+            return False
+        return value == expected_name or any(value.endswith(suffix) for suffix in suffixes)
+
+    return matches
+
+
+def _find_named(root, tag_name: str | None, expected_name: str):
+    matches = _matches_field_name(expected_name)
+    if tag_name is None:
+        return root.find(attrs={"name": matches}) or root.find(id=matches)
+    return root.find(tag_name, attrs={"name": matches}) or root.find(tag_name, id=matches)
+
+
+def _find_timetable_form(soup: BeautifulSoup):
+    form = soup.find("form", attrs={"id": "plan"}) or soup.find(
+        "form",
+        attrs={"id": lambda value: bool(value and "individualTimetable" in value)},
+    )
+    if form is not None:
+        return form
+
+    for candidate in soup.find_all("form"):
+        action = candidate.get("action", "")
+        if "individualTimetable" in action:
+            return candidate
+        if _find_named(candidate, "select", "plan:scheduleConfiguration:anzeigeoptionen:changeTerm_input") is not None:
+            return candidate
+    return None
+
+
 def _parse_select_options(soup: BeautifulSoup, field_name: str) -> tuple[AlmaTimetableOption, ...]:
-    field = soup.find("select", attrs={"name": field_name})
+    field = _find_named(soup, "select", field_name)
     if field is None:
         return ()
 
@@ -89,7 +132,7 @@ def _extract_days(soup: BeautifulSoup) -> tuple[AlmaTimetableDay, ...]:
 
 
 def _extract_export_url(soup: BeautifulSoup) -> str | None:
-    field = soup.find("textarea", attrs={"name": "plan:scheduleConfiguration:anzeigeoptionen:ical:cal_add"})
+    field = _find_named(soup, "textarea", "plan:scheduleConfiguration:anzeigeoptionen:ical:cal_add")
     if field is None:
         return None
     value = field.get_text(strip=True) or field.get("data-page-permalink", "").strip()
@@ -105,30 +148,31 @@ def build_timetable_action_request(
     extra_fields: dict[str, str] | None = None,
 ) -> AlmaTimetableFormRequest:
     soup = BeautifulSoup(html, "html.parser")
-    form = soup.find("form", attrs={"id": "plan"}) or soup.find(
-        "form",
-        attrs={"id": lambda value: bool(value and "individualTimetable" in value)},
-    )
+    form = _find_timetable_form(soup)
     if form is None:
         raise AlmaParseError("Could not find the Alma timetable form.")
 
-    trigger = form.find(attrs={"name": trigger_name}) or form.find(id=trigger_name)
+    trigger = _find_named(form, None, trigger_name)
     if trigger is None:
         raise AlmaParseError(f"Could not find Alma timetable trigger '{trigger_name}'.")
+    actual_trigger_name = trigger.get("name") or trigger.get("id") or trigger_name
 
     payload = extract_form_payload(form)
     if field_overrides:
-        payload.update(field_overrides)
+        for field_name, value in field_overrides.items():
+            actual_field = _find_named(form, None, field_name)
+            actual_name = actual_field.get("name") if actual_field is not None and actual_field.get("name") else field_name
+            payload[actual_name] = value
 
     if "activePageElementId" in payload and not payload["activePageElementId"]:
-        payload["activePageElementId"] = trigger_name
+        payload["activePageElementId"] = actual_trigger_name
     if "refreshButtonClickedId" in payload and not payload["refreshButtonClickedId"]:
-        payload["refreshButtonClickedId"] = trigger_name
+        payload["refreshButtonClickedId"] = actual_trigger_name
 
     trigger_value = ""
     if trigger.name in {"button", "input"}:
         trigger_value = trigger.get("value", "")
-        trigger_field_name = trigger.get("name") or trigger_name
+        trigger_field_name = trigger.get("name") or actual_trigger_name
         payload[trigger_field_name] = trigger_value
 
     if extra_fields:
@@ -154,9 +198,9 @@ def parse_timetable_contract(html: str, page_url: str) -> AlmaTimetableContract:
     selected_week = _selected_option(weeks)
 
     export_url = _extract_export_url(soup)
-    print_available = soup.find(attrs={"name": "plan:scheduleConfiguration:anzeigeoptionen:print"}) is not None
+    print_available = _find_named(soup, None, "plan:scheduleConfiguration:anzeigeoptionen:print") is not None
     can_refresh_export_url = (
-        soup.find(attrs={"name": "plan:scheduleConfiguration:anzeigeoptionen:ical:renewSecurityToken"}) is not None
+        _find_named(soup, None, "plan:scheduleConfiguration:anzeigeoptionen:ical:renewSecurityToken") is not None
     )
     supports_custom_range = any(option.value == "zeitraum" for option in range_modes)
 

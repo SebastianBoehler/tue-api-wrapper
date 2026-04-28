@@ -20,7 +20,7 @@ from .api_routes_moodle import router as moodle_router
 from .api_routes_products import router as products_router
 from .client import AlmaClient
 from .config import AlmaError
-from .portal_service import DEFAULT_DASHBOARD_TERM, PortalService, serialize
+from .portal_service import DEFAULT_DASHBOARD_TERM, PortalService, normalize_dashboard_term, serialize
 
 app = FastAPI(
     title="tue-api-wrapper",
@@ -97,7 +97,7 @@ def fetch_item(item_id: str, term: str = Query(DEFAULT_DASHBOARD_TERM)) -> dict[
 @app.get("/api/alma/timetable")
 def alma_timetable(term: str = Query(DEFAULT_DASHBOARD_TERM)) -> dict[str, object]:
     try:
-        result = _alma_client().fetch_timetable_for_term(term)
+        result = _alma_client().fetch_timetable_for_term(normalize_dashboard_term(term))
         return serialize(result)
     except AlmaError as error:
         raise _translate_error(error) from error

@@ -4,6 +4,7 @@ from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 
 from bs4 import BeautifulSoup
 
+from .alma_timetable_html import parse_timetable_contract
 from .config import AlmaParseError
 from .models import LoginForm
 
@@ -27,30 +28,19 @@ def extract_login_form(html: str, page_url: str) -> LoginForm:
 
 
 def extract_timetable_terms(html: str) -> dict[str, str]:
-    soup = BeautifulSoup(html, "html.parser")
-    select = soup.find("select", attrs={"name": "plan:scheduleConfiguration:anzeigeoptionen:changeTerm_input"})
-    if select is None:
+    contract = parse_timetable_contract(html, "")
+    if not contract.terms:
         raise AlmaParseError("Could not find the timetable term selector.")
 
-    terms: dict[str, str] = {}
-    for option in select.find_all("option"):
-        label = option.get_text(strip=True)
-        value = option.get("value", "").strip()
-        if label and value:
-            terms[label] = value
-    return terms
+    return {option.label: option.value for option in contract.terms}
 
 
 def extract_timetable_export_url(html: str) -> str:
-    soup = BeautifulSoup(html, "html.parser")
-    field = soup.find("textarea", attrs={"name": "plan:scheduleConfiguration:anzeigeoptionen:ical:cal_add"})
-    if field is None:
+    contract = parse_timetable_contract(html, "")
+    if contract.export_url is None:
         raise AlmaParseError("Could not find the timetable iCalendar export field.")
 
-    export_url = field.get_text(strip=True)
-    if not export_url:
-        raise AlmaParseError("The timetable iCalendar export field was empty.")
-    return export_url
+    return contract.export_url
 
 
 def build_term_export_url(export_url: str, term_id: str) -> str:

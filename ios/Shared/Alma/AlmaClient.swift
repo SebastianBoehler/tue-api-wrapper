@@ -44,11 +44,12 @@ struct AlmaClient {
         let end = calendar.date(byAdding: .day, value: days, to: now) ?? now
         let events = try ICSEventParser.parse(rawICS)
         let lectures = try RecurrenceExpander.expand(events, from: now, to: end)
+        let enrichedLectures = AlmaTimetableRoomHTMLParser.enrich(lectures, html: page, pageURL: timetableURL())
 
         return LectureSnapshot(
             refreshedAt: now,
             sourceTerm: term.label,
-            events: Array(lectures.prefix(limit)),
+            events: Array(enrichedLectures.prefix(limit)),
             semesterCredits: SemesterCreditCounter.summarize(events),
             personName: enrollmentState.personName
         )

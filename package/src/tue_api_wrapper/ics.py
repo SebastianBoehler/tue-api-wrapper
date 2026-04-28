@@ -135,6 +135,7 @@ def parse_ics_events(raw_ics: str) -> tuple[CalendarEvent, ...]:
                     uid=_decode_ics_text(uid[0]) if uid else None,
                     recurrence_rule=recurrence[0] if recurrence else None,
                     excluded_starts=_parse_exdates(current.get("EXDATE", [])),
+                    room_details=None,
                 )
             )
             current = None
@@ -196,6 +197,7 @@ def expand_ics_events(events: Iterable[CalendarEvent], term_label: str) -> tuple
                         end=normalized_start + duration if duration else None,
                         location=event.location,
                         description=event.description,
+                        room_details=event.room_details,
                     )
                 )
             continue
@@ -208,6 +210,7 @@ def expand_ics_events(events: Iterable[CalendarEvent], term_label: str) -> tuple
                     end=start_dt + duration if duration else end_dt,
                     location=event.location,
                     description=event.description,
+                    room_details=event.room_details,
                 )
             )
 

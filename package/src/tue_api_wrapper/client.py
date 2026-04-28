@@ -30,11 +30,15 @@ from .config import (
     STUDYSERVICE_PATH,
     TIMETABLE_PATH,
 )
+from .alma_timetable_html import parse_timetable_contract
+from .alma_timetable_rooms import (
+    enrich_calendar_events,
+    enrich_calendar_occurrences,
+    extract_timetable_room_entries,
+)
 from .html_contract import (
     build_term_export_url,
     extract_login_form,
-    extract_timetable_export_url,
-    extract_timetable_terms,
 )
 from .ics import expand_ics_events, parse_ics_events
 from .models import (
@@ -113,7 +117,8 @@ class AlmaClient:
 
     def fetch_timetable_for_term(self, term_label: str) -> TimetableResult:
         timetable_html = self.fetch_timetable_page()
-        terms = extract_timetable_terms(timetable_html)
+        contract = parse_timetable_contract(timetable_html, self.timetable_url)
+        terms = {option.label: option.value for option in contract.terms}
         resolved_term_label = term_label
         term_id = terms.get(term_label)
         if term_id is None:
@@ -122,19 +127,25 @@ class AlmaClient:
                     resolved_term_label = label
                     term_id = value
                     break
+        if term_id is None and not terms and contract.export_url:
+            resolved_term_label = contract.selected_term_label or term_label
+            term_id = contract.selected_term_value or ""
         if term_id is None:
             available = ", ".join(sorted(terms))
             raise AlmaParseError(f"Unknown term '{term_label}'. Available terms: {available}")
 
-        export_url = build_term_export_url(extract_timetable_export_url(timetable_html), term_id)
+        if contract.export_url is None:
+            raise AlmaParseError("Could not find the timetable iCalendar export field.")
+        export_url = build_term_export_url(contract.export_url, term_id) if term_id else contract.export_url
         calendar_response = self.session.get(export_url, timeout=self.timeout_seconds)
         calendar_response.raise_for_status()
         raw_ics = self._decode_calendar_response(calendar_response)
         if "BEGIN:VCALENDAR" not in raw_ics:
             raise AlmaParseError("Expected an iCalendar export but received a different response.")
 
-        events = parse_ics_events(raw_ics)
-        occurrences = expand_ics_events(events, resolved_term_label)
+        room_entries = extract_timetable_room_entries(timetable_html, self.timetable_url)
+        events = enrich_calendar_events(parse_ics_events(raw_ics), room_entries)
+        occurrences = enrich_calendar_occurrences(expand_ics_events(events, resolved_term_label), room_entries)
         return TimetableResult(
             term_label=resolved_term_label,
             term_id=term_id,

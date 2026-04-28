@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 
+from .calendar_room_models import CalendarRoomDetails
+
 
 @dataclass(frozen=True)
 class LoginForm:
@@ -20,6 +22,7 @@ class CalendarEvent:
     uid: str | None
     recurrence_rule: str | None
     excluded_starts: tuple[date | datetime, ...]
+    room_details: CalendarRoomDetails | None = None
 
 
 @dataclass(frozen=True)
@@ -29,6 +32,7 @@ class CalendarOccurrence:
     end: datetime | None
     location: str | None
     description: str | None
+    room_details: CalendarRoomDetails | None = None
 
 
 @dataclass(frozen=True)

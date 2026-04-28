@@ -96,10 +96,22 @@ def _resolve_option(options: tuple[AlmaTimetableOption, ...], raw_value: str, *,
 
 
 def _resolve_term_option(contract: AlmaTimetableContract, term: str | None) -> AlmaTimetableOption | None:
-    if not contract.terms:
-        return None
     if term and term.strip():
+        if not contract.terms:
+            return AlmaTimetableOption(
+                value=contract.selected_term_value or "",
+                label=contract.selected_term_label or term.strip(),
+                is_selected=True,
+            )
         return _resolve_option(contract.terms, term, field_label="term")
+    if not contract.terms:
+        if contract.selected_term_label or contract.export_url:
+            return AlmaTimetableOption(
+                value=contract.selected_term_value or "",
+                label=contract.selected_term_label or "Current term",
+                is_selected=True,
+            )
+        return None
     return next((option for option in contract.terms if option.is_selected), contract.terms[0])
 
 
@@ -296,9 +308,9 @@ def fetch_timetable_view(
     else:
         days = contract.days
 
-    calendar_feed_url = (
-        build_term_export_url(contract.export_url, term_option.value) if contract.export_url is not None else None
-    )
+    calendar_feed_url = None
+    if contract.export_url is not None:
+        calendar_feed_url = build_term_export_url(contract.export_url, term_option.value) if term_option.value else contract.export_url
 
     return AlmaTimetableView(
         page_url=contract.page_url,

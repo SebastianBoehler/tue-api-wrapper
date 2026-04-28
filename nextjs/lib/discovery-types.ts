@@ -1,4 +1,6 @@
-import type { AgendaItem, CatalogNode } from "./types";
+import type { AgendaItem, CalendarRoomDetails, CatalogNode } from "./types";
+
+export type { CalendarRoomDetails };
 
 export interface AlmaStudyPlannerSemester {
   index: number;

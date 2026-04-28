@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/next.js-15-000000?logo=nextdotjs&logoColor=white" alt="Next.js 15" />
   <img src="https://img.shields.io/badge/node-20-5FA04E?logo=nodedotjs&logoColor=white" alt="Node 20" />
   <a href="./LICENSE">
-    <img src="https://img.shields.io/badge/license-BUSL--1.1-E97312.svg" alt="Business Source License 1.1" />
+    <img src="https://img.shields.io/badge/license-Apache--2.0-D22128.svg" alt="Apache License 2.0" />
   </a>
 </p>
 
@@ -345,23 +345,11 @@ HAR exports, cookies, signed URLs, and downloaded PDFs may contain sensitive dat
 
 ## License
 
-This repository is source-available under the Business Source License 1.1 with
-a repo-specific academic Additional Use Grant. See [`LICENSE`](./LICENSE).
+This repository is licensed under the Apache License 2.0. See
+[`LICENSE`](./LICENSE).
 
-This is a source-available license model, not an OSI-approved open-source
-license.
-
-The Additional Use Grant allows production use only for non-commercial course,
-lecture, seminar, or supervised group-project work at the University of
-Tuebingen when that academic use is taught by, coordinated by, or expressly
-authorized in writing by Sebastian Boehler.
-
-Commercial use, managed or hosted offerings, campus-wide deployments, and use
-by other universities or institutions require a separate written license. See
-[`COMMERCIAL-LICENSING.md`](./COMMERCIAL-LICENSING.md).
-
-Versions or copies that were already distributed under the MIT License before
-April 23, 2026 remain available under MIT. This license change applies to
-versions first distributed under the new license on or after April 23, 2026.
+Versions first distributed before April 28, 2026 remain available under the
+licenses they were originally published under, including MIT and Business
+Source License 1.1 where applicable.
 
 The license applies to the code and documentation in this repository. It does not grant rights to third-party systems, trademarks, or data exposed by Alma, ILIAS, Moodle, or the University of Tuebingen.

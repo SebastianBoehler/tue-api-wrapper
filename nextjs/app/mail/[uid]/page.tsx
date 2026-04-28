@@ -33,7 +33,7 @@ export default async function MailDetailPage({
           </Button>
         </div>
 
-        <div className="rounded-4xl border border-border bg-card overflow-hidden">
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
           <MailDetailPanel message={message} />
         </div>
       </AppShell>

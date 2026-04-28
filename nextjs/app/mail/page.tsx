@@ -64,7 +64,7 @@ export default async function MailPage({
           {header}
           <MailInboxFiltersForm filters={filters} mailboxes={mailboxes} />
 
-          <div className="grid grid-cols-[320px_minmax(0,1fr)] gap-0 border border-border rounded-4xl overflow-hidden h-[calc(100svh-theme(spacing.72))] min-h-[480px]">
+          <div className="grid grid-cols-[320px_minmax(0,1fr)] gap-0 border border-border rounded-lg overflow-hidden h-[calc(100svh-theme(spacing.72))] min-h-[480px]">
             {/* Left — message list */}
             <div className="flex flex-col border-r border-border overflow-hidden">
               <div className="sticky top-0 z-10 flex items-center justify-between gap-2 px-3 py-2 bg-card border-b border-border shrink-0">

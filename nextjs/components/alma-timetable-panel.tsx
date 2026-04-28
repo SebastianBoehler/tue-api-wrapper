@@ -98,7 +98,7 @@ export function AlmaTimetablePanel({
             <div className="md:col-span-5 flex flex-wrap items-center justify-end gap-2">
               <a
                 href="/agenda"
-                className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-4xl border border-border bg-background px-3 text-sm font-medium transition-all hover:bg-muted hover:text-foreground"
+                className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-border bg-background px-3 text-sm font-medium transition-all hover:bg-muted hover:text-foreground"
               >
                 Reset
               </a>

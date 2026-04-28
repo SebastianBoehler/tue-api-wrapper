@@ -23,7 +23,7 @@ from tue_api_wrapper.praxisportal_client import (
     build_praxisportal_filter_options,
     map_praxisportal_detail,
 )
-from tue_api_wrapper.timms_client import parse_timms_item_page, parse_timms_player_page
+from tue_api_wrapper.timms_client import parse_timms_item_page, parse_timms_player_page, parse_timms_tree_page
 from tue_api_wrapper.talks_client import build_talks_response, map_talk
 
 
@@ -85,6 +85,27 @@ class PublicProductContractTests(unittest.TestCase):
         self.assertEqual(streams[0].height, 288)
         self.assertEqual(streams[1].bitrate, 564)
         self.assertTrue(streams[1].url.endswith("sample.640x360b0564.mp4"))
+
+    def test_parse_timms_tree_page_merges_preview_and_title_links(self) -> None:
+        html = """
+        <html><body><div id="content">
+          <div class="opennodecontainer">
+            <div class="opennode"><a href="/List/OpenNode?nodepath=/A&nodeid=n1">A</a></div>
+            <table class="leavecontainer">
+              <tr>
+                <td><a href="/tp/UT_20200421_001_theoinf_0001"><img alt="preview" src="/prev.jpg" /></a></td>
+                <td><a class="uniblue" href="/tp/UT_20200421_001_theoinf_0001">Vorlesung Theoretische Informatik, 1. Stunde</a><br />00:34:22</td>
+              </tr>
+            </table>
+          </div>
+        </div></body></html>
+        """
+
+        page = parse_timms_tree_page(html, "https://timms.uni-tuebingen.de/List/Browse")
+
+        self.assertEqual(len(page.items), 1)
+        self.assertEqual(page.items[0].item_id, "UT_20200421_001_theoinf_0001")
+        self.assertEqual(page.items[0].title, "Vorlesung Theoretische Informatik, 1. Stunde")
 
     def test_map_praxisportal_detail_and_filter_options(self) -> None:
         detail = map_praxisportal_detail(

@@ -93,10 +93,7 @@
     @apply font-sans bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background:
-      radial-gradient(circle at top left, rgba(161, 30, 59, 0.08), transparent 24rem),
-      radial-gradient(circle at top right, rgba(15, 118, 110, 0.06), transparent 22rem),
-      linear-gradient(180deg, #fbf9f6 0%, #f4f1ed 100%);
+    background: #f6f6f3;
   }
   html {
     @apply font-sans;

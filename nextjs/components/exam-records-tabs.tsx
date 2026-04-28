@@ -17,7 +17,7 @@ function ExamBadges({ exam }: { exam: ExamItem }) {
     (grade !== "" && grade !== "-" && !isFailed);
 
   const base =
-    "inline-flex h-5 items-center rounded-3xl border px-2 py-0.5 text-xs font-medium whitespace-nowrap";
+    "inline-flex h-5 items-center rounded-lg border px-2 py-0.5 text-xs font-medium whitespace-nowrap";
   const passedCls =
     "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
   const failedCls =

@@ -23,6 +23,16 @@ function buildCampusHref(options: { canteenId?: string; buildingPath?: string })
   return `/campus?${params.toString()}`;
 }
 
+function campusAssetUrl(value: string) {
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+  if (value.startsWith("/")) {
+    return `https://uni-tuebingen.de${value}`;
+  }
+  return `https://uni-tuebingen.de/${value}`;
+}
+
 export function CampusHub({
   canteens,
   selectedCanteen,
@@ -65,15 +75,15 @@ export function CampusHub({
           </CardAction>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-3xl border border-border px-4 py-3">
+          <div className="rounded-lg border border-border px-4 py-3">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Active Tübingen feeds</p>
             <p className="mt-1 text-3xl font-semibold">{canteens.length}</p>
           </div>
-          <div className="rounded-3xl border border-border px-4 py-3">
+          <div className="rounded-lg border border-border px-4 py-3">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Buildings</p>
             <p className="mt-1 text-3xl font-semibold">{directory.buildings.length}</p>
           </div>
-          <div className="rounded-3xl border border-border px-4 py-3 md:col-span-2">
+          <div className="rounded-lg border border-border px-4 py-3 md:col-span-2">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Area maps</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {directory.area_links.slice(0, 6).map((link) => (
@@ -100,7 +110,7 @@ export function CampusHub({
                 <Link
                   key={canteen.canteen_id}
                   href={buildCampusHref({ canteenId: canteen.canteen_id, buildingPath: currentBuildingPath }) as Route}
-                  className={`rounded-3xl border p-4 transition-colors hover:bg-muted/40 ${selectedCanteen.canteen_id === canteen.canteen_id ? "border-primary/30 bg-primary/5" : "border-border"
+                  className={`rounded-lg border p-4 transition-colors hover:bg-muted/40 ${selectedCanteen.canteen_id === canteen.canteen_id ? "border-primary/30 bg-primary/5" : "border-border"
                     }`}
                 >
                   <div className="flex flex-wrap gap-2">
@@ -145,7 +155,7 @@ export function CampusHub({
               </div>
               {selectedCanteen.menus.length ? (
                 selectedCanteen.menus.slice(0, 8).map((menu) => (
-                  <div key={menu.id} className="rounded-3xl border border-border px-4 py-3">
+                  <div key={menu.id} className="rounded-lg border border-border px-4 py-3">
                     <div className="flex flex-wrap gap-2">
                       {menu.menu_line ? <Badge variant="secondary">{menu.menu_line}</Badge> : null}
                       {menu.menu_date ? <Badge variant="outline">{menu.menu_date}</Badge> : null}
@@ -167,7 +177,7 @@ export function CampusHub({
                   </div>
                 ))
               ) : (
-                <div className="rounded-3xl bg-muted px-4 py-5 text-sm text-muted-foreground">
+                <div className="rounded-lg bg-muted px-4 py-5 text-sm text-muted-foreground">
                   No active menus were published for this canteen at the moment.
                 </div>
               )}
@@ -206,13 +216,13 @@ export function CampusHub({
               {selectedBuilding.image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={selectedBuilding.image_url}
+                  src={campusAssetUrl(selectedBuilding.image_url)}
                   alt={selectedBuilding.title}
-                  className="w-full rounded-3xl object-cover"
+                  className="w-full rounded-lg object-cover"
                 />
               ) : null}
               {selectedBuilding.address_lines.length ? (
-                <div className="rounded-3xl border border-border px-4 py-3 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-border px-4 py-3 text-sm text-muted-foreground">
                   {selectedBuilding.address_lines.map((line) => (
                     <p key={line}>{line}</p>
                   ))}

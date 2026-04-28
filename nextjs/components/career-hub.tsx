@@ -96,7 +96,7 @@ export function CareerHub({
                 id="career-project-type"
                 name="projectTypeId"
                 defaultValue={selectedProjectTypeId ? String(selectedProjectTypeId) : ""}
-                className="h-9 w-full rounded-3xl border border-input bg-input/50 px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                className="h-9 w-full rounded-lg border border-input bg-input/50 px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
               >
                 <option value="">Any</option>
                 {filters.project_types.map((option) => (
@@ -112,7 +112,7 @@ export function CareerHub({
                 id="career-industry"
                 name="industryId"
                 defaultValue={selectedIndustryId ? String(selectedIndustryId) : ""}
-                className="h-9 w-full rounded-3xl border border-input bg-input/50 px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                className="h-9 w-full rounded-lg border border-input bg-input/50 px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
               >
                 <option value="">Any</option>
                 {filters.industries.map((option) => (
@@ -144,7 +144,7 @@ export function CareerHub({
                   projectId: item.id,
                   page: currentPage
                 }) as Route}
-                className="block rounded-3xl border border-border p-4 transition-colors hover:bg-muted/40"
+                className="block rounded-lg border border-border p-4 transition-colors hover:bg-muted/40"
               >
                 <div className="flex flex-wrap gap-2">
                   {item.project_types.map((projectType) => (
@@ -252,7 +252,7 @@ export function CareerHub({
                 ) : null}
               </>
             ) : (
-              <div className="rounded-3xl bg-muted px-4 py-5 text-sm text-muted-foreground">
+              <div className="rounded-lg bg-muted px-4 py-5 text-sm text-muted-foreground">
                 Role descriptions, requirements, and organization details appear here after you select a result.
               </div>
             )}

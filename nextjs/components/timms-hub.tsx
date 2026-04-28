@@ -99,7 +99,8 @@ export function TimmsHub({
                       nodeId: tree.selected_node_id ?? undefined,
                       nodePath: selectedNode?.node_path
                     }) as Route}
-                    className="grid gap-3 rounded-3xl border border-border p-4 transition-colors hover:bg-muted/40 lg:grid-cols-[104px_minmax(0,1fr)]"
+                    scroll={false}
+                    className="grid gap-3 rounded-lg border border-border p-4 transition-colors hover:bg-muted/40 lg:grid-cols-[104px_minmax(0,1fr)]"
                   >
                     <div className="overflow-hidden rounded-2xl bg-muted">
                       {result.preview_image_url ? (
@@ -132,7 +133,7 @@ export function TimmsHub({
                   </Link>
                 ))
               ) : (
-                <div className="rounded-3xl bg-muted px-4 py-5 text-sm text-muted-foreground">
+                <div className="rounded-lg bg-muted px-4 py-5 text-sm text-muted-foreground">
                   {currentQuery
                     ? "No TIMMS items matched this search."
                     : "Start with a lecture title, topic, or lecturer name to open the archive."}
@@ -151,6 +152,7 @@ export function TimmsHub({
                 <Link
                   key={`${node.node_id}-${node.node_path}`}
                   href={buildArchiveHref({ query: currentQuery, nodeId: node.node_id, nodePath: node.node_path }) as Route}
+                  scroll={false}
                   className={`flex items-center justify-between rounded-2xl px-3 py-2 text-sm transition-colors hover:bg-muted/40 ${node.is_open ? "bg-primary/5 text-primary" : "text-foreground"
                     }`}
                   style={{ marginLeft: `${node.depth * 14}px` }}
@@ -172,6 +174,7 @@ export function TimmsHub({
                           nodeId: tree.selected_node_id ?? undefined,
                           nodePath: selectedNode?.node_path
                         }) as Route}
+                        scroll={false}
                         className="block rounded-2xl border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/40"
                       >
                         {treeItem.title}
@@ -232,7 +235,7 @@ export function TimmsHub({
                   </div>
                 </>
               ) : (
-                <div className="rounded-3xl bg-muted px-4 py-5 text-sm text-muted-foreground">
+                <div className="rounded-lg bg-muted px-4 py-5 text-sm text-muted-foreground">
                   Metadata, citations, and direct MP4 variants appear here after selecting an archive item.
                 </div>
               )}
@@ -263,7 +266,7 @@ export function TimmsHub({
                   </a>
                 ))
               ) : (
-                <div className="rounded-3xl bg-muted px-4 py-5 text-sm text-muted-foreground">
+                <div className="rounded-lg bg-muted px-4 py-5 text-sm text-muted-foreground">
                   Select a TIMMS item to list its extracted stream files.
                 </div>
               )}

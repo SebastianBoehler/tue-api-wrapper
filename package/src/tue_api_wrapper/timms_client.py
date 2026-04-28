@@ -26,7 +26,6 @@ TIMMS_BASE_URL = "https://timms.uni-tuebingen.de"
 _TOTAL_HITS_RE = re.compile(r"(\d[\d.]*)\s+Treffer")
 _BACKGROUND_IMAGE_RE = re.compile(r"background-image:url\(([^)]+)\)")
 _MYTOK_RE = re.compile(r"mytok\s*=\s*'([^']+)'")
-
 def _absolute_url(path: str) -> str:
     return urljoin(f"{TIMMS_BASE_URL}/", path)
 
@@ -212,15 +211,22 @@ def _parse_tree_node(link: Tag, *, depth: int, is_open: bool) -> TimmsTreeNode:
     )
 
 def _parse_visible_tree_items(links: Iterable[Tag]) -> list[TimmsTreeItem]:
-    seen: set[str] = set()
+    by_id: dict[str, TimmsTreeItem] = {}
     items: list[TimmsTreeItem] = []
     for link in links:
         item_url = _absolute_url(link["href"])
         item_id = _item_id_from_url(item_url)
-        if item_id in seen or "?starttime=" in link["href"]:
+        if "?starttime=" in link["href"]:
             continue
-        seen.add(item_id)
-        items.append(TimmsTreeItem(item_id=item_id, title=link.get_text(" ", strip=True), url=item_url))
+        title = link.get_text(" ", strip=True)
+        existing = by_id.get(item_id)
+        if existing is not None:
+            if title and not existing.title:
+                existing.title = title
+            continue
+        item = TimmsTreeItem(item_id=item_id, title=title, url=item_url)
+        by_id[item_id] = item
+        items.append(item)
     return items
 
 def _safe_int(value: object) -> int | None:

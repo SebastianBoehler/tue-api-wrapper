@@ -74,8 +74,8 @@ export default async function HomePage() {
               </CardHeader>
               <CardContent>
                 <ListRows>
-                  {dashboard.agenda.items.slice(0, 6).map((item) => (
-                    <ListRow key={`${item.summary}-${item.start}`} href={buildAgendaCourseDetailHref(item, undefined)}>
+                  {dashboard.agenda.items.slice(0, 6).map((item, index) => (
+                    <ListRow key={`${item.summary}-${item.start}-${item.location ?? "location"}-${index}`} href={buildAgendaCourseDetailHref(item, undefined)}>
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{item.summary}</p>
@@ -231,7 +231,7 @@ export default async function HomePage() {
             </Card>
 
             <DashboardTalksCard talks={dashboard.talks} />
-            <DashboardNotificationsFeedCard />
+            <DashboardNotificationsFeedCard apiBaseUrl={buildPortalApiUrl("")} />
           </div>
         </div>
       </AppShell>

@@ -14,7 +14,7 @@ export const serverName = "tue-study-hub";
 const enableMailTools = process.env.CHATGPT_ENABLE_MAIL_TOOLS !== "false";
 
 export function createAppServer() {
-  const server = new McpServer({ name: serverName, version: "0.5.0" });
+  const server = new McpServer({ name: serverName, version: "0.8.0" });
 
   registerWidgetResources(server);
   registerSearchTools(server);

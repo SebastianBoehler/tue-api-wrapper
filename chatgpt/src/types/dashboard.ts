@@ -9,12 +9,30 @@ export interface DashboardMetric {
   value: number;
 }
 
+export interface CalendarRoomDetails {
+  room_default: string | null;
+  room_short: string | null;
+  room_long: string | null;
+  floor_default: string | null;
+  floor_short: string | null;
+  floor_long: string | null;
+  building_default: string | null;
+  building_short: string | null;
+  building_long: string | null;
+  campus_default: string | null;
+  campus_short: string | null;
+  campus_long: string | null;
+  detail_url: string | null;
+  display_text: string | null;
+}
+
 export interface AgendaItem {
   summary: string;
   start: string;
   end: string | null;
   location: string | null;
   description: string | null;
+  room_details?: CalendarRoomDetails | null;
 }
 
 export interface AlmaTimetableEvent {
@@ -23,6 +41,7 @@ export interface AlmaTimetableEvent {
   end: string | null;
   location: string | null;
   description: string | null;
+  room_details?: CalendarRoomDetails | null;
   uid: string | null;
   recurrence_rule: string | null;
   excluded_starts: string[];

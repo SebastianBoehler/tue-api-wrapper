@@ -16,11 +16,41 @@ const widgetCss = readFileSync(join(projectRoot, "web/dist/widget.css"), "utf8")
 const widgetDomain = process.env.APP_BASE_URL;
 const apiBaseUrl = process.env.PORTAL_API_BASE_URL;
 
-export const widgetUri = "ui://study-hub/dashboard-v4.html";
-export const detailWidgetUri = "ui://study-hub/detail-v4.html";
-export const actionWidgetUri = "ui://study-hub/action-v4.html";
+export const widgetUri = "ui://study-hub/dashboard-v8.html";
+export const detailWidgetUri = "ui://study-hub/detail-v8.html";
+export const actionWidgetUri = "ui://study-hub/action-v8.html";
+export const mensaWidgetUri = "ui://study-hub/mensa-v8.html";
 
-function buildWidgetHtml(template: "dashboard" | "detail" | "action") {
+const widgetAliases = {
+  dashboard: [
+    widgetUri,
+    "ui://study-hub/dashboard-v7.html",
+    "ui://study-hub/dashboard-v6.html",
+    "ui://study-hub/dashboard-v5.html",
+    "ui://study-hub/dashboard-v4.html",
+  ],
+  detail: [
+    detailWidgetUri,
+    "ui://study-hub/detail-v7.html",
+    "ui://study-hub/detail-v6.html",
+    "ui://study-hub/detail-v5.html",
+    "ui://study-hub/detail-v4.html",
+  ],
+  action: [
+    actionWidgetUri,
+    "ui://study-hub/action-v7.html",
+    "ui://study-hub/action-v6.html",
+    "ui://study-hub/action-v5.html",
+    "ui://study-hub/action-v4.html",
+  ],
+  mensa: [
+    mensaWidgetUri,
+  ],
+} as const;
+
+type WidgetTemplate = "dashboard" | "detail" | "action" | "mensa";
+
+function buildWidgetHtml(template: WidgetTemplate, uri: string) {
   const meta: Record<string, unknown> = {
     ui: {
       prefersBorder: true,
@@ -34,7 +64,9 @@ function buildWidgetHtml(template: "dashboard" | "detail" | "action") {
         ? "Shows a host modal with focused details for a selected study item."
         : template === "action"
           ? "Shows a human confirmation screen for a prepared critical university action with Proceed and Cancel controls."
-          : "Shows an interactive study dashboard with upcoming Alma events, open ILIAS tasks, exam progress, documents, and learning spaces.",
+          : template === "mensa"
+            ? "Shows Tübingen mensa menus with canteen filters, prices, diet tags, and source links."
+            : "Shows an interactive study dashboard with upcoming Alma events, open ILIAS tasks, exam progress, documents, and learning spaces.",
   };
 
   if (widgetDomain) {
@@ -47,7 +79,7 @@ function buildWidgetHtml(template: "dashboard" | "detail" | "action") {
   return {
     contents: [
       {
-        uri: template === "detail" ? detailWidgetUri : template === "action" ? actionWidgetUri : widgetUri,
+        uri,
         mimeType: RESOURCE_MIME_TYPE,
         text: `<!doctype html>
 <html lang="en">
@@ -68,25 +100,15 @@ function buildWidgetHtml(template: "dashboard" | "detail" | "action") {
 }
 
 export function registerWidgetResources(server: McpServer) {
-  registerAppResource(
-    server,
-    "study-hub-widget",
-    widgetUri,
-    {},
-    async () => buildWidgetHtml("dashboard"),
-  );
-  registerAppResource(
-    server,
-    "study-hub-detail-widget",
-    detailWidgetUri,
-    {},
-    async () => buildWidgetHtml("detail"),
-  );
-  registerAppResource(
-    server,
-    "study-hub-action-widget",
-    actionWidgetUri,
-    {},
-    async () => buildWidgetHtml("action"),
-  );
+  for (const [template, uris] of Object.entries(widgetAliases)) {
+    uris.forEach((uri, index) => {
+      registerAppResource(
+        server,
+        `study-hub-${template}-widget-${index}`,
+        uri,
+        {},
+        async () => buildWidgetHtml(template as WidgetTemplate, uri),
+      );
+    });
+  }
 }

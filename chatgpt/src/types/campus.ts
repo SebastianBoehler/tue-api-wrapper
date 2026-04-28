@@ -31,3 +31,15 @@ export interface CampusCanteen {
   map_url: string | null;
   menus: CampusMenu[];
 }
+
+export interface CampusFoodPlanPayload {
+  date: string;
+  canteens: CampusCanteen[];
+  matched_menu_count: number;
+  requested_canteen_ids: string[];
+  requested_icons: string[];
+}
+
+export interface CampusFoodPlanView extends CampusFoodPlanPayload {
+  view: "mensa";
+}

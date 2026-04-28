@@ -34,6 +34,15 @@ function host(): ActionOpenAIHost | undefined {
   return (window as typeof window & { openai?: ActionOpenAIHost }).openai;
 }
 
+function notifyActionHeight(root: HTMLElement) {
+  const shell = root.querySelector<HTMLElement>(".action-shell, .widget-empty");
+  if (!shell) {
+    host()?.notifyIntrinsicHeight?.();
+    return;
+  }
+  host()?.notifyIntrinsicHeight?.(Math.ceil(shell.getBoundingClientRect().height));
+}
+
 export function isCriticalActionView(value: unknown): value is CriticalActionView {
   return Boolean(value && typeof value === "object" && "view" in value && (value as { view?: unknown }).view === "critical-action");
 }
@@ -58,7 +67,7 @@ export function renderActionTemplate(
   }
 
   bindActionHandlers(root, escapeHtml);
-  host()?.notifyIntrinsicHeight?.();
+  notifyActionHeight(root);
 }
 
 function isActionToolResult(value: ActionRenderResult): value is ActionToolResult {
@@ -200,7 +209,7 @@ function bindActionHandlers(root: HTMLElement, escapeHtml: EscapeHtml) {
 async function handleAction(action: string, root: HTMLElement, escapeHtml: EscapeHtml) {
   if (action === "cancel-critical-action") {
     root.innerHTML = renderCancelled(escapeHtml);
-    host()?.notifyIntrinsicHeight?.();
+    notifyActionHeight(root);
     return;
   }
 

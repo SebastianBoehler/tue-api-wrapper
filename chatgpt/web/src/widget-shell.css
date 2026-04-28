@@ -1,13 +1,17 @@
 .widget-shell {
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  align-content: start;
   width: 100%;
-  height: min(680px, calc(100vh - 1rem));
+  max-width: 100%;
+  min-width: 0;
+  height: min(680px, calc(100dvh - 1rem));
   min-height: 420px;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .widget-shell.is-expanded {
-  height: min(880px, calc(100vh - 1rem));
+  height: min(880px, calc(100dvh - 1rem));
   max-width: 1360px;
   margin: 0 auto;
 }
@@ -25,10 +29,8 @@
   display: grid;
   gap: 0.9rem;
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
   padding-right: 0.25rem;
-  scrollbar-gutter: stable;
 }
 
 .widget-scroll:focus-visible {
@@ -39,7 +41,7 @@
 @media (max-width: 720px) {
   .widget-shell,
   .widget-shell.is-expanded {
-    height: min(620px, calc(100vh - 1rem));
+    height: min(620px, calc(100dvh - 1rem));
     min-height: 360px;
   }
 }

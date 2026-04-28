@@ -34,11 +34,21 @@ function dashboardFromMetadata(metadata: Record<string, unknown> | undefined): u
   };
 }
 
+function errorFromToolOutput(toolOutput: unknown): unknown {
+  if (!isRecord(toolOutput) || typeof toolOutput.error !== "string") {
+    return null;
+  }
+  return {
+    view: "error",
+    message: toolOutput.error
+  };
+}
+
 function normalizeToolResult(toolOutput: unknown, metadata?: Record<string, unknown>): unknown {
   if (hasView(toolOutput)) {
     return toolOutput;
   }
-  return dashboardFromMetadata(metadata) ?? toolOutput ?? null;
+  return errorFromToolOutput(toolOutput) ?? dashboardFromMetadata(metadata) ?? toolOutput ?? null;
 }
 
 function readOpenAiGlobals(): HostGlobals {

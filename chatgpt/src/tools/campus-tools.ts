@@ -3,20 +3,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import { loadCampusFoodPlan } from "../campus-backend.js";
-import type { CampusCanteen, CampusMenu } from "../types.js";
+import type { CampusCanteen, CampusFoodPlanPayload, CampusMenu } from "../types.js";
 import { asStructured, readOnlyAnnotations, runReadTool } from "../tool-runtime.js";
+import { mensaWidgetUri } from "../widget-resources.js";
 
 const campusDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional();
 const canteenIdsSchema = z.array(z.string().regex(/^\d+$/)).min(1).max(5).optional();
 const iconsSchema = z.array(z.string().min(1)).min(1).max(4).optional();
-
-interface CampusFoodPlanResult {
-  date: string;
-  canteens: CampusCanteen[];
-  matched_menu_count: number;
-  requested_canteen_ids: string[];
-  requested_icons: string[];
-}
 
 function berlinToday(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -78,6 +71,10 @@ export function registerCampusTools(server: McpServer) {
       },
       annotations: readOnlyAnnotations(),
       _meta: {
+        ui: {
+          resourceUri: mensaWidgetUri,
+        },
+        "openai/outputTemplate": mensaWidgetUri,
         "openai/toolInvocation/invoking": "Loading mensa plan…",
         "openai/toolInvocation/invoked": "Mensa plan ready",
       },
@@ -93,7 +90,7 @@ export function registerCampusTools(server: McpServer) {
           requestedIcons,
         );
         const matchedMenuCount = summarizeMenus(canteens);
-        const result: CampusFoodPlanResult = {
+        const result: CampusFoodPlanPayload = {
           date: targetDate,
           canteens,
           matched_menu_count: matchedMenuCount,
@@ -103,7 +100,10 @@ export function registerCampusTools(server: McpServer) {
 
         const iconSummary = requestedIcons.length ? ` matching ${requestedIcons.join(", ")}` : "";
         return {
-          structuredContent: asStructured(result),
+          structuredContent: asStructured({
+            view: "mensa",
+            ...result,
+          }),
           content: [
             {
               type: "text" as const,
@@ -114,6 +114,7 @@ export function registerCampusTools(server: McpServer) {
             },
           ],
           _meta: {
+            mensaFoodPlan: result,
             date: targetDate,
             canteens,
           },

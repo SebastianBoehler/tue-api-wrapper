@@ -31,7 +31,7 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "OPTIONS" && url.pathname.startsWith(mcpPath)) {
+  if (req.method === "OPTIONS" && url.pathname === mcpPath) {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",

@@ -1,5 +1,17 @@
 export const defaultStudyTerm = "Sommer 2026";
 
+const relativeStudyTerms = new Set([
+  "aktuell",
+  "aktuelles semester",
+  "current",
+  "current semester",
+  "current term",
+  "default",
+  "dieses semester",
+  "this semester",
+  "this term",
+]);
+
 export function normalizeStudyTerm(term: string | null | undefined, fallback = defaultStudyTerm): string {
   const raw = term?.trim();
   if (!raw) {
@@ -11,6 +23,10 @@ export function normalizeStudyTerm(term: string | null | undefined, fallback = d
     .toLowerCase()
     .replace(/[._-]+/g, " ")
     .replace(/\s+/g, " ");
+
+  if (relativeStudyTerms.has(key)) {
+    return fallback;
+  }
 
   const summerMatch = key.match(/^(?:sommer|summer|sommer semester|sommersemester|sommersemster|somersemester|sose|ss)\s*(\d{4})$/);
   if (summerMatch) {

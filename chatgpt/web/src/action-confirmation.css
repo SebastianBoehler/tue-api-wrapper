@@ -4,7 +4,11 @@
 }
 
 .action-shell {
-  min-height: 100vh;
+  height: min(680px, calc(100dvh - 1rem));
+  min-height: 420px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .action-hero {
@@ -68,6 +72,11 @@
 }
 
 @media (max-width: 720px) {
+  .action-shell {
+    height: min(620px, calc(100dvh - 1rem));
+    min-height: 360px;
+  }
+
   .action-facts {
     grid-template-columns: 1fr;
   }

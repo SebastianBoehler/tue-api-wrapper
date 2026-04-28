@@ -18,6 +18,7 @@ The current widget bundle rendering a public Alma module detail:
 - `get_current_grades`: Alma exam rows plus tracked credits and passed exam count
 - `get_learning_spaces`: authenticated ILIAS memberships
 - `get_documents_summary`: Alma study-service summary with tabs, output requests, and current PDF availability
+- `get_mensa_food_plan`: widget-backed Tübingen mensa plan with date, canteen, and meal-type filters
 - `get_mail_inbox`: inbox triage and filtering inside ChatGPT
 - `get_mail_message`: full plaintext mail message detail by UID
 - `get_course_catalog_filters`: valid Alma public module-search filters for degree, subject, faculty, language, and element type

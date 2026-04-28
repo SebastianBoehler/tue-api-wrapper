@@ -69,6 +69,10 @@ export function registerWidgetTools(server: McpServer) {
     async () =>
       runWidgetTool(async () => {
         const documents = await loadDocumentsSummary();
+        const availableCount =
+          documents.reports.length +
+          documents.outputRequests.length +
+          (documents.currentDownloadAvailable ? 1 : 0);
         return {
           structuredContent: {
             view: "documents",
@@ -77,7 +81,9 @@ export function registerWidgetTools(server: McpServer) {
           content: [
             {
               type: "text" as const,
-              text: `Loaded ${documents.reports.length} Alma study-service document jobs.`,
+              text: availableCount
+                ? `Loaded ${documents.reports.length} Alma study-service document jobs, ${documents.outputRequests.length} output-request groups, and ${documents.currentDownloadAvailable ? "a current PDF download" : "no current PDF download"}.`
+                : "The Alma study-service page loaded, but no report jobs, output-request groups, or current PDF downloads are currently available.",
             },
           ],
           _meta: {

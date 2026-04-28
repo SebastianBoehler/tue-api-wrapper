@@ -1,5 +1,7 @@
 import "./styles.css";
 import { isCriticalActionView, renderActionTemplate } from "./action-confirmation-render.js";
+import { renderDocuments } from "./documents-render.js";
+import { bindMensaFoodPlanActions, isMensaFoodPlanView, renderMensaFoodPlan } from "./mensa-render.js";
 import { isModuleDetail, renderModuleDetailTemplate } from "./module-detail-render.js";
 import { connectWidgetResultUpdates, readInitialWidgetResult } from "./widget-host-events.js";
 import type {
@@ -7,9 +9,11 @@ import type {
   AlmaCourseSearchResponse,
   AlmaExamRecord,
   DashboardPayload,
+  DocumentsSummaryPayload,
   IliasMembershipItem,
   IliasTaskItem,
   ModuleDetail,
+  CampusFoodPlanView,
   CriticalActionView
 } from "../../src/types.js";
 
@@ -20,12 +24,13 @@ type WidgetResult =
     }
   | {
       view: "documents";
-      documents: DashboardPayload["documents"];
+      documents: DocumentsSummaryPayload;
     }
   | {
       view: "course-detail";
       detail: ModuleDetail;
     }
+  | CampusFoodPlanView
   | {
       view: "error";
       message: string;
@@ -130,7 +135,7 @@ declare global {
   }
 }
 
-const detailWidgetUri = "ui://study-hub/detail-v4.html";
+const detailWidgetUri = "ui://study-hub/detail-v7.html";
 const isDetailTemplate = document.body.dataset.template === "detail";
 const isActionTemplate = document.body.dataset.template === "action";
 
@@ -282,20 +287,38 @@ function renderDetailButton(detail: DetailPayload): string {
   `;
 }
 
+function agendaLocation(item: AgendaItem): string | null {
+  return item.room_details?.display_text ?? item.location ?? null;
+}
+
 function buildAgendaDetail(item: AgendaItem): DetailPayload {
+  const room = item.room_details;
+  const lines = [
+    `Start: ${formatDate(item.start)}`,
+    item.end ? `End: ${formatDate(item.end)}` : "End: not provided",
+    item.description ? `Notes: ${item.description}` : "Notes: no extra description"
+  ];
+  if (room?.floor_default) {
+    lines.push(`Floor: ${room.floor_default}`);
+  }
+  if (room?.building_default) {
+    lines.push(`Building: ${room.building_default}`);
+  }
+  if (room?.campus_default) {
+    lines.push(`Campus: ${room.campus_default}`);
+  }
   return {
     title: item.summary,
-    subtitle: item.location ?? "Alma schedule item",
-    lines: [
-      `Start: ${formatDate(item.start)}`,
-      item.end ? `End: ${formatDate(item.end)}` : "End: not provided",
-      item.description ? `Notes: ${item.description}` : "Notes: no extra description"
-    ]
+    subtitle: agendaLocation(item) ?? "Alma schedule item",
+    lines,
+    href: room?.detail_url ?? undefined,
+    hrefLabel: room?.detail_url ? "Open Alma room details" : undefined
   };
 }
 
 function renderAgendaRow(item: AgendaItem, accent = "teal"): string {
   const relativeStart = formatRelativeStart(item.start);
+  const location = agendaLocation(item);
 
   return `
     <div class="widget-row widget-agenda-row" data-accent="${accent}">
@@ -305,7 +328,7 @@ function renderAgendaRow(item: AgendaItem, accent = "teal"): string {
       </div>
       <div class="widget-agenda-content">
         <strong>${escapeHtml(item.summary)}</strong>
-        <p>${escapeHtml(item.location ?? "Location pending")}</p>
+        <p>${escapeHtml(location ?? "Location pending")}</p>
       </div>
       <div class="widget-row-actions">
         ${renderDetailButton(buildAgendaDetail(item))}
@@ -935,53 +958,6 @@ function renderPanel(): string {
   }
 }
 
-function renderDocuments(
-  documents: DashboardPayload["documents"]
-): string {
-  return `
-    <div class="widget-stack">
-      <header class="widget-hero">
-        <div>
-          <p class="widget-kicker">Documents</p>
-          <h1>Study-service exports</h1>
-          <p>Keep the bureaucratic options visible without forcing the user back through Alma navigation.</p>
-        </div>
-      </header>
-      ${
-        documents.currentDownloadUrl
-          ? `
-            <section class="widget-card">
-              <div class="widget-card-header">
-                <div>
-                  <p class="widget-kicker">Live download</p>
-                  <h2>Current Alma PDF</h2>
-                </div>
-                <a href="${escapeHtml(documents.currentDownloadUrl)}" target="_blank" rel="noreferrer">
-                  Download
-                </a>
-              </div>
-            </section>
-          `
-          : ""
-      }
-      <section class="widget-card">
-        <div class="widget-list">
-          ${documents.reports
-            .map(
-              (item) => `
-                <div class="widget-row compact">
-                  <strong>${escapeHtml(item.label)}</strong>
-                  <span>${escapeHtml(item.trigger_name)}</span>
-                </div>
-              `
-            )
-            .join("")}
-        </div>
-      </section>
-    </div>
-  `;
-}
-
 function renderError(message: string): string {
   return `
     <div class="widget-empty">
@@ -993,7 +969,7 @@ function renderError(message: string): string {
 }
 
 function notifyRenderedHeight(root: HTMLElement) {
-  const shell = root.querySelector<HTMLElement>(".widget-shell");
+  const shell = root.querySelector<HTMLElement>(".widget-shell, .widget-modal-stack, .action-shell, .widget-empty");
   if (!shell) {
     window.openai?.notifyIntrinsicHeight?.();
     return;
@@ -1071,7 +1047,7 @@ function renderAppShell(content: string): string {
           <button class="widget-button ghost small" data-action="toggle-expand" aria-pressed="${state.expanded}">
             ${state.expanded ? "Collapse" : "Expand"}
           </button>
-          <button class="widget-button ghost" data-follow-up="Summarize the most urgent things in my study dashboard.">Summarize</button>
+          <button class="widget-button ghost small" data-follow-up="Summarize the most urgent things in my study dashboard.">Summarize</button>
         </div>
       </header>
 
@@ -1166,6 +1142,8 @@ function render(result: WidgetResult) {
 
   if (isModuleDetail(result)) {
     root.innerHTML = renderModuleDetailTemplate(result, escapeHtml);
+  } else if (isMensaFoodPlanView(result)) {
+    root.innerHTML = renderMensaFoodPlan(result);
   } else if (!isWidgetViewResult(result)) {
     root.innerHTML = renderError("The widget received an unsupported Alma detail payload.");
   } else {
@@ -1377,6 +1355,8 @@ function bindActions(root: HTMLElement) {
       void loadPanel("courses");
     };
   }
+
+  bindMensaFoodPlanActions(root, callTool, (nextResult) => render(nextResult as WidgetResult));
 }
 
 window.addEventListener("openai:set_globals", (event) => {

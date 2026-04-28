@@ -242,12 +242,18 @@ export function registerStudyTools(server: McpServer) {
     async () =>
       runReadTool(async () => {
         const documents = await loadDocumentsSummary();
+        const availableCount =
+          documents.reports.length +
+          documents.outputRequests.length +
+          (documents.currentDownloadAvailable ? 1 : 0);
         return {
           structuredContent: asStructured(documents),
           content: [
             {
               type: "text" as const,
-              text: `Loaded ${documents.reports.length} Alma study-service report jobs and ${documents.outputRequests.length} output-request groups.`,
+              text: availableCount
+                ? `Loaded ${documents.reports.length} Alma study-service report jobs, ${documents.outputRequests.length} output-request groups, and ${documents.currentDownloadAvailable ? "a current PDF download" : "no current PDF download"}.`
+                : "The Alma study-service page loaded, but no report jobs, output-request groups, or current PDF downloads are currently available.",
             },
           ],
           _meta: {

@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from .config import AlmaParseError
+from .ilias_html import is_authenticated_ilias_page
 from .models import IliasExerciseAssignment, IliasForumTopic, IliasMembershipItem, IliasTaskItem
 
 
@@ -40,7 +41,7 @@ def parse_membership_overview(html: str, page_url: str) -> tuple[IliasMembership
             )
         )
 
-    if not items and "ILIAS Universität Tübingen" not in html:
+    if not items and not is_authenticated_ilias_page(html, page_url):
         raise AlmaParseError("The response did not look like an authenticated ILIAS membership overview.")
     return tuple(items)
 
@@ -67,7 +68,7 @@ def parse_task_overview(html: str, page_url: str) -> tuple[IliasTaskItem, ...]:
             )
         )
 
-    if not items and "ILIAS Universität Tübingen" not in html:
+    if not items and not is_authenticated_ilias_page(html, page_url):
         raise AlmaParseError("The response did not look like an authenticated ILIAS task overview.")
     return tuple(items)
 
@@ -90,7 +91,7 @@ def parse_forum_topics(html: str, page_url: str) -> tuple[IliasForumTopic, ...]:
                 visits=properties.get("Besuche"),
             )
         )
-    if not topics and "ILIAS Universität Tübingen" not in html:
+    if not topics and not is_authenticated_ilias_page(html, page_url):
         raise AlmaParseError("The response did not look like an authenticated ILIAS forum page.")
     return tuple(topics)
 
@@ -121,7 +122,7 @@ def parse_exercise_assignments(html: str, page_url: str) -> tuple[IliasExerciseA
                 team_action_url=urljoin(page_url, team_button["data-action"]) if team_button else None,
             )
         )
-    if not assignments and "ILIAS Universität Tübingen" not in html:
+    if not assignments and not is_authenticated_ilias_page(html, page_url):
         raise AlmaParseError("The response did not look like an authenticated ILIAS exercise page.")
     return tuple(assignments)
 

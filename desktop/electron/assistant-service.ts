@@ -1,4 +1,9 @@
-import type { AssistantChatRequest, AssistantChatResponse, AssistantToolCard } from "../shared/desktop-types";
+import type {
+  AssistantChatRequest,
+  AssistantChatResponse,
+  AssistantToolCallTrace,
+  AssistantToolCard
+} from "../shared/desktop-types";
 import { BackendManager } from "./backend-manager";
 
 type LlmMessage = { role: "system" | "user" | "assistant" | "tool"; content: string | null; tool_call_id?: string; tool_calls?: ToolCall[] };
@@ -18,30 +23,38 @@ export class AssistantService {
     const first = await callModel(endpoint, config, messages, true);
     const choice = first.choices?.[0]?.message;
     const cards: AssistantToolCard[] = [];
+    const traces: AssistantToolCallTrace[] = [];
     if (!choice?.tool_calls?.length) {
-      return { text: choice?.content ?? "", toolCards: cards };
+      return { text: choice?.content ?? "", toolCards: cards, toolCalls: traces };
     }
 
     messages.push({ role: "assistant", content: choice.content ?? "", tool_calls: choice.tool_calls });
     for (const call of choice.tool_calls) {
-      const card = await this.runTool(call);
-      cards.push(card);
-      messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(card.data) });
+      const args = safeArgs(call.function.arguments);
+      try {
+        const card = await this.runTool(call.function.name, args);
+        cards.push(card);
+        traces.push(trace(call, args, "success", card.title, card.summary));
+        messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(card.data) });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Tool call failed.";
+        traces.push(trace(call, args, "error", toolTitle(call.function.name), message));
+        messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: message }) });
+      }
     }
 
     const final = await callModel(endpoint, config, messages, false);
-    return { text: final.choices?.[0]?.message?.content ?? "", toolCards: cards };
+    return { text: final.choices?.[0]?.message?.content ?? "", toolCards: cards, toolCalls: traces };
   }
 
-  private async runTool(call: ToolCall): Promise<AssistantToolCard> {
+  private async runTool(name: string, args: Record<string, unknown>): Promise<AssistantToolCard> {
     const backendUrl = this.manager.getState().backendUrl;
     if (!backendUrl) {
       throw new Error("The local study backend is not ready.");
     }
-    const args = safeArgs(call.function.arguments);
-    switch (call.function.name) {
+    switch (name) {
       case "get_study_snapshot":
-        return card("get_study_snapshot", "Study snapshot", await getJson(`${backendUrl}/api/dashboard`));
+        return card("get_study_snapshot", "Study snapshot", await getJson(`${backendUrl}/api/dashboard?include_course_assignments=false`));
       case "search_talks":
         return card("search_talks", "Talks", await getJson(`${backendUrl}/api/talks?query=${encodeURIComponent(String(args.query ?? ""))}&limit=8`));
       case "search_timms":
@@ -51,7 +64,7 @@ export class AssistantService {
       case "search_mail":
         return card("search_mail", "Mail", await getJson(`${backendUrl}/api/mail/inbox?limit=8&query=${encodeURIComponent(String(args.query ?? ""))}&unread_only=${Boolean(args.unreadOnly)}`));
       default:
-        throw new Error(`Unsupported assistant tool '${call.function.name}'.`);
+        throw new Error(`Unsupported assistant tool '${name}'.`);
     }
   }
 }
@@ -59,7 +72,8 @@ export class AssistantService {
 const systemPrompt = [
   "You are the local TUE Study Hub desktop assistant.",
   "Use tools when the user asks about schedule, grades, mail, talks, TIMMS videos, or university people.",
-  "Keep answers concise and reference tool results. Do not ask for passwords or secrets."
+  "Keep answers concise and reference tool results. Do not ask for passwords or secrets.",
+  "The app renders structured UI cards from tool results, so summarize the findings instead of duplicating every row."
 ].join(" ");
 
 const tools = [
@@ -117,6 +131,20 @@ async function getJson(url: string): Promise<unknown> {
 
 function card(name: string, title: string, data: unknown): AssistantToolCard {
   return { name, title, summary: summarize(data), data };
+}
+
+function trace(
+  call: ToolCall,
+  args: Record<string, unknown>,
+  status: AssistantToolCallTrace["status"],
+  title: string,
+  summary: string
+): AssistantToolCallTrace {
+  return { id: call.id, name: call.function.name, title, arguments: args, status, summary };
+}
+
+function toolTitle(name: string): string {
+  return tools.find((item) => item.function.name === name)?.function.description ?? name;
 }
 
 function summarize(data: unknown): string {

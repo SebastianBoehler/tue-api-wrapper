@@ -31,6 +31,15 @@ export interface AssistantToolCard {
   data: unknown;
 }
 
+export interface AssistantToolCallTrace {
+  id: string;
+  name: string;
+  title: string;
+  arguments: Record<string, unknown>;
+  status: "success" | "error";
+  summary: string;
+}
+
 export interface AssistantChatRequest {
   messages: AssistantChatMessage[];
   config: AssistantConfig;
@@ -39,4 +48,5 @@ export interface AssistantChatRequest {
 export interface AssistantChatResponse {
   text: string;
   toolCards: AssistantToolCard[];
+  toolCalls: AssistantToolCallTrace[];
 }

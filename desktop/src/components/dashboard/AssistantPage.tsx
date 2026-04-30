@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 
-import type { AssistantChatMessage, AssistantConfig, AssistantToolCard } from "../../../shared/desktop-types";
+import type { AssistantChatMessage, AssistantConfig, AssistantToolCallTrace, AssistantToolCard } from "../../../shared/desktop-types";
+import { AssistantResultPanel } from "./AssistantResultPanel";
+import { MarkdownText } from "./MarkdownText";
 import type { DashboardPageProps } from "./types";
+
+type TranscriptMessage = AssistantChatMessage & {
+  toolCards?: AssistantToolCard[];
+  toolCalls?: AssistantToolCallTrace[];
+};
 
 const nvidiaPreset = {
   baseUrl: "https://integrate.api.nvidia.com/v1",
@@ -10,8 +17,7 @@ const nvidiaPreset = {
 
 export function AssistantPage({ state }: DashboardPageProps) {
   const [config, setConfig] = useState<AssistantConfig>({ baseUrl: "http://127.0.0.1:1234/v1", model: "local-model", apiKey: "" });
-  const [messages, setMessages] = useState<AssistantChatMessage[]>([]);
-  const [cards, setCards] = useState<AssistantToolCard[]>([]);
+  const [messages, setMessages] = useState<TranscriptMessage[]>([]);
   const [input, setInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -46,9 +52,17 @@ export function AssistantPage({ state }: DashboardPageProps) {
     setLoading(true);
     setError(null);
     try {
-      const response = await window.desktop.sendAssistantMessage({ config, messages: nextMessages });
-      setMessages([...nextMessages, { role: "assistant", content: response.text }]);
-      setCards(response.toolCards);
+      const requestMessages = nextMessages.map(({ role, content }) => ({ role, content }));
+      const response = await window.desktop.sendAssistantMessage({ config, messages: requestMessages });
+      setMessages([
+        ...nextMessages,
+        {
+          role: "assistant",
+          content: response.text,
+          toolCards: response.toolCards,
+          toolCalls: response.toolCalls
+        }
+      ]);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Assistant request failed.");
     } finally {
@@ -95,8 +109,13 @@ export function AssistantPage({ state }: DashboardPageProps) {
       <section className="panel assistant-chat">
         <div className="assistant-transcript">
           {messages.map((message, index) => (
-            <div key={`${message.role}-${index}`} className={`chat-bubble ${message.role}`}>
-              {message.content}
+            <div key={`${message.role}-${index}`} className={`chat-turn ${message.role}`}>
+              <div className={`chat-bubble ${message.role}`}>
+                {message.role === "assistant" ? <MarkdownText text={message.content} /> : message.content}
+              </div>
+              {message.role === "assistant" ? (
+                <AssistantResultPanel cards={message.toolCards ?? []} toolCalls={message.toolCalls ?? []} />
+              ) : null}
             </div>
           ))}
           {messages.length === 0 ? <p className="muted empty-state">Ask about your schedule, grades, mail, talks, TIMMS videos, or people.</p> : null}
@@ -111,24 +130,6 @@ export function AssistantPage({ state }: DashboardPageProps) {
           <button className="primary-button" disabled={loading || !input.trim()} onClick={() => void send()} type="button">
             {loading ? "Thinking..." : "Send"}
           </button>
-        </div>
-      </section>
-
-      <section className="panel assistant-cards">
-        <div className="section-heading">
-          <h3>Tool results</h3>
-          <span>{cards.length}</span>
-        </div>
-        <div className="stack-list">
-          {cards.map((card) => (
-            <div key={`${card.name}-${card.title}`} className="stack-row compact-row">
-              <div>
-                <strong>{card.title}</strong>
-                <span>{card.summary}</span>
-              </div>
-            </div>
-          ))}
-          {cards.length === 0 ? <p className="muted empty-state">Tool calls will appear here as structured cards.</p> : null}
         </div>
       </section>
     </div>

@@ -1,11 +1,28 @@
 from __future__ import annotations
 
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
 from .config import AlmaParseError
+from .html_forms import extract_form_payload
 from .models import IliasContentItem, IliasContentPage, IliasContentSection, IliasLink, IliasLoginForm, IliasRootPage
+
+AUTHENTICATED_ILIAS_MARKERS = (
+    "ILIAS Universität Tübingen",
+    "logout.php",
+    "il-mainbar-entries",
+    "il-maincontrols-metabar",
+    "baseClass=ilDashboardGUI",
+    "baseClass=ilmembershipoverviewgui",
+    "baseClass=ilderivedtasksgui",
+)
+LOGIN_OR_HANDOFF_MARKERS = (
+    "SAMLResponse",
+    "j_username",
+    "j_password",
+    "Login mit zentraler Universitäts-Kennung",
+)
 
 
 def extract_shib_login_url(html: str, page_url: str) -> str:
@@ -36,14 +53,13 @@ def extract_idp_login_form(html: str, page_url: str) -> IliasLoginForm:
 def extract_hidden_form(html: str, page_url: str, required_fields: set[str]) -> IliasLoginForm:
     soup = BeautifulSoup(html, "html.parser")
     for form in soup.find_all("form"):
-        payload: dict[str, str] = {}
-        for field in form.find_all("input"):
+        payload = extract_form_payload(form)
+        for field in form.find_all(["button", "input"]):
             name = field.get("name")
-            if not name:
-                continue
-            payload[name] = field.get("value", "")
+            if name in required_fields and name not in payload:
+                payload[name] = field.get("value", "")
         if required_fields.issubset(payload):
-            return IliasLoginForm(action_url=urljoin(page_url, form["action"]), payload=payload)
+            return IliasLoginForm(action_url=urljoin(page_url, form.get("action", page_url)), payload=payload)
     raise AlmaParseError(f"Could not find a form with fields: {sorted(required_fields)}")
 
 
@@ -53,6 +69,15 @@ def extract_idp_error(html: str) -> str | None:
     if error is None:
         return None
     return " ".join(error.get_text(" ", strip=True).split())
+
+
+def is_authenticated_ilias_page(html: str, page_url: str) -> bool:
+    parsed = urlparse(page_url)
+    if parsed.hostname != "ovidius.uni-tuebingen.de":
+        return False
+    if any(marker in html for marker in LOGIN_OR_HANDOFF_MARKERS):
+        return False
+    return any(marker in html for marker in AUTHENTICATED_ILIAS_MARKERS)
 
 
 def parse_ilias_root_page(html: str, page_url: str) -> IliasRootPage:
@@ -71,7 +96,7 @@ def parse_ilias_root_page(html: str, page_url: str) -> IliasRootPage:
         if label:
             top_categories.append(IliasLink(label=label, url=urljoin(page_url, link["href"])))
 
-    if not top_categories and "ILIAS Universität Tübingen" not in html:
+    if not top_categories and not is_authenticated_ilias_page(html, page_url):
         raise AlmaParseError("The response did not look like an authenticated ILIAS root page.")
     return IliasRootPage(
         title=title,
@@ -113,7 +138,7 @@ def parse_ilias_content_page(html: str, page_url: str) -> IliasContentPage:
         if label and items:
             sections.append(IliasContentSection(label=label, items=tuple(items)))
 
-    if not sections and "ILIAS Universität Tübingen" not in html:
+    if not sections and not is_authenticated_ilias_page(html, page_url):
         raise AlmaParseError("The response did not look like an authenticated ILIAS content page.")
 
     return IliasContentPage(title=title, page_url=page_url, sections=tuple(sections))

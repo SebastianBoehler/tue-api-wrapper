@@ -1,48 +1,19 @@
 from __future__ import annotations
 
-from dataclasses import asdict, is_dataclass
-from datetime import date, datetime
 from typing import Any
 
-from .alma_course_assignments_client import build_timetable_course_assignments
 from .client import AlmaClient
-from .config import AlmaError, AlmaParseError, MailError
+from .config import AlmaParseError, MailError
 from .credentials import read_mail_credentials, read_uni_credentials
-from .dashboard_talks import build_talks_panel
+from .dashboard_builder import build_dashboard_payload
 from .ilias_client import IliasClient
 from .mail_client import MailClient
-
-DEFAULT_DASHBOARD_TERM = "Sommer 2026"
-RELATIVE_DASHBOARD_TERMS = {
-    "",
-    "aktuell",
-    "aktuelles semester",
-    "current",
-    "current semester",
-    "current term",
-    "default",
-    "dieses semester",
-    "this semester",
-    "this term",
-}
-
-
-def normalize_dashboard_term(term_label: str | None = None) -> str:
-    raw = (term_label or "").strip()
-    key = " ".join(raw.casefold().replace("_", " ").replace("-", " ").split())
-    return DEFAULT_DASHBOARD_TERM if key in RELATIVE_DASHBOARD_TERMS else raw
-
-
-def serialize(value: Any) -> Any:
-    if is_dataclass(value):
-        return {key: serialize(item) for key, item in asdict(value).items()}
-    if isinstance(value, dict):
-        return {str(key): serialize(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [serialize(item) for item in value]
-    if isinstance(value, (date, datetime)):
-        return value.isoformat()
-    return value
+from .portal_common import DEFAULT_DASHBOARD_TERM, normalize_dashboard_term, serialize
+from .portal_search import (
+    build_dashboard_search_index,
+    fetch_dashboard_index_item,
+    search_dashboard_index,
+)
 
 
 class PortalService:
@@ -109,315 +80,20 @@ class PortalService:
         }
 
     def build_dashboard(self, *, term_label: str = DEFAULT_DASHBOARD_TERM, limit: int = 8) -> dict[str, Any]:
-        term_label = normalize_dashboard_term(term_label)
-        alma = self._alma_client()
-        ilias = self._ilias_client()
-        mail = self._mail_panel(limit=limit)
-        talks = build_talks_panel(limit=limit)
-
-        timetable = alma.fetch_timetable_for_term(term_label)
-        enrollments = alma.fetch_enrollment_page()
-        exams = alma.fetch_exam_overview()[:limit]
-        studyservice_contract = alma.fetch_studyservice_contract()
-        documents = studyservice_contract.reports[:limit]
-        ilias_root = ilias.fetch_root_page()
-        memberships = ilias.fetch_membership_overview()[:limit]
-        tasks = ilias.fetch_task_overview()[:limit]
-        current_credit_error = None
-        try:
-            course_assignments = build_timetable_course_assignments(alma, timetable, limit=100)
-        except AlmaError as error:
-            course_assignments = None
-            current_credit_error = str(error)
-
-        passed_exams = [
-            exam for exam in exams
-            if (exam.status or "").strip().upper() in {"BE", "PASSED", "BESTANDEN"}
-            or bool(exam.grade and exam.grade.strip() not in {"", "-", "5,0"})
-        ]
-        credit_values = [
-            float((exam.cp or "0").replace(",", "."))
-            for exam in exams
-            if exam.cp and exam.cp.strip() not in {"", "-"}
-        ]
-
-        metrics = [
-            {"label": "Upcoming events", "value": len(timetable.occurrences)},
-            {"label": "Open tasks", "value": len(tasks)},
-            {"label": "Learning spaces", "value": len(memberships)},
-            {"label": "Passed exams", "value": len(passed_exams)},
-        ]
-        if course_assignments is not None:
-            metrics.insert(1, {"label": "Saved semester CP", "value": course_assignments.total_credits})
-        if talks["available"]:
-            metrics.insert(2, {"label": "Upcoming talks", "value": talks["totalHits"]})
-
-        return {
-            "generatedAt": datetime.utcnow().isoformat() + "Z",
-            "termLabel": timetable.term_label,
-            "hero": {
-                "title": "Study Hub",
-                "subtitle": "Your next classes, open course work, study records, and learning spaces in one place.",
-            },
-            "metrics": metrics,
-            "agenda": {
-                "exportUrl": timetable.export_url,
-                "items": serialize(timetable.occurrences[:limit]),
-            },
-            "study": {
-                "selectedTerm": enrollments.selected_term,
-                "message": enrollments.message,
-                "passedExamCount": len(passed_exams),
-                "trackedCredits": round(sum(credit_values), 1),
-                "currentSemesterCredits": course_assignments.total_credits if course_assignments is not None else None,
-                "currentSemesterCreditCourses": course_assignments.resolved_credit_count if course_assignments is not None else 0,
-                "currentSemesterCreditUnresolved": (
-                    list(course_assignments.unresolved_credit_summaries) if course_assignments is not None else []
-                ),
-                "currentSemesterCreditError": current_credit_error,
-                "availableTerms": serialize(enrollments.available_terms),
-            },
-            "documents": {
-                "reports": serialize(documents),
-                "currentDownloadAvailable": studyservice_contract.latest_download_url is not None,
-                "currentDownloadUrl": "/api/alma/documents/current"
-                if studyservice_contract.latest_download_url is not None
-                else None,
-                "sourcePageUrl": alma.studyservice_url,
-            },
-            "exams": serialize(exams),
-            "enrollment": serialize(enrollments),
-            "ilias": {
-                "title": ilias_root.title,
-                "mainbarLinks": serialize(ilias_root.mainbar_links),
-                "topCategories": serialize(ilias_root.top_categories),
-                "memberships": serialize(memberships),
-                "tasks": serialize(tasks),
-            },
-            "mail": mail,
-            "talks": talks,
-            "quickLinks": [
-                {
-                    "label": "Talks",
-                    "href": "/talks",
-                    "description": "Browse upcoming public talks from talks.tuebingen.ai.",
-                },
-                {
-                    "label": "Inbox",
-                    "href": "/mail",
-                    "description": "Read your Uni mailbox through the same dashboard backend.",
-                },
-                {
-                    "label": "Progress",
-                    "href": "/progress",
-                    "description": "Review grades, credits, and term-level study status.",
-                },
-                {
-                    "label": "Tasks",
-                    "href": "/tasks",
-                    "description": "See active ILIAS due items without opening multiple spaces.",
-                },
-                {
-                    "label": "Learning spaces",
-                    "href": "/spaces",
-                    "description": "Open course, group, and materials spaces from your memberships.",
-                },
-                {
-                    "label": "Documents",
-                    "href": "/documents",
-                    "description": "Access Alma study-service PDFs and report jobs.",
-                },
-            ],
-        }
+        return build_dashboard_payload(
+            term_label=term_label,
+            limit=limit,
+            load_alma_client=self._alma_client,
+            load_ilias_client=self._ilias_client,
+            load_mail_panel=self._mail_panel,
+        )
 
     def build_search_index(self, *, term_label: str = DEFAULT_DASHBOARD_TERM) -> list[dict[str, Any]]:
-        term_label = normalize_dashboard_term(term_label)
-        dashboard = self.build_dashboard(term_label=term_label, limit=12)
-        items: list[dict[str, Any]] = []
-
-        for index, event in enumerate(dashboard["agenda"]["items"], start=1):
-            items.append(
-                {
-                    "id": f"event:{index}",
-                    "title": event["summary"],
-                    "url": dashboard["agenda"]["exportUrl"],
-                    "text": (
-                        f'{event["summary"]}\n'
-                        f'Start: {event["start"]}\n'
-                        f'End: {event["end"]}\n'
-                        f'Location: {event["location"] or "-"}'
-                    ),
-                    "metadata": {"kind": "agenda", "termLabel": dashboard["termLabel"]},
-                }
-            )
-
-        for report in dashboard["documents"]["reports"]:
-            items.append(
-                {
-                    "id": f'document:{report["trigger_name"]}',
-                    "title": report["label"],
-                    "url": dashboard["documents"]["sourcePageUrl"],
-                    "text": f'Document export job: {report["label"]}',
-                    "metadata": {
-                        "kind": "document",
-                        "triggerName": report["trigger_name"],
-                    },
-                }
-            )
-
-        if dashboard["documents"]["currentDownloadUrl"] is not None:
-            items.append(
-                {
-                    "id": "document:current",
-                    "title": "Current study-service PDF",
-                    "url": dashboard["documents"]["currentDownloadUrl"],
-                    "text": "Download the PDF currently exposed by Alma on the study-service page.",
-                    "metadata": {"kind": "document-download"},
-                }
-            )
-
-        for index, link in enumerate(dashboard["quickLinks"], start=1):
-            items.append(
-                {
-                    "id": f"quicklink:{index}",
-                    "title": link["label"],
-                    "url": link["href"],
-                    "text": link["description"],
-                    "metadata": {"kind": "quicklink"},
-                }
-            )
-
-        for message in dashboard.get("mail", {}).get("items", []):
-            sender = message.get("from_address") or message.get("from_name") or "Unknown sender"
-            items.append(
-                {
-                    "id": f'mail:{message["uid"]}',
-                    "title": message["subject"],
-                    "url": f'/mail/{message["uid"]}',
-                    "text": f"From: {sender}\nPreview: {message.get('preview') or '-'}",
-                    "metadata": {"kind": "mail", "unread": bool(message.get("is_unread"))},
-                }
-            )
-
-        for talk in dashboard.get("talks", {}).get("items", []):
-            items.append(
-                {
-                    "id": f'talk:{talk["id"]}',
-                    "title": talk["title"],
-                    "url": talk["source_url"],
-                    "text": "\n".join(
-                        [
-                            f'Speaker: {talk.get("speaker_name") or "-"}',
-                            f'Time: {talk.get("timestamp") or "-"}',
-                            f'Location: {talk.get("location") or "-"}',
-                            talk.get("description") or "",
-                        ]
-                    ).strip(),
-                    "metadata": {"kind": "talk"},
-                }
-            )
-
-        for exam in dashboard["exams"]:
-            exam_number = exam["number"] or exam["title"]
-            items.append(
-                {
-                    "id": f"exam:{exam_number}",
-                    "title": exam["title"],
-                    "url": "https://alma.uni-tuebingen.de/alma/pages/sul/examAssessment/personExamsReadonly.xhtml?_flowId=examsOverviewForPerson-flow",
-                    "text": (
-                        f'Title: {exam["title"]}\n'
-                        f'Number: {exam["number"] or "-"}\n'
-                        f'Grade: {exam["grade"] or "-"}\n'
-                        f'Status: {exam["status"] or "-"}'
-                    ),
-                    "metadata": {"kind": "exam"},
-                }
-            )
-
-        for link in dashboard["ilias"]["mainbarLinks"]:
-            items.append(
-                {
-                    "id": f'mainbar:{link["label"]}',
-                    "title": link["label"],
-                    "url": link["url"],
-                    "text": f'ILIAS main navigation link: {link["label"]}',
-                    "metadata": {"kind": "ilias-mainbar"},
-                }
-            )
-
-        for link in dashboard["ilias"]["topCategories"]:
-            items.append(
-                {
-                    "id": f'category:{link["label"]}',
-                    "title": link["label"],
-                    "url": link["url"],
-                    "text": f'ILIAS top category: {link["label"]}',
-                    "metadata": {"kind": "ilias-category"},
-                }
-            )
-
-        for membership in dashboard["ilias"]["memberships"]:
-            items.append(
-                {
-                    "id": f'membership:{membership["title"]}',
-                    "title": membership["title"],
-                    "url": membership["url"],
-                    "text": "\n".join(
-                        [
-                            membership.get("description") or "",
-                            *membership.get("properties", []),
-                        ]
-                    ).strip(),
-                    "metadata": {
-                        "kind": "ilias-membership",
-                        "type": membership.get("kind") or "",
-                    },
-                }
-            )
-
-        for task in dashboard["ilias"]["tasks"]:
-            items.append(
-                {
-                    "id": f'task:{task["title"]}',
-                    "title": task["title"],
-                    "url": task["url"],
-                    "text": "\n".join(
-                        [
-                            f'Type: {task.get("item_type") or "-"}',
-                            f'Start: {task.get("start") or "-"}',
-                            f'End: {task.get("end") or "-"}',
-                        ]
-                    ),
-                    "metadata": {"kind": "ilias-task"},
-                }
-            )
-
-        return items
+        dashboard = self.build_dashboard(term_label=normalize_dashboard_term(term_label), limit=12)
+        return build_dashboard_search_index(dashboard)
 
     def search(self, query: str, *, term_label: str = DEFAULT_DASHBOARD_TERM) -> list[dict[str, Any]]:
-        normalized_query = query.strip().lower()
-        if not normalized_query:
-            raise AlmaParseError("A non-empty search query is required.")
-
-        matches: list[dict[str, Any]] = []
-        for item in self.build_search_index(term_label=term_label):
-            haystack = "\n".join(
-                [
-                    item["title"],
-                    item["text"],
-                    " ".join(f"{key}:{value}" for key, value in item.get("metadata", {}).items()),
-                ]
-            ).lower()
-            if normalized_query in haystack:
-                matches.append(item)
-        return matches
+        return search_dashboard_index(query, self.build_search_index(term_label=term_label))
 
     def fetch_item(self, item_id: str, *, term_label: str = DEFAULT_DASHBOARD_TERM) -> dict[str, Any]:
-        normalized_id = item_id.strip()
-        if not normalized_id:
-            raise AlmaParseError("A non-empty item id is required.")
-
-        for item in self.build_search_index(term_label=term_label):
-            if item["id"] == normalized_id:
-                return item
-        raise AlmaParseError(f"No unified portal item was found for id '{normalized_id}'.")
+        return fetch_dashboard_index_item(item_id, self.build_search_index(term_label=term_label))

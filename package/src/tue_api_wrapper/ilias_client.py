@@ -10,6 +10,7 @@ from .ilias_html import (
     extract_idp_error,
     extract_idp_login_form,
     extract_shib_login_url,
+    is_authenticated_ilias_page,
     parse_ilias_content_page,
     parse_ilias_root_page,
 )
@@ -130,10 +131,10 @@ class IliasClient:
 
     def _complete_saml_handoff(self, response: requests.Response) -> requests.Response:
         for _ in range(6):
-            parsed = urlparse(response.url)
-            if parsed.netloc == "ovidius.uni-tuebingen.de" and "ILIAS Universität Tübingen" in response.text:
+            if is_authenticated_ilias_page(response.text, response.url):
                 return response
 
+            parsed = urlparse(response.url)
             if "SAMLResponse" in response.text and "RelayState" in response.text:
                 form = extract_hidden_form(response.text, response.url, {"SAMLResponse", "RelayState"})
                 response = self.session.post(

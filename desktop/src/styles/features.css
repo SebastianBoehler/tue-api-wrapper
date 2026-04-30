@@ -90,6 +90,30 @@
   gap: 14px;
 }
 
+.course-title-block {
+  display: grid;
+  gap: 6px;
+}
+
+.course-title-block h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+
+.course-title-block p {
+  margin: 0;
+}
+
+.course-quick-facts {
+  display: grid;
+  gap: 0;
+}
+
+.course-actions {
+  align-items: center;
+}
+
 .detail-section-list {
   display: grid;
   gap: 16px;
@@ -97,6 +121,11 @@
 
 .detail-section-list h4 {
   margin: 0 0 8px;
+}
+
+.source-detail {
+  margin: 0;
+  white-space: pre-wrap;
 }
 
 .detail-line {

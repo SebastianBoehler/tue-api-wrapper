@@ -79,7 +79,9 @@
 
 .header-actions,
 .hero-meta,
-.status-meta {
+.status-meta,
+.settings-actions,
+.course-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;

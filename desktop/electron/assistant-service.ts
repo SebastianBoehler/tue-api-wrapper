@@ -44,7 +44,8 @@ export class AssistantService {
     }
 
     const final = await callModel(endpoint, config, messages, false);
-    return { text: final.choices?.[0]?.message?.content ?? "", toolCards: cards, toolCalls: traces };
+    const text = (final.choices?.[0]?.message?.content ?? "").trim() || fallbackText(cards, traces);
+    return { text, toolCards: cards, toolCalls: traces };
   }
 
   private async runTool(name: string, args: Record<string, unknown>): Promise<AssistantToolCard> {
@@ -53,6 +54,8 @@ export class AssistantService {
       throw new Error("The local study backend is not ready.");
     }
     switch (name) {
+      case "get_grades":
+        return card("get_grades", "Grades", await getJson(`${backendUrl}/api/alma/exams?limit=30`));
       case "get_study_snapshot":
         return card("get_study_snapshot", "Study snapshot", await getJson(`${backendUrl}/api/dashboard?include_course_assignments=false`));
       case "search_talks":
@@ -72,11 +75,13 @@ export class AssistantService {
 const systemPrompt = [
   "You are the local TUE Study Hub desktop assistant.",
   "Use tools when the user asks about schedule, grades, mail, talks, TIMMS videos, or university people.",
+  "When the user asks about grades, exams, credits, CP, passed modules, or study records, prefer get_grades over get_study_snapshot.",
   "Keep answers concise and reference tool results. Do not ask for passwords or secrets.",
   "The app renders structured UI cards from tool results, so summarize the findings instead of duplicating every row."
 ].join(" ");
 
 const tools = [
+  tool("get_grades", "Load Alma exam and grade records, including title, module number, CP, status, and grade.", {}),
   tool("get_study_snapshot", "Load current dashboard data including schedule, exams, study, mail, and learning status.", {}),
   tool("search_talks", "Search public university talks.", { query: { type: "string" } }),
   tool("search_timms", "Search TIMMS lecture archive videos.", { query: { type: "string" } }),
@@ -156,4 +161,19 @@ function summarize(data: unknown): string {
     return keys.length ? keys.join(", ") : "Loaded";
   }
   return "Loaded";
+}
+
+function fallbackText(cards: AssistantToolCard[], traces: AssistantToolCallTrace[]): string {
+  const successful = traces.filter((item) => item.status === "success").map((item) => item.name);
+  if (cards.some((item) => item.name === "get_grades")) {
+    const count = cards.reduce((total, item) => total + (item.name === "get_grades" && Array.isArray(item.data) ? item.data.length : 0), 0);
+    return `I loaded your grade records${count ? ` (${count} entries)` : ""} and rendered them below.`;
+  }
+  if (cards.some((item) => item.name === "get_study_snapshot")) {
+    return "I loaded your study snapshot and rendered the relevant data below.";
+  }
+  if (successful.length > 0) {
+    return `I used ${successful.join(", ")} and rendered the results below.`;
+  }
+  return "I could not generate a text answer, but the tool status is shown below.";
 }

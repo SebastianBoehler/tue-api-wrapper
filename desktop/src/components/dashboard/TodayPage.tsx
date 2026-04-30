@@ -2,7 +2,7 @@ import { formatCredits, formatDateRange, formatTimestamp } from "../../lib/forma
 import { EmptyState, PanelHeader } from "./DashboardPrimitives";
 import type { DashboardPageProps } from "./types";
 
-export function TodayPage({ data, state }: DashboardPageProps) {
+export function TodayPage({ data }: DashboardPageProps) {
   return (
     <div className="page-grid">
       <section className="panel hero-strip">
@@ -12,7 +12,6 @@ export function TodayPage({ data, state }: DashboardPageProps) {
           <p className="muted hero-note">Calendar, learning work, mail, and study status from the local backend.</p>
         </div>
         <div className="hero-meta">
-          <span>{state.username ? `Signed in as ${state.username}` : "No user stored"}</span>
           <span>{data ? `Updated ${formatTimestamp(data.generatedAt)}` : "Waiting for live data"}</span>
         </div>
       </section>

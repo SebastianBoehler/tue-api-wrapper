@@ -5,9 +5,21 @@ import { PanelHeader } from "./DashboardPrimitives";
 import { TimmsArchivePanel } from "./TimmsArchivePanel";
 import type { DashboardPageProps } from "./types";
 
-type ToolTab = "timms" | "people" | "backend";
+type ToolTab = "timms" | "people" | "settings";
 
-export function ToolsPage({ data, state }: DashboardPageProps) {
+export function ToolsPage({
+  data,
+  loading,
+  onClearCredentials,
+  onRefresh,
+  onRestart,
+  state
+}: DashboardPageProps & {
+  loading: boolean;
+  onClearCredentials: () => Promise<void>;
+  onRefresh: () => void;
+  onRestart: () => Promise<void>;
+}) {
   const [tab, setTab] = useState<ToolTab>("timms");
   const links = state.backendUrl
     ? [
@@ -31,14 +43,14 @@ export function ToolsPage({ data, state }: DashboardPageProps) {
       <section className="panel section-hero">
         <div>
           <p className="eyebrow">Discover</p>
-          <h2>Archive, people, and local runtime tools</h2>
-          <p className="muted">Public TIMMS videos, EPV directory search, and desktop sidecar endpoints.</p>
+          <h2>Archive, people, and app settings</h2>
+          <p className="muted">TIMMS videos, university people search, and local app controls in one place.</p>
         </div>
         <div className="segmented-control">
           {([
             ["timms", "TIMMS"],
             ["people", "People"],
-            ["backend", "Backend"]
+            ["settings", "Settings"]
           ] as const).map(([id, label]) => (
             <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)} type="button">
               {label}
@@ -49,26 +61,77 @@ export function ToolsPage({ data, state }: DashboardPageProps) {
 
       {tab === "timms" ? <TimmsArchivePanel baseUrl={state.backendUrl ?? null} /> : null}
       {tab === "people" ? <PeopleSearchPanel baseUrl={state.backendUrl ?? null} /> : null}
-      {tab === "backend" ? <BackendTools links={links} reportCount={data?.documents.reports.length ?? 0} reports={data?.documents.reports ?? []} stateReady={Boolean(state.backendUrl)} /> : null}
+      {tab === "settings" ? (
+        <RuntimeSettings
+          links={links}
+          loading={loading}
+          onClearCredentials={onClearCredentials}
+          onRefresh={onRefresh}
+          onRestart={onRestart}
+          reportCount={data?.documents.reports.length ?? 0}
+          reports={data?.documents.reports ?? []}
+          state={state}
+          stateReady={Boolean(state.backendUrl)}
+        />
+      ) : null}
     </div>
   );
 }
 
-function BackendTools({
+function RuntimeSettings({
   links,
+  loading,
+  onClearCredentials,
+  onRefresh,
+  onRestart,
   reportCount,
   reports,
+  state,
   stateReady
 }: {
   links: { label: string; url: string; detail: string }[];
+  loading: boolean;
+  onClearCredentials: () => Promise<void>;
+  onRefresh: () => void;
+  onRestart: () => Promise<void>;
   reportCount: number;
   reports: { label: string; trigger_name: string }[];
+  state: DashboardPageProps["state"];
   stateReady: boolean;
 }) {
   return (
     <div className="content-grid">
       <article className="panel">
-        <PanelHeader title="Backend tools" meta={stateReady ? "Local API" : "Unavailable"} />
+        <PanelHeader title="App settings" meta={stateReady ? "Connected" : "Unavailable"} />
+        <div className="stack-list">
+          <div className="stack-row compact-row">
+            <div>
+              <strong>Account</strong>
+              <span>{state.username ? state.username : "No account stored"}</span>
+            </div>
+          </div>
+          <div className="stack-row compact-row">
+            <div>
+              <strong>Local service</strong>
+              <span>{runtimeLabel(state.backendState, state.backendUrl, state.backendError)}</span>
+            </div>
+          </div>
+        </div>
+        <div className="settings-actions">
+          <button className="secondary-button" disabled={loading || !state.backendUrl} onClick={onRefresh} type="button">
+            {loading ? "Refreshing..." : "Refresh data"}
+          </button>
+          <button className="secondary-button" onClick={() => void onRestart()} type="button">
+            Reconnect local service
+          </button>
+          <button className="ghost-button" onClick={() => void onClearCredentials()} type="button">
+            Sign out
+          </button>
+        </div>
+      </article>
+
+      <article className="panel">
+        <PanelHeader title="Developer links" meta={stateReady ? "Local API" : "Unavailable"} />
         <div className="stack-list">
           {links.map((link) => (
             <button key={link.url} className="link-row" onClick={() => void window.desktop.openExternal(link.url)} type="button">
@@ -97,4 +160,17 @@ function BackendTools({
       </article>
     </div>
   );
+}
+
+function runtimeLabel(state: string, backendUrl: string | null, error: string | null): string {
+  if (error) {
+    return error;
+  }
+  if (state === "ready" && backendUrl) {
+    return "Ready for local study data";
+  }
+  if (state === "starting") {
+    return "Starting";
+  }
+  return "Not connected";
 }

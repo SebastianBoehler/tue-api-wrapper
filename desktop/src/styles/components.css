@@ -271,3 +271,7 @@
 .empty-state {
   margin: 0;
 }
+
+.settings-actions {
+  margin-top: 16px;
+}

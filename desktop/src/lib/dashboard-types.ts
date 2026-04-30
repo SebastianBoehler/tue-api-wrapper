@@ -1,3 +1,5 @@
+import type { AlmaCourseDetail } from "./course-types";
+
 export interface DashboardMetric {
   label: string;
   value: string | number;
@@ -33,6 +35,29 @@ export interface DashboardExamItem {
   cp?: string | null;
   status?: string | null;
   grade?: string | null;
+}
+
+export interface AlmaCourseSlot {
+  weekday: number;
+  weekday_label: string;
+  start_time: string;
+  end_time?: string | null;
+  location?: string | null;
+}
+
+export interface AlmaTimetableCourseAssignment {
+  summary: string;
+  occurrence_count: number;
+  slots: AlmaCourseSlot[];
+  number?: string | null;
+  title?: string | null;
+  event_type?: string | null;
+  organization?: string | null;
+  detail_url?: string | null;
+  credits?: number | null;
+  credit_source?: string | null;
+  detail?: AlmaCourseDetail | null;
+  error?: string | null;
 }
 
 export interface DashboardMailItem {
@@ -94,6 +119,7 @@ export interface DashboardData {
     currentSemesterCreditCourses?: number;
     currentSemesterCreditUnresolved?: string[];
     currentSemesterCreditError?: string | null;
+    currentSemesterCourses?: AlmaTimetableCourseAssignment[];
   };
   documents: DashboardDocumentsPanel;
   exams: DashboardExamItem[];
@@ -114,4 +140,5 @@ export interface AlmaCourseAssignmentsPage {
   total_credits: number;
   resolved_credit_count: number;
   unresolved_credit_summaries: string[];
+  courses: AlmaTimetableCourseAssignment[];
 }

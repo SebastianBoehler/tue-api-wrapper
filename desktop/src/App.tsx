@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import type { DesktopRuntimeState } from "../shared/desktop-types";
 import { DashboardScreen } from "./components/DashboardScreen";
 import { OnboardingScreen } from "./components/OnboardingScreen";
-import { StatusBanner } from "./components/StatusBanner";
 import { useDashboard } from "./lib/use-dashboard";
 
 export function App() {
@@ -48,8 +47,6 @@ export function App() {
 
   return (
     <div className="app-shell">
-      <StatusBanner state={state} />
-
       {!state.hasCredentials ? (
         <OnboardingScreen
           onSubmit={(username, password) => desktop.saveCredentials({ username, password })}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
-import type { DashboardAgendaItem } from "../../lib/dashboard-types";
+import type { AlmaTimetableCourseAssignment, DashboardAgendaItem } from "../../lib/dashboard-types";
 import { formatDateRange } from "../../lib/format";
 import { EmptyState, PanelHeader } from "./DashboardPrimitives";
 import { CourseDetailPanel } from "./CourseDetailPanel";
@@ -10,6 +10,10 @@ export function CalendarPage({ data, state }: DashboardPageProps) {
   const events = useMemo(() => data?.agenda.items ?? [], [data?.agenda.items]);
   const days = useMemo(() => groupEventsByDay(events), [events]);
   const [selectedEvent, setSelectedEvent] = useState<DashboardAgendaItem | null>(events[0] ?? null);
+  const selectedAssignment = useMemo(
+    () => findCourseAssignment(data?.study.currentSemesterCourses ?? [], selectedEvent),
+    [data?.study.currentSemesterCourses, selectedEvent]
+  );
 
   useEffect(() => {
     setSelectedEvent((current) => current ?? events[0] ?? null);
@@ -74,7 +78,12 @@ export function CalendarPage({ data, state }: DashboardPageProps) {
         </article>
       </section>
 
-      <CourseDetailPanel baseUrl={state.backendUrl ?? null} event={selectedEvent} term={data?.termLabel} />
+      <CourseDetailPanel
+        assignment={selectedAssignment}
+        baseUrl={state.backendUrl ?? null}
+        event={selectedEvent}
+        term={data?.termLabel}
+      />
     </div>
   );
 }
@@ -131,4 +140,19 @@ function courseColor(summary: string) {
 function courseKey(summary: string): string {
   const code = summary.match(/\b[A-Z]{2,}\s?\d{3,}[A-Z]?\b/i)?.[0];
   return (code ?? summary).replace(/\s+/g, "").toUpperCase();
+}
+
+function findCourseAssignment(
+  assignments: AlmaTimetableCourseAssignment[],
+  event: DashboardAgendaItem | null
+): AlmaTimetableCourseAssignment | null {
+  if (!event) {
+    return null;
+  }
+  const summaryKey = normalizeCourseSummary(event.summary);
+  return assignments.find((assignment) => normalizeCourseSummary(assignment.summary) === summaryKey) ?? null;
+}
+
+function normalizeCourseSummary(value: string): string {
+  return value.replace(/\s+/g, " ").trim().toLocaleLowerCase("de-DE");
 }

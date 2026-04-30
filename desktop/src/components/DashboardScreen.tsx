@@ -48,12 +48,6 @@ export function DashboardScreen({
           <button className="secondary-button" onClick={onRefresh} disabled={loading || !state.backendUrl} type="button">
             {loading ? "Refreshing..." : "Refresh"}
           </button>
-          <button className="secondary-button" onClick={() => void onRestart()} type="button">
-            Restart backend
-          </button>
-          <button className="ghost-button" onClick={() => void onClearCredentials()} type="button">
-            Forget credentials
-          </button>
         </div>
       </header>
 
@@ -94,7 +88,16 @@ export function DashboardScreen({
           />
         ) : null}
         {activePage === "assistant" ? <AssistantPage data={data} state={state} /> : null}
-        {activePage === "tools" ? <ToolsPage data={data} state={state} /> : null}
+        {activePage === "tools" ? (
+          <ToolsPage
+            data={data}
+            loading={loading}
+            onClearCredentials={onClearCredentials}
+            onRefresh={onRefresh}
+            onRestart={onRestart}
+            state={state}
+          />
+        ) : null}
       </main>
     </div>
   );

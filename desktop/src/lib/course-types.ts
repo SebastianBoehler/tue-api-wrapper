@@ -14,6 +14,17 @@ export interface CourseDetailTable {
   rows: string[][];
 }
 
+export interface AlmaCourseDetail {
+  title: string;
+  number?: string | null;
+  permalink?: string | null;
+  source_url: string;
+  active_tab?: string | null;
+  available_tabs: string[];
+  sections: CourseDetailSection[];
+  module_study_program_tables: CourseDetailTable[];
+}
+
 export interface CoursePortalStatus {
   portal: string;
   status: string;
@@ -27,16 +38,7 @@ export interface CoursePortalStatus {
 }
 
 export interface UnifiedCourseDetail {
-  alma: {
-    title: string;
-    number?: string | null;
-    permalink?: string | null;
-    source_url: string;
-    active_tab?: string | null;
-    available_tabs: string[];
-    sections: CourseDetailSection[];
-    module_study_program_tables: CourseDetailTable[];
-  };
+  alma: AlmaCourseDetail;
   portal_statuses: CoursePortalStatus[];
   registration_hints: Array<{ source: string; label: string; text: string }>;
   ilias_results: Array<{

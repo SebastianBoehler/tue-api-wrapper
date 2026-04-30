@@ -19,14 +19,9 @@ export function AssistantResultPanel({
       {toolCalls.length > 0 ? (
         <div className="tool-call-list" aria-label="Assistant tool calls">
           {toolCalls.map((call) => (
-            <div key={call.id} className={`tool-call-row ${call.status}`}>
-              <div>
-                <strong>{call.name}</strong>
-                <span>{formatArgs(call.arguments)}</span>
-              </div>
-              <span>{call.status}</span>
-              <small>{call.summary}</small>
-            </div>
+            <span key={call.id} className={`tool-call-chip ${call.status}`} title={call.summary}>
+              {call.name}
+            </span>
           ))}
         </div>
       ) : null}
@@ -43,6 +38,9 @@ export function AssistantResultPanel({
 }
 
 function GeneratedCard({ card }: { card: AssistantToolCard }) {
+  if (card.name === "get_grades") {
+    return <GradesCard card={card} items={records(card.data)} />;
+  }
   if (card.name === "get_study_snapshot") {
     return <DashboardCard card={card} />;
   }
@@ -64,6 +62,7 @@ function GeneratedCard({ card }: { card: AssistantToolCard }) {
 function DashboardCard({ card }: { card: AssistantToolCard }) {
   const data = asRecord(card.data);
   const agenda = recordsAt(asRecord(data.agenda), "items").slice(0, 5);
+  const exams = records(data.exams).slice(0, 6);
   const metrics = records(data.metrics).slice(0, 4);
   return (
     <article className="generated-card">
@@ -79,6 +78,7 @@ function DashboardCard({ card }: { card: AssistantToolCard }) {
           </div>
         ))}
       </div>
+      <GradesList items={exams} />
       <div className="assistant-mini-list">
         {agenda.map((item) => (
           <div key={`${text(item.summary)}-${text(item.start)}`} className="assistant-mini-row">
@@ -89,6 +89,37 @@ function DashboardCard({ card }: { card: AssistantToolCard }) {
         ))}
       </div>
     </article>
+  );
+}
+
+function GradesCard({ card, items }: { card: AssistantToolCard; items: AnyRecord[] }) {
+  return (
+    <article className="generated-card">
+      <div className="generated-card-header">
+        <strong>{card.title}</strong>
+        <span>{card.summary}</span>
+      </div>
+      <GradesList items={items.slice(0, 12)} />
+    </article>
+  );
+}
+
+function GradesList({ items }: { items: AnyRecord[] }) {
+  if (items.length === 0) {
+    return <p className="muted">No grade records returned.</p>;
+  }
+  return (
+    <div className="assistant-mini-list">
+      {items.map((item, index) => (
+        <div key={`${text(item.number)}-${text(item.title)}-${index}`} className="grade-row">
+          <div>
+            <strong>{text(item.title) || "Untitled exam"}</strong>
+            <span>{[text(item.number), text(item.status), creditLabel(item.cp)].filter(Boolean).join(" · ")}</span>
+          </div>
+          <strong>{text(item.grade) || "Pending"}</strong>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -160,11 +191,6 @@ function ResultRow({ item, fields, url }: { item: AnyRecord; fields: string[]; u
   );
 }
 
-function formatArgs(args: Record<string, unknown>): string {
-  const entries = Object.entries(args).filter(([, value]) => value !== undefined && value !== "");
-  return entries.length ? entries.map(([key, value]) => `${key}: ${String(value)}`).join(", ") : "no arguments";
-}
-
 function records(value: unknown): AnyRecord[] {
   return Array.isArray(value) ? value.map(asRecord).filter((item) => Object.keys(item).length > 0) : [];
 }
@@ -179,4 +205,9 @@ function asRecord(value: unknown): AnyRecord {
 
 function text(value: unknown): string {
   return typeof value === "string" || typeof value === "number" ? String(value) : "";
+}
+
+function creditLabel(value: unknown): string {
+  const raw = text(value);
+  return raw ? `${raw} CP` : "";
 }

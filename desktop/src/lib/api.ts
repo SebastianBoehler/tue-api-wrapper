@@ -41,6 +41,7 @@ export function applyCourseAssignments(
       currentSemesterCredits: assignments.total_credits,
       currentSemesterCreditCourses: assignments.resolved_credit_count,
       currentSemesterCreditUnresolved: assignments.unresolved_credit_summaries,
+      currentSemesterCourses: assignments.courses,
       currentSemesterCreditError: null
     }
   };
@@ -51,6 +52,7 @@ export function markCourseAssignmentsError(dashboard: DashboardData, error: unkn
     ...dashboard,
     study: {
       ...dashboard.study,
+      currentSemesterCourses: dashboard.study.currentSemesterCourses ?? [],
       currentSemesterCreditError: `Semester credit lookup failed: ${errorMessage("", error).replace(/^: /, "")}`
     }
   };
@@ -61,6 +63,7 @@ function markCourseAssignmentsPending(dashboard: DashboardData): DashboardData {
     ...dashboard,
     study: {
       ...dashboard.study,
+      currentSemesterCourses: dashboard.study.currentSemesterCourses ?? [],
       currentSemesterCreditError: "Semester credit lookup is loading in the background."
     }
   };

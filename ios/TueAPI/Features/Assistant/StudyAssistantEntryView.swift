@@ -58,6 +58,8 @@ struct StudyAssistantEntryView: View {
                 return "This device is not eligible for Apple Intelligence, so this screen is using local MLX instead."
             case .unavailable(.modelNotReady):
                 return "Apple's on-device model is not ready yet, so this screen is using local MLX instead."
+            case .unavailable(_):
+                return "Apple Foundation Models is unavailable, so this screen is using local MLX instead."
             }
         }
         return "Apple Foundation Models requires iOS 26, so this screen is using local MLX instead."

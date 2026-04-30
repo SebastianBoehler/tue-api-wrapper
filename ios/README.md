@@ -37,6 +37,34 @@ xcodegen generate --spec ios/project.yml
 open ios/TueAPI.xcodeproj
 ```
 
+## TestFlight
+
+Fast path for a signed TestFlight upload:
+
+```bash
+npm run archive:ios
+npm run upload:ios:testflight
+```
+
+The upload uses `ios/exportOptions/testflight.plist` with automatic App Store Connect signing for team `8P4NW2AQ75`.
+
+Before the first upload, create the App Store Connect app record for `dev.sebastianboehler.tueapi`, register the widget bundle ID `dev.sebastianboehler.tueapi.widget`, and enable the App Group below for both targets.
+
+Each TestFlight upload needs a new `CURRENT_PROJECT_VERSION` build number in `ios/project.yml`. Keep `MARKETING_VERSION` stable for small beta rebuilds unless the user-facing version should change.
+
+External Beta App Review notes should mention:
+
+- The app is a University of Tuebingen student client for timetable, tasks, grades, mail, campus food, talks, maps, and course discovery.
+- Testers sign in with their own university account. Credentials are stored in the iOS Keychain and are not included in feedback.
+- Public discovery, campus food, talks, and map surfaces can be tested without university credentials.
+- The feedback sheet creates a public GitHub issue from user-entered text and app/device context.
+
+Run a local unsigned release sanity check without Apple signing:
+
+```bash
+npm run release-check:ios
+```
+
 ## App Groups
 
 The app and widget extension share cached upcoming events through:

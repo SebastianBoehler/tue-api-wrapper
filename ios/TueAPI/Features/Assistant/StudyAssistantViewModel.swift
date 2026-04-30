@@ -43,6 +43,8 @@ final class StudyAssistantViewModel {
             return "Apple Intelligence is not enabled on this device."
         case .unavailable(.modelNotReady):
             return "The on-device model is not ready yet."
+        case .unavailable(_):
+            return "The on-device model is unavailable."
         }
     }
 
@@ -181,6 +183,8 @@ final class StudyAssistantViewModel {
                     ordered.append(output.toolName)
                 }
             case .instructions, .prompt, .response:
+                break
+            @unknown default:
                 break
             }
         }

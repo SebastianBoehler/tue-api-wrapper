@@ -3,7 +3,7 @@ import type { CampusSnapshot } from "../../lib/campus-types";
 import type { DashboardData } from "../../lib/dashboard-types";
 import type { MailboxSummary, MailInboxSummary } from "../../lib/mail-types";
 
-export type DashboardPageId = "today" | "calendar" | "learning" | "study" | "mail" | "campus" | "tools";
+export type DashboardPageId = "today" | "calendar" | "learning" | "study" | "mail" | "campus" | "assistant" | "tools";
 
 export interface DashboardPageProps {
   state: DesktopRuntimeState;

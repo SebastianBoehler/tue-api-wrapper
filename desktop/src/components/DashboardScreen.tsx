@@ -4,6 +4,7 @@ import type { DesktopRuntimeState } from "../../shared/desktop-types";
 import type { DashboardData } from "../lib/dashboard-types";
 import { useCampusSnapshot } from "../lib/use-campus-snapshot";
 import { useMailSurface } from "../lib/use-mail-surface";
+import { AssistantPage } from "./dashboard/AssistantPage";
 import { CalendarPage } from "./dashboard/CalendarPage";
 import { CampusPage } from "./dashboard/CampusPage";
 import { DashboardNav } from "./dashboard/DashboardNav";
@@ -92,6 +93,7 @@ export function DashboardScreen({
             state={state}
           />
         ) : null}
+        {activePage === "assistant" ? <AssistantPage data={data} state={state} /> : null}
         {activePage === "tools" ? <ToolsPage data={data} state={state} /> : null}
       </main>
     </div>

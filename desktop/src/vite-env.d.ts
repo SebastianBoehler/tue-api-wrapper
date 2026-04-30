@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import type { CredentialInput, DesktopRuntimeState } from "../shared/desktop-types";
+import type { AssistantChatRequest, AssistantChatResponse, AssistantConfig, CredentialInput, DesktopRuntimeState } from "../shared/desktop-types";
 
 declare global {
   interface Window {
@@ -10,6 +10,9 @@ declare global {
       clearCredentials(): Promise<void>;
       restartBackend(): Promise<void>;
       openExternal(url: string): Promise<void>;
+      getAssistantConfig(): Promise<AssistantConfig>;
+      saveAssistantConfig(input: AssistantConfig): Promise<AssistantConfig>;
+      sendAssistantMessage(input: AssistantChatRequest): Promise<AssistantChatResponse>;
       onStateChanged(listener: (state: DesktopRuntimeState) => void): () => void;
     };
   }

@@ -12,3 +12,31 @@ export interface DesktopRuntimeState {
   backendUrl: string | null;
   backendError: string | null;
 }
+
+export interface AssistantConfig {
+  baseUrl: string;
+  model: string;
+  apiKey: string;
+}
+
+export interface AssistantChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface AssistantToolCard {
+  name: string;
+  title: string;
+  summary: string;
+  data: unknown;
+}
+
+export interface AssistantChatRequest {
+  messages: AssistantChatMessage[];
+  config: AssistantConfig;
+}
+
+export interface AssistantChatResponse {
+  text: string;
+  toolCards: AssistantToolCard[];
+}

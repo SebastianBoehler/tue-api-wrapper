@@ -149,9 +149,65 @@
   justify-items: end;
 }
 
+.assistant-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr) minmax(240px, 320px);
+  gap: 16px;
+  align-items: start;
+}
+
+.assistant-settings,
+.assistant-chat,
+.assistant-cards {
+  display: grid;
+  gap: 12px;
+}
+
+.assistant-transcript {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 420px;
+  max-height: 58vh;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.chat-bubble {
+  max-width: 78%;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--panel-muted);
+  padding: 11px 13px;
+  white-space: pre-wrap;
+}
+
+.chat-bubble.user {
+  justify-self: end;
+  background: #fff3f5;
+  border-color: rgba(161, 30, 59, 0.2);
+}
+
+.assistant-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.assistant-input-row input {
+  min-width: 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: inherit;
+  font: inherit;
+  padding: 11px 12px;
+}
+
 @media (max-width: 1180px) {
   .discover-grid,
-  .timms-layout {
+  .timms-layout,
+  .assistant-layout {
     grid-template-columns: 1fr;
   }
 

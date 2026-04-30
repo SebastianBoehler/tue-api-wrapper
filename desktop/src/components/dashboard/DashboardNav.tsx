@@ -23,6 +23,7 @@ export function DashboardNav({
     { id: "study", label: "Study", badge: data?.study.passedExamCount },
     { id: "mail", label: "Mail", badge: data?.mail.unreadCount },
     { id: "campus", label: "Campus" },
+    { id: "assistant", label: "Assistant" },
     { id: "tools", label: "Tools" }
   ];
 

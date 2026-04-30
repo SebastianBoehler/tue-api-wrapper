@@ -9,6 +9,7 @@ export function OnboardingScreen({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const canSubmit = username.trim().length > 0 && password.length > 0 && !saving;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -26,64 +27,71 @@ export function OnboardingScreen({
 
   return (
     <div className="onboarding-shell">
-      <div className="hero-panel">
+      <section className="hero-panel onboarding-copy">
         <p className="eyebrow">Desktop onboarding</p>
-        <h1>TUE Study Hub for desktop</h1>
+        <h1>TUE Study Hub Desktop</h1>
         <p className="lead">
-          Connect your university account once, keep the credentials encrypted on-device, and let the desktop
-          app run the local study backend for you.
+          Connect once to run the local study workspace with live university data and credentials encrypted on
+          this device.
         </p>
-        <div className="bullet-grid">
+
+        <dl className="assurance-list">
           <div>
-            <strong>Local only</strong>
-            <span>The desktop app only talks to a backend running on your own machine.</span>
+            <dt>Local runtime</dt>
+            <dd>The desktop app talks to the backend running on this machine.</dd>
           </div>
           <div>
-            <strong>Encrypted storage</strong>
-            <span>Credentials are encrypted before they are written into the app data directory.</span>
+            <dt>Credential storage</dt>
+            <dd>Credentials are encrypted before they are written into the app data directory.</dd>
           </div>
           <div>
-            <strong>Live data only</strong>
-            <span>The dashboard shows real Alma, ILIAS, Moodle, talks, and mail data.</span>
+            <dt>Data source</dt>
+            <dd>The dashboard loads real Alma, ILIAS, Moodle, talks, and mail data.</dd>
           </div>
-        </div>
-      </div>
+        </dl>
+      </section>
 
       <form className="auth-card" onSubmit={handleSubmit}>
-        <div>
+        <div className="form-header">
           <p className="eyebrow">Credentials</p>
-          <h2>Connect your uni account</h2>
+          <h2>University login</h2>
           <p className="muted">
-            Use the same `UNI_USERNAME` and `UNI_PASSWORD` pair that the Python backend already expects.
+            Use the same university username and password that the local backend expects.
           </p>
         </div>
 
-        <label className="field">
-          <span>Username</span>
-          <input
-            autoComplete="username"
-            placeholder="ZDV ID or UNI username"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-          />
-        </label>
+        <div className="field-stack">
+          <label className="field">
+            <span>University username</span>
+            <input
+              autoComplete="username"
+              placeholder="ZDV ID or UNI username"
+              required
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+            />
+          </label>
 
-        <label className="field">
-          <span>Password</span>
-          <input
-            autoComplete="current-password"
-            placeholder="Password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
+          <label className="field">
+            <span>Password</span>
+            <input
+              autoComplete="current-password"
+              placeholder="Password"
+              required
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+        </div>
 
         {error ? <p className="inline-error">{error}</p> : null}
 
-        <button className="primary-button" type="submit" disabled={saving}>
+        <button className="primary-button" type="submit" disabled={!canSubmit}>
           {saving ? "Saving credentials..." : "Save and continue"}
         </button>
+
+        <p className="form-note">No demo data is loaded after sign-in.</p>
       </form>
     </div>
   );

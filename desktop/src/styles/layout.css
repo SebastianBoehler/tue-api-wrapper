@@ -1,8 +1,8 @@
 .app-shell {
   min-height: 100vh;
-  max-width: 1440px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 24px 28px 36px;
 }
 
 .centered-state,
@@ -19,13 +19,16 @@
 
 .onboarding-shell {
   display: grid;
-  grid-template-columns: 1.2fr minmax(360px, 460px);
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
+  gap: 28px;
+  align-items: start;
+  margin: 0 auto;
+  max-width: 1120px;
 }
 
 .dashboard-shell {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .dashboard-header {
@@ -33,6 +36,16 @@
   justify-content: space-between;
   gap: 18px;
   align-items: flex-start;
+}
+
+.dashboard-header .lead {
+  max-width: 52rem;
+}
+
+.page-surface,
+.page-grid {
+  display: grid;
+  gap: 16px;
 }
 
 .hero-strip {
@@ -52,27 +65,16 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+  align-items: start;
 }
 
-.bullet-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 28px;
-}
-
-.bullet-grid div,
 .stack-list,
 .action-list,
 .field,
-.auth-card {
+.auth-card,
+.field-stack {
   display: grid;
   gap: 10px;
-}
-
-.bullet-grid span {
-  color: var(--muted);
-  line-height: 1.55;
 }
 
 .header-actions,
@@ -95,6 +97,7 @@
 .section-heading h3,
 .dashboard-header h1,
 .hero-panel h1,
+.auth-card h2,
 .centered-panel h1,
 .status-banner h2 {
   margin: 0;
@@ -120,12 +123,14 @@
 
   .status-banner,
   .dashboard-header,
-  .hero-strip {
+  .hero-strip,
+  .section-hero {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .bullet-grid {
+  .assurance-list div {
     grid-template-columns: 1fr;
+    gap: 6px;
   }
 }

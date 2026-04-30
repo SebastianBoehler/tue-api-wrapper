@@ -1,0 +1,243 @@
+.schedule-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  gap: 16px;
+  align-items: start;
+}
+
+.schedule-main {
+  display: grid;
+  gap: 16px;
+}
+
+.schedule-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.schedule-day {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  min-height: 360px;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  background: #fbfaf8;
+  padding: 12px;
+}
+
+.schedule-day-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+  border-bottom: 1px solid var(--panel-border);
+  padding-bottom: 10px;
+}
+
+.schedule-day-header span,
+.schedule-slot span,
+.aligned-row span,
+.mensa-card span,
+.mensa-menu-row span,
+.detail-line span {
+  color: var(--muted);
+}
+
+.schedule-slots {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.schedule-slot {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--panel-border);
+  border-left: 6px solid rgba(161, 30, 59, 0.72);
+  border-radius: 14px;
+  background: #fff7f8;
+  padding: 13px 14px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.schedule-slot time {
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.schedule-slot strong {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.schedule-slot.active {
+  border-color: rgba(161, 30, 59, 0.55);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.course-detail-panel {
+  position: sticky;
+  top: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.detail-section-list {
+  display: grid;
+  gap: 16px;
+}
+
+.detail-section-list h4 {
+  margin: 0 0 8px;
+}
+
+.detail-line {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--panel-border);
+}
+
+.mail-filter-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.mail-filter-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) minmax(220px, 1fr) auto;
+  gap: 10px;
+}
+
+.mail-filter-row select,
+.mail-filter-row input {
+  min-width: 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: inherit;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.checkbox-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-strong);
+  font-weight: 650;
+}
+
+.mail-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 132px;
+  gap: 12px;
+  align-items: start;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--panel-muted);
+  padding: 13px 14px;
+}
+
+.mail-row.unread {
+  background: #ffffff;
+  border-color: rgba(161, 30, 59, 0.24);
+}
+
+.mail-status {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.mail-row time,
+.aligned-row time {
+  color: var(--muted-strong);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.aligned-list {
+  display: grid;
+  gap: 10px;
+}
+
+.aligned-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  gap: 16px;
+  width: 100%;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--panel-muted);
+  padding: 13px 14px;
+  color: inherit;
+  text-align: left;
+}
+
+.mensa-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mensa-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--panel-muted);
+  padding: 14px;
+}
+
+.mensa-menu-list {
+  display: grid;
+  gap: 8px;
+}
+
+.mensa-menu-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.mensa-menu-row strong {
+  text-align: right;
+}
+
+@media (max-width: 1080px) {
+  .schedule-layout,
+  .mail-filter-row,
+  .mensa-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .course-detail-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .schedule-day,
+  .schedule-slot,
+  .mail-row,
+  .aligned-row,
+  .detail-line {
+    grid-template-columns: 1fr;
+  }
+
+  .mail-row time,
+  .aligned-row time {
+    text-align: left;
+  }
+}

@@ -8,14 +8,14 @@ export function CampusPage({ campus, campusError, campusLoading, data, onRefresh
       <article className="panel">
         <PanelHeader title="Talks" meta={data?.talks.available ? `${data.talks.totalHits} upcoming` : "Unavailable"} />
         {data?.talks.available ? (
-          <div className="stack-list">
+          <div className="aligned-list">
             {data.talks.items.map((talk) => (
-              <button key={talk.id} className="link-row" onClick={() => void window.desktop.openExternal(talk.source_url)} type="button">
+              <button key={talk.id} className="aligned-row" onClick={() => void window.desktop.openExternal(talk.source_url)} type="button">
                 <div>
                   <strong>{talk.title}</strong>
                   <span>{talk.speaker_name || talk.location || "Speaker pending"}</span>
                 </div>
-                <span>{formatTimestamp(talk.timestamp)}</span>
+                <time>{formatTimestamp(talk.timestamp)}</time>
               </button>
             ))}
           </div>
@@ -32,23 +32,21 @@ export function CampusPage({ campus, campusError, campusLoading, data, onRefresh
           </button>
         </div>
         {campusError ? <p className="inline-error">{campusError}</p> : null}
-        {campus?.errors.map((error) => (
-          <p key={error} className="inline-error">{error}</p>
-        ))}
-        <div className="stack-list">
+        {campus?.errors.map((error) => <p key={error} className="inline-error">{error}</p>)}
+        <div className="aligned-list">
           {campus?.fitness ? (
-            <div className="stack-row compact-row">
+            <div className="aligned-row">
               <div>
                 <strong>{campus.fitness.facility_name}</strong>
                 <span>Retrieved {formatTimestamp(campus.fitness.retrieved_at)}</span>
               </div>
-              <span>{campus.fitness.count} people</span>
+              <time>{campus.fitness.count} people</time>
             </div>
           ) : null}
-          {(campus?.events?.items ?? []).slice(0, 3).map((event) => (
+          {(campus?.events?.items ?? []).slice(0, 4).map((event) => (
             <button
               key={event.id}
-              className="link-row"
+              className="aligned-row"
               disabled={!event.url}
               onClick={() => event.url ? void window.desktop.openExternal(event.url) : undefined}
               type="button"
@@ -57,7 +55,7 @@ export function CampusPage({ campus, campusError, campusLoading, data, onRefresh
                 <strong>{event.title}</strong>
                 <span>{event.location || event.speaker || "University event"}</span>
               </div>
-              <span>{formatTimestamp(event.starts_at)}</span>
+              <time>{formatTimestamp(event.starts_at)}</time>
             </button>
           ))}
           {campus && !campus.fitness && !campus.events?.items.length && !campus.canteens?.length ? (
@@ -68,16 +66,22 @@ export function CampusPage({ campus, campusError, campusLoading, data, onRefresh
 
       <article className="panel wide-panel">
         <PanelHeader title="Mensa today" meta={`${campus?.canteens?.length ?? 0} canteens`} />
-        <div className="stack-list">
+        <div className="mensa-grid">
           {(campus?.canteens ?? []).slice(0, 4).map((canteen) => (
-            <div key={canteen.canteen_id} className="stack-row">
+            <section key={canteen.canteen_id} className="mensa-card">
               <div>
                 <strong>{canteen.canteen}</strong>
                 <span>{canteen.address || "Address pending"}</span>
-                {canteen.menus[0]?.items[0] ? <span>{canteen.menus[0].items[0]}</span> : null}
               </div>
-              <span>{canteen.menus.length} menus</span>
-            </div>
+              <div className="mensa-menu-list">
+                {canteen.menus.slice(0, 6).map((menu) => (
+                  <div key={menu.id} className="mensa-menu-row">
+                    <span>{menu.items.slice(0, 2).join(", ") || menu.menu_line || "Menu item"}</span>
+                    <strong>{menu.student_price || "Price pending"}</strong>
+                  </div>
+                ))}
+              </div>
+            </section>
           ))}
           {campus?.canteens?.length === 0 ? <EmptyState>No canteen menus returned for today.</EmptyState> : null}
         </div>

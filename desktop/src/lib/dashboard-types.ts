@@ -8,6 +8,7 @@ export interface DashboardAgendaItem {
   start: string;
   end?: string | null;
   location?: string | null;
+  description?: string | null;
 }
 
 export interface DashboardTaskItem {

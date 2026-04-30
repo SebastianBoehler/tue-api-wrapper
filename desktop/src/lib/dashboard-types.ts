@@ -109,3 +109,9 @@ export interface DashboardData {
   };
   talks: DashboardTalksPanel;
 }
+
+export interface AlmaCourseAssignmentsPage {
+  total_credits: number;
+  resolved_credit_count: number;
+  unresolved_credit_summaries: string[];
+}

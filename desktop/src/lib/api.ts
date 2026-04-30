@@ -1,12 +1,69 @@
-import type { DashboardData } from "./dashboard-types";
+import type { AlmaCourseAssignmentsPage, DashboardData } from "./dashboard-types";
 import type { CampusCanteen, CampusSnapshot, KufTrainingOccupancy, UniversityCalendarResponse } from "./campus-types";
 import type { UnifiedCourseDetail } from "./course-types";
 import type { MailboxSummary, MailInboxSummary } from "./mail-types";
 import type { DirectoryAction, DirectoryForm, DirectorySearchResponse } from "./people-types";
 import type { TimmsItemDetail, TimmsSearchPage, TimmsStreamVariant, TimmsTreePage } from "./timms-types";
 
-export async function fetchDashboard(baseUrl: string): Promise<DashboardData> {
-  return fetchJson<DashboardData>(baseUrl, "/api/dashboard");
+export async function fetchDashboard(
+  baseUrl: string,
+  options: { includeCourseAssignments?: boolean } = {}
+): Promise<DashboardData> {
+  const params = new URLSearchParams();
+  if (options.includeCourseAssignments === false) {
+    params.set("include_course_assignments", "false");
+  }
+
+  const dashboard = await fetchJson<DashboardData>(baseUrl, `/api/dashboard${params.size ? `?${params}` : ""}`);
+  return options.includeCourseAssignments === false ? markCourseAssignmentsPending(dashboard) : dashboard;
+}
+
+export async function fetchCourseAssignments(baseUrl: string, term: string): Promise<AlmaCourseAssignmentsPage> {
+  const params = new URLSearchParams({ term, limit: "100" });
+  return fetchJson<AlmaCourseAssignmentsPage>(baseUrl, `/api/alma/timetable/course-assignments?${params}`);
+}
+
+export function applyCourseAssignments(
+  dashboard: DashboardData,
+  assignments: AlmaCourseAssignmentsPage
+): DashboardData {
+  const metrics = dashboard.metrics.filter((metric) => metric.label !== "Saved semester CP");
+  metrics.splice(Math.min(1, metrics.length), 0, {
+    label: "Saved semester CP",
+    value: assignments.total_credits
+  });
+
+  return {
+    ...dashboard,
+    metrics,
+    study: {
+      ...dashboard.study,
+      currentSemesterCredits: assignments.total_credits,
+      currentSemesterCreditCourses: assignments.resolved_credit_count,
+      currentSemesterCreditUnresolved: assignments.unresolved_credit_summaries,
+      currentSemesterCreditError: null
+    }
+  };
+}
+
+export function markCourseAssignmentsError(dashboard: DashboardData, error: unknown): DashboardData {
+  return {
+    ...dashboard,
+    study: {
+      ...dashboard.study,
+      currentSemesterCreditError: `Semester credit lookup failed: ${errorMessage("", error).replace(/^: /, "")}`
+    }
+  };
+}
+
+function markCourseAssignmentsPending(dashboard: DashboardData): DashboardData {
+  return {
+    ...dashboard,
+    study: {
+      ...dashboard.study,
+      currentSemesterCreditError: "Semester credit lookup is loading in the background."
+    }
+  };
 }
 
 export async function fetchCampusSnapshot(baseUrl: string): Promise<CampusSnapshot> {

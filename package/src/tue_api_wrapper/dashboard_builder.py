@@ -45,6 +45,7 @@ def build_dashboard_payload(
     *,
     term_label: str = DEFAULT_DASHBOARD_TERM,
     limit: int = 8,
+    include_course_assignments: bool = True,
     load_alma_client: Callable[[], AlmaClient],
     load_ilias_client: Callable[[], IliasClient],
     load_mail_panel: Callable[..., dict[str, Any]],
@@ -52,7 +53,13 @@ def build_dashboard_payload(
 ) -> dict[str, Any]:
     term_label = normalize_dashboard_term(term_label)
     with ThreadPoolExecutor(max_workers=4, thread_name_prefix="dashboard") as executor:
-        alma_future = executor.submit(_load_alma_dashboard, load_alma_client, term_label, limit)
+        alma_future = executor.submit(
+            _load_alma_dashboard,
+            load_alma_client,
+            term_label,
+            limit,
+            include_course_assignments,
+        )
         ilias_future = executor.submit(_load_ilias_dashboard, load_ilias_client, limit)
         mail_future = executor.submit(load_mail_panel, limit=limit)
         talks_future = executor.submit(load_talks_panel, limit=limit)
@@ -69,6 +76,7 @@ def _load_alma_dashboard(
     load_alma_client: Callable[[], AlmaClient],
     term_label: str,
     limit: int,
+    include_course_assignments: bool,
 ) -> AlmaDashboardData:
     alma = load_alma_client()
     timetable = alma.fetch_timetable_for_term(term_label)
@@ -76,11 +84,14 @@ def _load_alma_dashboard(
     exams = tuple(alma.fetch_exam_overview()[:limit])
     studyservice_contract = alma.fetch_studyservice_contract()
     current_credit_error = None
-    try:
-        course_assignments = build_timetable_course_assignments(alma, timetable, limit=100)
-    except AlmaError as error:
+    if include_course_assignments:
+        try:
+            course_assignments = build_timetable_course_assignments(alma, timetable, limit=100)
+        except AlmaError as error:
+            course_assignments = None
+            current_credit_error = str(error)
+    else:
         course_assignments = None
-        current_credit_error = str(error)
 
     return AlmaDashboardData(
         timetable=timetable,

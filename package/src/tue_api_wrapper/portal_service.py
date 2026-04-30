@@ -79,10 +79,17 @@ class PortalService:
             "error": None,
         }
 
-    def build_dashboard(self, *, term_label: str = DEFAULT_DASHBOARD_TERM, limit: int = 8) -> dict[str, Any]:
+    def build_dashboard(
+        self,
+        *,
+        term_label: str = DEFAULT_DASHBOARD_TERM,
+        limit: int = 8,
+        include_course_assignments: bool = True,
+    ) -> dict[str, Any]:
         return build_dashboard_payload(
             term_label=term_label,
             limit=limit,
+            include_course_assignments=include_course_assignments,
             load_alma_client=self._alma_client,
             load_ilias_client=self._ilias_client,
             load_mail_panel=self._mail_panel,

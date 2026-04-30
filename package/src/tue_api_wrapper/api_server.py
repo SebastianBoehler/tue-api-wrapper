@@ -74,9 +74,15 @@ def health() -> dict[str, str]:
 
 
 @app.get("/api/dashboard")
-def dashboard(term: str = Query(DEFAULT_DASHBOARD_TERM)) -> dict[str, object]:
+def dashboard(
+    term: str = Query(DEFAULT_DASHBOARD_TERM),
+    include_course_assignments: bool = Query(True),
+) -> dict[str, object]:
     try:
-        return portal_service.build_dashboard(term_label=term)
+        return portal_service.build_dashboard(
+            term_label=term,
+            include_course_assignments=include_course_assignments,
+        )
     except AlmaError as error:
         raise _translate_error(error) from error
 

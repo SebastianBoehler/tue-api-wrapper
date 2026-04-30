@@ -157,6 +157,21 @@ class DashboardBuilderTests(unittest.TestCase):
         self.assertEqual(dashboard["study"]["currentSemesterCredits"], 6.0)
         self.assertEqual(dashboard["ilias"]["tasks"][0]["title"], "Assignment 1")
 
+    def test_course_assignments_can_be_deferred(self) -> None:
+        with patch("tue_api_wrapper.dashboard_builder.build_timetable_course_assignments") as assignments:
+            dashboard = build_dashboard_payload(
+                term_label="Sommer 2026",
+                include_course_assignments=False,
+                load_alma_client=lambda: _FakeAlmaClient(),
+                load_ilias_client=lambda: _FakeIliasClient(),
+                load_mail_panel=lambda *, limit: {"available": True, "items": []},
+                load_talks_panel=lambda *, limit: {"available": False, "totalHits": 0, "items": [], "error": None},
+            )
+
+        assignments.assert_not_called()
+        self.assertIsNone(dashboard["study"]["currentSemesterCredits"])
+        self.assertNotIn("Saved semester CP", [metric["label"] for metric in dashboard["metrics"]])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import type { DashboardAgendaItem } from "../../lib/dashboard-types";
 import { formatDateRange } from "../../lib/format";
@@ -42,18 +42,28 @@ export function CalendarPage({ data, state }: DashboardPageProps) {
                     <span>{day.dateLabel}</span>
                   </div>
                   <div className="schedule-slots">
-                    {day.items.map((item) => (
-                      <button
-                        key={`${item.summary}-${item.start}`}
-                        className={selectedEvent === item ? "schedule-slot active" : "schedule-slot"}
-                        onClick={() => setSelectedEvent(item)}
-                        type="button"
-                      >
-                        <time>{formatTime(item.start, item.end)}</time>
-                        <strong>{item.summary}</strong>
-                        <span>{item.location || "Location pending"}</span>
-                      </button>
-                    ))}
+                    {day.items.map((item) => {
+                      const color = courseColor(item.summary);
+                      return (
+                        <button
+                          key={`${item.summary}-${item.start}`}
+                          className={selectedEvent === item ? "schedule-slot active" : "schedule-slot"}
+                          onClick={() => setSelectedEvent(item)}
+                          style={
+                            {
+                              "--course-accent": color.accent,
+                              "--course-bg": color.background,
+                              "--course-focus": color.focus
+                            } as CSSProperties
+                          }
+                          type="button"
+                        >
+                          <time>{formatTime(item.start, item.end)}</time>
+                          <strong>{item.summary}</strong>
+                          <span>{item.location || "Location pending"}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </section>
               ))}
@@ -96,4 +106,29 @@ function groupEventsByDay(events: DashboardAgendaItem[]) {
 
 function formatTime(start: string, end?: string | null): string {
   return formatDateRange(start, end).replace(/^[^,]+,\s*/, "");
+}
+
+const coursePalette = [
+  { accent: "#b0163a", background: "#fff3f5", focus: "rgba(176, 22, 58, 0.18)" },
+  { accent: "#2563eb", background: "#eff6ff", focus: "rgba(37, 99, 235, 0.18)" },
+  { accent: "#047857", background: "#ecfdf5", focus: "rgba(4, 120, 87, 0.18)" },
+  { accent: "#7c3aed", background: "#f5f3ff", focus: "rgba(124, 58, 237, 0.18)" },
+  { accent: "#b45309", background: "#fffbeb", focus: "rgba(180, 83, 9, 0.2)" },
+  { accent: "#0f766e", background: "#f0fdfa", focus: "rgba(15, 118, 110, 0.18)" },
+  { accent: "#be123c", background: "#fff1f2", focus: "rgba(190, 18, 60, 0.18)" },
+  { accent: "#4338ca", background: "#eef2ff", focus: "rgba(67, 56, 202, 0.18)" }
+] as const;
+
+function courseColor(summary: string) {
+  const key = courseKey(summary);
+  let hash = 0;
+  for (const char of key) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+  return coursePalette[hash % coursePalette.length];
+}
+
+function courseKey(summary: string): string {
+  const code = summary.match(/\b[A-Z]{2,}\s?\d{3,}[A-Z]?\b/i)?.[0];
+  return (code ?? summary).replace(/\s+/g, "").toUpperCase();
 }

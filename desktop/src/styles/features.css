@@ -58,9 +58,9 @@
   gap: 8px;
   width: 100%;
   border: 1px solid var(--panel-border);
-  border-left: 6px solid rgba(161, 30, 59, 0.72);
+  border-left: 6px solid var(--course-accent, var(--accent));
   border-radius: 14px;
-  background: #fff7f8;
+  background: var(--course-bg, #fff7f8);
   padding: 13px 14px;
   color: inherit;
   text-align: left;
@@ -68,7 +68,7 @@
 }
 
 .schedule-slot time {
-  color: var(--accent);
+  color: var(--course-accent, var(--accent));
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -79,8 +79,8 @@
 }
 
 .schedule-slot.active {
-  border-color: rgba(161, 30, 59, 0.55);
-  box-shadow: 0 0 0 3px var(--focus-ring);
+  border-color: var(--course-accent, var(--accent));
+  box-shadow: 0 0 0 3px var(--course-focus, var(--focus-ring));
 }
 
 .course-detail-panel {

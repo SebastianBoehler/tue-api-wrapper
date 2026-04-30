@@ -58,6 +58,28 @@ Or run the full pipeline in one step:
 npm run dist
 ```
 
+### Local signed macOS release
+
+For a DMG that macOS can open without the malware-check warning, build on macOS with a `Developer ID Application` certificate and notarization credentials:
+
+```bash
+export APPLE_ID="apple-id@example.com"
+export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
+export APPLE_TEAM_ID="TEAMID1234"
+npm run dist:mac:signed
+```
+
+The local helper also accepts App Store Connect API key notarization:
+
+```bash
+export APPLE_API_KEY="/path/to/AuthKey_ABC123DEFG.p8"
+export APPLE_API_KEY_ID="ABC123DEFG"
+export APPLE_API_ISSUER="00000000-0000-0000-0000-000000000000"
+npm run dist:mac:signed
+```
+
+If the certificate is already in your login keychain, the helper uses the first `Developer ID Application` identity it finds. If you keep the certificate as an exported `.p12`, set `CSC_LINK` and `CSC_KEY_PASSWORD` instead. The command builds the release, then verifies `codesign`, `spctl`, and stapled notarization tickets for the generated `.app` and `.dmg`.
+
 ## Releases
 
 Two GitHub workflows are included:

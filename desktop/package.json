@@ -14,7 +14,8 @@
     "build:electron": "tsc -p tsconfig.electron.json",
     "build:backend": "node scripts/build-python-sidecar.mjs",
     "package": "npm run build && electron-builder --config electron-builder.yml",
-    "dist": "npm run build:backend && npm run package"
+    "dist": "npm run build:backend && npm run package",
+    "dist:mac:signed": "node scripts/dist-macos-signed-local.mjs"
   },
   "dependencies": {
     "get-port": "^7.1.0",

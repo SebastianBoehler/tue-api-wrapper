@@ -15,6 +15,9 @@ coverage
 *.tsbuildinfo
 *.har
 *.pdf
+*.ppt
+*.pptx
+~$*
 __pycache__/
 chatgpt/web/dist/
 chatgpt/dist/

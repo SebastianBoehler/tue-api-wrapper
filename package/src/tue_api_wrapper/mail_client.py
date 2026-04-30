@@ -125,6 +125,17 @@ class MailClient:
         raw_message = self._fetch_raw_message(client, uid)
         return parse_message_detail(raw_message, uid=uid, mailbox=mailbox, is_unread=uid in unread_ids)
 
+    def move_message(self, uid: str, *, mailbox: str = "INBOX", destination: str) -> dict[str, str]:
+        client = self._require_client()
+        status, _ = client.select(mailbox, readonly=False)
+        if status != "OK":
+            raise MailError(f"Could not open mailbox '{mailbox}'.")
+
+        status, _ = client.uid("move", uid, destination)
+        if status != "OK":
+            raise MailError(f"Could not move message UID {uid} to '{destination}'.")
+        return {"uid": uid, "mailbox": mailbox, "destination": destination, "status": "moved"}
+
     def close(self) -> None:
         if self._client is None:
             return

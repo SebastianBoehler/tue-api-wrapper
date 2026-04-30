@@ -3,7 +3,10 @@ from __future__ import annotations
 import requests
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
+from pydantic import BaseModel
 
+from .directory_client import UniversityDirectoryClient
+from .directory_models import DirectoryAction, DirectoryForm
 from .event_calendar_client import EventCalendarClient
 from .fitness_client import FitnessClient
 from .campus_client import CampusClient
@@ -14,6 +17,7 @@ from .talks_client import TalksClient
 
 router = APIRouter()
 timms_client = TimmsClient()
+directory_client = UniversityDirectoryClient()
 praxisportal_client = PraxisportalClient()
 campus_client = CampusClient()
 talks_client = TalksClient()
@@ -24,6 +28,12 @@ fitness_client = FitnessClient()
 def _translate_public_error(error: Exception) -> HTTPException:
     status_code = 502 if isinstance(error, requests.RequestException) else 400
     return HTTPException(status_code=status_code, detail=str(error))
+
+
+class DirectoryActionRequest(BaseModel):
+    query: str
+    form: DirectoryForm
+    action: DirectoryAction
 
 
 @router.get("/api/timms/search")
@@ -76,6 +86,22 @@ def timms_tree(node_id: str = "", node_path: str = "") -> dict[str, object]:
                 node_path=node_path.strip() or None,
             )
         )
+    except Exception as error:  # pragma: no cover - exercised via FastAPI surface
+        raise _translate_public_error(error) from error
+
+
+@router.get("/api/people/search")
+def people_search(query: str = Query(..., min_length=2, max_length=120)) -> dict[str, object]:
+    try:
+        return serialize(directory_client.search(query))
+    except Exception as error:  # pragma: no cover - exercised via FastAPI surface
+        raise _translate_public_error(error) from error
+
+
+@router.post("/api/people/action")
+def people_action(request: DirectoryActionRequest) -> dict[str, object]:
+    try:
+        return serialize(directory_client.submit(query=request.query, form=request.form, action=request.action))
     except Exception as error:  # pragma: no cover - exercised via FastAPI surface
         raise _translate_public_error(error) from error
 

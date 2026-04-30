@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Query
+from pydantic import BaseModel
 
 from .api_errors import translate_alma_error
 from .config import AlmaError
@@ -8,6 +9,11 @@ from .portal_service import PortalService, serialize
 
 router = APIRouter()
 portal_service = PortalService()
+
+
+class MoveMessageRequest(BaseModel):
+    mailbox: str = "INBOX"
+    destination: str
 
 
 def _mail_client():
@@ -62,6 +68,18 @@ def mail_message(uid: str, mailbox: str = Query("INBOX")) -> dict[str, object]:
         client = _mail_client()
         try:
             return serialize(client.fetch_message_detail(uid, mailbox=mailbox))
+        finally:
+            client.close()
+    except AlmaError as error:
+        raise _translate_error(error) from error
+
+
+@router.post("/api/mail/messages/{uid}/move")
+def mail_move_message(uid: str, request: MoveMessageRequest) -> dict[str, object]:
+    try:
+        client = _mail_client()
+        try:
+            return serialize(client.move_message(uid, mailbox=request.mailbox, destination=request.destination))
         finally:
             client.close()
     except AlmaError as error:

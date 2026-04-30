@@ -1,3 +1,6 @@
+import { useState } from "react";
+
+import { moveMailMessage } from "../../lib/api";
 import { formatTimestamp } from "../../lib/format";
 import { EmptyState, PanelHeader } from "./DashboardPrimitives";
 import type { MailPageProps } from "./types";
@@ -15,8 +18,31 @@ export function MailPage({
   onRefreshMail,
   setMailbox,
   setQuery,
-  setUnreadOnly
+  setUnreadOnly,
+  state
 }: MailPageProps) {
+  const [movingUid, setMovingUid] = useState<string | null>(null);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const archiveMailbox = mailboxes.find((item) =>
+    item.special_use === "archive" || /archive|archiv/i.test(`${item.name} ${item.label}`)
+  );
+
+  async function archiveMessage(uid: string) {
+    if (!state.backendUrl || !archiveMailbox) {
+      return;
+    }
+    setMovingUid(uid);
+    setArchiveError(null);
+    try {
+      await moveMailMessage(state.backendUrl, { uid, mailbox, destination: archiveMailbox.name });
+      onRefreshMail();
+    } catch (error) {
+      setArchiveError(error instanceof Error ? error.message : "Could not archive message.");
+    } finally {
+      setMovingUid(null);
+    }
+  }
+
   return (
     <div className="page-grid">
       <section className="panel mail-filter-panel">
@@ -46,6 +72,7 @@ export function MailPage({
           </label>
         </div>
         {mailError ? <p className="inline-error">{mailError}</p> : null}
+        {archiveError ? <p className="inline-error">{archiveError}</p> : null}
       </section>
 
       <article className="panel">
@@ -62,7 +89,14 @@ export function MailPage({
                   <span>{item.from_name || item.from_address || "Unknown sender"}</span>
                   {preview ? <span>{preview}</span> : null}
                 </div>
-                <time>{formatTimestamp(item.received_at)}</time>
+                <div className="mail-row-actions">
+                  <time>{formatTimestamp(item.received_at)}</time>
+                  {archiveMailbox && inbox?.mailbox !== archiveMailbox.name ? (
+                    <button className="ghost-button compact-button" disabled={movingUid === item.uid} onClick={() => void archiveMessage(item.uid)} type="button">
+                      {movingUid === item.uid ? "Archiving..." : "Archive"}
+                    </button>
+                  ) : null}
+                </div>
               </div>
             );
           })}

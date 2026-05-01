@@ -70,14 +70,6 @@ iOS app:
 
 <img src="./docs/assets/previews/ios-calendar-preview.png" alt="iOS calendar preview" width="360" />
 
-Web dashboard:
-
-![Web dashboard preview](./docs/assets/overview-screenshot.png)
-
-ChatGPT app:
-
-![ChatGPT widget preview](./docs/assets/previews/chatgpt-widget-preview.png)
-
 ## Repository layout
 
 | Path | Purpose |

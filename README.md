@@ -1,13 +1,9 @@
-<p align="center">
-  <img src="./docs/assets/overview-screenshot.png" alt="tue-api-wrapper web course planner preview" width="100%" />
-</p>
-
 <h1 align="center">tue-api-wrapper</h1>
 
 <p align="center">
-  Unified Alma, ILIAS, Moodle, and mail access for the University of Tuebingen.
+  Request clients, parsers, and app surfaces for University of Tübingen systems.
   <br />
-  One contract layer, multiple surfaces: Python API, Go CLI, Next.js dashboard, ChatGPT app, Electron desktop, and native iOS with an on-device assistant.
+  Alma, ILIAS, Moodle, mail, campus data, and reusable contracts for course projects.
 </p>
 
 <p align="center">
@@ -26,131 +22,123 @@
 <p align="center">
   <a href="#why-this-project-exists">Why</a>
   ·
-  <a href="#workflow">Workflow</a>
+  <a href="#what-you-can-build">Build</a>
   ·
   <a href="#quick-start">Quick Start</a>
   ·
-  <a href="#desktop-app">Desktop</a>
-  ·
-  <a href="#repository-layout">Layout</a>
-  ·
-  <a href="#development">Development</a>
+  <a href="#architecture">Architecture</a>
   ·
   <a href="#contributing">Contributing</a>
+  ·
+  <a href="#security-and-ethics">Security</a>
 </p>
 
 ## Why this project exists
 
-University systems often expose useful data only through brittle browser flows. This repository turns those flows into documented, testable request contracts so they can be reused in:
+University of Tübingen study data is spread across several systems: Alma for timetables, modules, exams, and registrations; ILIAS and Moodle for learning spaces and course work; university mail for messages; and separate public pages for campus services.
 
-- local automation
-- terminal tooling
-- a web dashboard
-- ChatGPT tools and widgets
-- other student or research-facing integrations
+Most useful data is not available through a clean public API. Students often end up scraping browser pages directly, mixing network discovery, parsing, credentials, and app logic in one fragile script. That makes projects hard to maintain, hard to test, and risky when credentials or session artifacts are involved.
 
-The upstream systems remain the source of truth. This repo focuses on cleaner access, stable contracts, and better tooling around them.
+This repository separates those concerns:
 
-## StudyOS Role
+- clients perform the portal requests
+- parsers turn HTML, JSON, ICS, and feeds into typed contracts
+- API routes expose stable JSON for apps and tools
+- examples show how to build web, desktop, iOS, CLI, and ChatGPT surfaces on top
 
-This repository is the university systems layer for downstream StudyOS-style products.
+The upstream university systems remain the source of truth. This project does not replace Alma, ILIAS, Moodle, or university mail; it provides a cleaner integration layer for research, teaching, and student-built tools.
 
-It should own:
+## What you can build
 
-- authenticated Alma, ILIAS, Moodle, mail, and future TIMMS connectors
-- normalized contracts for schedules, tasks, grades, documents, and campus context
-- public campus, directory, food, and events data
-- preview-first critical actions for official portal workflows
-- shared contracts that web, ChatGPT, desktop, iOS, CLI, and downstream apps can consume consistently
+This project is intended for practical course work and open source contributions. Useful project directions include:
 
-It should not become the tutoring or learning-artifact product layer. Flashcards, quizzes, explainers, podcasts, spaced repetition, and adaptive study coaching belong in downstream learning applications built on top of these contracts.
+- public campus tools using canteen, building, fitness, event, or public course data
+- personal dashboards that combine timetable, tasks, mail, and learning spaces
+- parsers that make brittle portal pages easier to consume safely
+- agents or assistants that query normalized study data instead of scraping pages ad hoc
+- mobile, desktop, or web clients that reuse the same backend contracts
 
-The current StudyOS-aligned backlog for this repo is tracked in [`docs/superpowers/plans/2026-04-23-studyos-data-layer-backlog.md`](./docs/superpowers/plans/2026-04-23-studyos-data-layer-backlog.md).
+Prefer public and unauthenticated data for course projects unless a project explicitly needs private student data. If a feature does need private data, keep credentials local to the student device or local development backend.
 
-## What works today
+## Screenshots
 
-- Alma: timetable export, current lectures, exam overview, portal messages feed refresh, study-service documents, study planner parsing, public module search, module detail fetching, and combined course detail bundles
-- ILIAS: root navigation, memberships, task overview, content parsing, forum topics, exercise assignments, authenticated search, info-page resolution, and related learning-space matching for course detail pages
-- Moodle: dashboard, calendar, courses, categories, grades, messages, and notifications
-- Mail: read-only mailbox, inbox, and message access over IMAP through the backend, plus direct on-device IMAP in iOS
-- Shared delivery surfaces: Python package, FastAPI backend, Go CLI, Next.js dashboard, ChatGPT MCP app, Electron desktop shell, and native iOS app with an on-device assistant test surface
+Desktop app:
 
-The repo is live-data oriented. When upstream authentication or university systems fail, the tools return explicit errors instead of mock data.
+![Desktop app preview](./docs/assets/previews/desktop-app-preview.png)
 
-## Workflow
+iOS app:
 
-```mermaid
-flowchart LR
-    Alma["Alma"] --> Python["Python clients and parsers"]
-    ILIAS["ILIAS"] --> Python
-    Moodle["Moodle"] --> Python
-    Mail["Uni mail"] --> Python
-    Mail --> iOS
-    Python --> API["FastAPI backend and normalized JSON contracts"]
-    API --> Web["Next.js dashboard"]
-    API --> ChatGPT["ChatGPT app and MCP tools"]
-    Python --> PyCLI["Python CLI entry points"]
-    Alma --> Go["Go CLI for stable authenticated flows"]
-    ILIAS --> Go
-    Alma --> iOS["Native iOS app and widgets"]
-```
+<img src="./docs/assets/previews/ios-calendar-preview.png" alt="iOS calendar preview" width="360" />
 
-Typical development flow:
+Web dashboard:
 
-1. Discover and harden a flow in [`package/`](./package/).
-2. Expose it through the FastAPI backend when it should be reusable by UI or tool surfaces.
-3. Consume the same contract from the Next.js app or ChatGPT app.
-4. Port especially stable Alma or ILIAS paths into [`go/`](./go/) for constrained environments.
-
-## Surfaces
-
-| Surface | Purpose | Entry point |
-| --- | --- | --- |
-| Python package | Core clients, parsers, contracts, and original CLI tools | `cd package && tue-api-server` |
-| FastAPI backend | Shared JSON API for app surfaces | `http://127.0.0.1:8000/docs` |
-| Go CLI | Small JSON-first CLI for stable authenticated flows | `cd go && go build ./cmd/tue` |
-| Next.js app | Student-facing dashboard UI | `cd nextjs && npm run dev` |
-| ChatGPT app | MCP server plus widget-based study assistant and Alma detail widgets | `cd chatgpt && npm run dev` |
-| Electron desktop app | Local desktop shell with encrypted credential storage and managed backend | `cd desktop && npm run dev` |
-| iOS app | Native Alma timetable and mail client with Keychain credentials, WidgetKit widgets, Live Activities, feedback sheet, and an on-device assistant | `npm run generate:ios` |
-
-## Preview
-
-The header image shows the current web course planner surface.
+![Web dashboard preview](./docs/assets/overview-screenshot.png)
 
 ChatGPT app:
 
 ![ChatGPT widget preview](./docs/assets/previews/chatgpt-widget-preview.png)
 
-iOS app:
+## Repository layout
 
-![iOS app today overview](./docs/assets/previews/ios-today-preview.png)
+| Path | Purpose |
+| --- | --- |
+| [`package/`](./package/) | Python clients, parsers, FastAPI routes, contracts, and CLI entry points |
+| [`go/`](./go/) | Native Go CLI for stable Alma and ILIAS request flows |
+| [`nextjs/`](./nextjs/) | Browser dashboard built with Next.js |
+| [`chatgpt/`](./chatgpt/) | ChatGPT app, MCP server, and widget UI |
+| [`desktop/`](./desktop/) | Electron desktop app with local credential storage and managed backend |
+| [`ios/`](./ios/) | Native SwiftUI app, WidgetKit extension, and on-device clients |
+| [`cli/`](./cli/) | Repo-local wrapper scripts around package entry points |
+| [`docs/`](./docs/) | Discovery notes, screenshots, and supporting documentation |
 
 ## Quick start
 
-### 1. Start the Python backend
+The Python package is the best starting point for most contributors. It contains the shared request clients, parsers, API routes, and tests.
+
+### 1. Install the Python package
 
 ```bash
 cd package
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
+```
 
-export UNI_USERNAME="your-uni-login"
-export UNI_PASSWORD="your-password"
+### 2. Start the local API
 
+```bash
 tue-api-server
 ```
 
-Default backend URL: `http://127.0.0.1:8000`
+The API starts at `http://127.0.0.1:8000`.
 
-Useful endpoints:
+Useful local URLs:
 
-- root: `/`
-- health: `/api/health`
-- OpenAPI docs: `/docs`
+- API root: `http://127.0.0.1:8000/`
+- health check: `http://127.0.0.1:8000/api/health`
+- OpenAPI docs: `http://127.0.0.1:8000/docs`
 
-### 2. Start the Next.js dashboard
+### 3. Add credentials only when needed
+
+Public routes should work without university credentials. Private account routes need a local university login:
+
+```bash
+export UNI_USERNAME="your-uni-login"
+export UNI_PASSWORD="your-password"
+```
+
+Mail can use the same pair. If your mailbox needs separate credentials, set:
+
+```bash
+export MAIL_USERNAME="your-mail-login"
+export MAIL_PASSWORD="your-mail-password"
+```
+
+Authenticated routes return explicit errors when credentials or upstream systems fail. The project should not silently switch to mock data.
+
+### 4. Run a frontend
+
+Next.js dashboard:
 
 ```bash
 cd nextjs
@@ -158,7 +146,7 @@ npm ci --workspaces=false
 PORTAL_API_BASE_URL=http://127.0.0.1:8000 npm run dev
 ```
 
-### 3. Start the ChatGPT app
+ChatGPT app and MCP server:
 
 ```bash
 cd chatgpt
@@ -166,9 +154,22 @@ npm ci --workspaces=false
 PORTAL_API_BASE_URL=http://127.0.0.1:8000 npm run dev
 ```
 
-Default MCP endpoint: `http://127.0.0.1:8080/mcp`
+Electron desktop app:
 
-### 4. Build the Go CLI
+```bash
+cd desktop
+npm ci
+npm run dev
+```
+
+iOS app:
+
+```bash
+npm run generate:ios
+npm run build:ios
+```
+
+Go CLI:
 
 ```bash
 cd go
@@ -176,89 +177,46 @@ go build ./cmd/tue
 ./tue --help
 ```
 
-Example commands:
+## Architecture
 
-```bash
-./tue alma current-lectures --date 14.03.2026 --json
-./tue ilias search --term graphics --json
-./tue ilias info --target 5289871 --json
+```mermaid
+flowchart LR
+    Alma["Alma"] --> Python["Python clients and parsers"]
+    ILIAS["ILIAS"] --> Python
+    Moodle["Moodle"] --> Python
+    Mail["University mail"] --> Python
+    Campus["Public campus pages"] --> Python
+    Python --> API["FastAPI JSON contracts"]
+    API --> Web["Next.js dashboard"]
+    API --> ChatGPT["ChatGPT app and MCP tools"]
+    API --> Desktop["Electron desktop app"]
+    Python --> PyCLI["Python CLI"]
+    Alma --> Go["Go CLI"]
+    ILIAS --> Go
+    Alma --> iOS["Native iOS app"]
+    Mail --> iOS
 ```
 
-Cross-compile for Linux ARM64:
+Typical development flow:
 
-```bash
-cd go
-GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o tue-linux-arm64 ./cmd/tue
-```
+1. Discover the upstream request flow in `package/`.
+2. Parse the response into a typed contract.
+3. Add tests with fixtures or focused parser examples.
+4. Expose the contract through FastAPI if apps or tools should reuse it.
+5. Consume the same JSON contract from web, desktop, ChatGPT, iOS, or CLI surfaces.
 
-Note for the current macOS toolchain in this repo: plain `go build` or `go run` can fail with a missing `LC_UUID`. If you hit that locally, use the workaround documented in [`go/README.md`](./go/README.md).
+## Current capabilities
 
-### 5. Generate the iOS app
+- Alma: timetable export, current lectures, exam overview, portal messages, study-service documents, study planner parsing, module search, module details, and course detail bundles
+- ILIAS: root navigation, memberships, task overview, content parsing, forum topics, exercise assignments, search, info-page resolution, and learning-space matching
+- Moodle: dashboard, calendar, courses, categories, grades, messages, and notifications
+- Mail: read-only mailbox, inbox, and message access over IMAP through the backend, plus direct on-device IMAP in iOS
+- Campus: canteens, buildings, events, and fitness occupancy surfaces
+- Apps: Python package, FastAPI backend, Go CLI, Next.js dashboard, ChatGPT MCP app, Electron desktop shell, and native iOS app
 
-The iOS workspace lives in [`ios/`](./ios/). Credentialed study data stays on-device: the app logs in to Alma directly, reads Uni Tuebingen mail directly over TLS IMAP, stores credentials in Keychain from Settings, parses the Alma timetable iCalendar feed in Swift, browses public current lectures, caches upcoming lectures for WidgetKit widgets and Live Activities, and exposes an on-device study assistant test screen. Public discovery surfaces and the in-app feedback sheet can call the shared FastAPI backend.
+## Development checks
 
-```bash
-npm run generate:ios
-npm run build:ios
-```
-
-## Desktop app
-
-The desktop workspace lives in [`desktop/`](./desktop/). It wraps the existing Python backend in Electron, stores credentials with operating-system-backed encryption through Electron `safeStorage`, and exposes build plus release workflows for packaged installers.
-
-Desktop release support now includes:
-
-- macOS signing and notarization when the Apple certificate and notarization secrets are configured
-- Windows code signing when a `.pfx` signing certificate is configured
-- explicit unsigned fallback behavior for CI and for release builds that are missing signing secrets
-
-Local development:
-
-```bash
-cd package
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-
-cd ../desktop
-npm install
-npm run dev
-```
-
-Desktop packaging and release details are documented in [`desktop/README.md`](./desktop/README.md).
-
-## Environment variables
-
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `UNI_USERNAME` | Usually yes | Canonical username for Alma, ILIAS, and mail access |
-| `UNI_PASSWORD` | Usually yes | Canonical password for Alma, ILIAS, and mail access |
-| `MAIL_USERNAME` | Optional | Mail-only override when mailbox credentials differ |
-| `MAIL_PASSWORD` | Optional | Mail-only override when mailbox credentials differ |
-| `PORT` | Optional | Port for the Python backend, defaults to `8000` |
-| `PORTAL_API_BASE_URL` | For Next.js and ChatGPT | Base URL of the Python backend |
-| `APP_BASE_URL` | For deployed ChatGPT app | Public origin used for widget metadata and hosted app resources |
-| `GITHUB_FEEDBACK_TOKEN` | For iOS feedback issue creation | GitHub token with issue-write access for `POST /api/feedback/issues` |
-| `GITHUB_FEEDBACK_REPOSITORY` | Optional | Target repository for app feedback issues, defaults to `SebastianBoehler/tue-api-wrapper` |
-
-Legacy `ALMA_*` and `ILIAS_*` credential variables are still accepted for compatibility, but `UNI_USERNAME` and `UNI_PASSWORD` are the canonical setup.
-
-## Repository layout
-
-| Path | Purpose |
-| --- | --- |
-| [`package/`](./package/) | Python package, parsers, API routes, contract logic, and CLI entry points |
-| [`go/`](./go/) | Native Go CLI for stable authenticated Alma and ILIAS flows |
-| [`cli/`](./cli/) | Repo-local wrapper scripts around Python entry points |
-| [`nextjs/`](./nextjs/) | Student dashboard built with Next.js |
-| [`chatgpt/`](./chatgpt/) | ChatGPT app, MCP server, and widget UI |
-| [`desktop/`](./desktop/) | Electron desktop app with onboarding, encrypted local credential storage, and sidecar backend packaging |
-| [`ios/`](./ios/) | Native SwiftUI app plus WidgetKit extension for direct Alma timetable access |
-| [`docs/`](./docs/) | Discovery notes, screenshots, and supporting documentation |
-
-## Development
-
-Common checks:
+Run the checks that match the part of the repository you changed:
 
 ```bash
 cd package && python3 -m unittest discover -s tests -v
@@ -269,35 +227,41 @@ cd desktop && npm ci && npm run build
 npm run generate:ios && npm run build:ios
 ```
 
-If you install workspace dependencies from the repository root, these convenience scripts are available:
+GitHub Actions runs the main Python, Go, Next.js, ChatGPT, desktop, and iOS checks on pushes and pull requests.
 
-```bash
-npm run dev:web
-npm run build:web
-npm run dev:chatgpt
-npm run build:chatgpt
-npm run dev:desktop
-npm run build:desktop
-npm run package:desktop
-npm run generate:ios
-npm run build:ios
-```
+## Contributing
 
-GitHub Actions runs the same main checks on pushes to `main` and on pull requests:
+Contributions are welcome from students and external contributors. Good first issues usually involve one small portal flow, one parser, one endpoint, or one UI improvement.
 
-- Python package install, compile, and unit tests
-- Go tests and CLI build
-- Next.js typecheck and production build
-- ChatGPT app typecheck and production build
-- Desktop renderer and Electron build in `desktop/`
-- iOS project generation and simulator build
+When adding or changing integrations:
 
-Workflow file: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
+- start from the Python package unless you are working on a native-only surface
+- keep credentialed flows local to a client or local backend
+- prefer typed parsers and structured contracts over ad hoc string handling
+- add tests for parser behavior and API contracts
+- keep files focused and below 300 lines where practical
+- return clear errors instead of mock data or hidden fallbacks
+- avoid committing HAR files, cookies, downloaded PDFs, tokens, or session artifacts
 
-Additional desktop workflows:
+Agent-assisted contributions are welcome. Before using an agent on this repo, point it at [`AGENTS.md`](./AGENTS.md) and ask it to preserve unrelated work, keep changes scoped, and explain verification steps.
 
-- [`.github/workflows/desktop-build.yml`](./.github/workflows/desktop-build.yml): cross-platform desktop artifact builds for macOS, Windows, and Linux
-- [`.github/workflows/desktop-release.yml`](./.github/workflows/desktop-release.yml): tagged desktop releases for `desktop-v*`, with macOS signing/notarization and Windows signing when secrets are available
+Before opening a PR, read:
+
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+- [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md)
+- [`SECURITY.md`](./SECURITY.md)
+- [`MAINTAINERS.md`](./MAINTAINERS.md)
+
+## Security and ethics
+
+This project touches university systems and may handle private student data. Treat that data carefully.
+
+- Do not commit credentials, cookies, HAR captures, signed URLs, PDFs, or mailbox exports.
+- Do not build hosted services that collect other students' university passwords.
+- Prefer public university pages for teaching projects when possible.
+- Use private authenticated routes only with accounts you are allowed to use.
+- Respect upstream rate limits, terms, and robots guidance.
+- Report vulnerabilities privately as described in [`SECURITY.md`](./SECURITY.md).
 
 ## Related documentation
 
@@ -305,51 +269,17 @@ Additional desktop workflows:
 - [`go/README.md`](./go/README.md)
 - [`chatgpt/README.md`](./chatgpt/README.md)
 - [`desktop/README.md`](./desktop/README.md)
-- [`cli/README.md`](./cli/README.md)
+- [`ios/README.md`](./ios/README.md)
 - [`docs/surface-parity.md`](./docs/surface-parity.md)
 - [`docs/alma-ilias-discovery.md`](./docs/alma-ilias-discovery.md)
 - [`docs/moodle-discovery.md`](./docs/moodle-discovery.md)
 - [`docs/mail-discovery.md`](./docs/mail-discovery.md)
-- [`docs/timms-discovery.md`](./docs/timms-discovery.md)
 - [`docs/campus-logistics-discovery.md`](./docs/campus-logistics-discovery.md)
-- [`docs/superpowers/plans/2026-04-23-studyos-data-layer-backlog.md`](./docs/superpowers/plans/2026-04-23-studyos-data-layer-backlog.md)
-
-## Contributing
-
-Contributions are welcome across parsers, contract discovery, fixtures, tests, UI, and packaging work.
-
-Good first contribution areas:
-
-- new Alma or ILIAS flows with tests
-- parser hardening against markup drift
-- docs and onboarding cleanup
-- dashboard or ChatGPT UX improvements
-- fixture curation and contract regression coverage
-
-Before opening a PR, start with:
-
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md)
-- [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md)
-- [`SECURITY.md`](./SECURITY.md)
-- [`MAINTAINERS.md`](./MAINTAINERS.md)
-
-Small, focused pull requests with tests or fixture updates are the easiest to review.
-
-## Security and data handling
-
-HAR exports, cookies, signed URLs, and downloaded PDFs may contain sensitive data.
-
-- Do not commit secrets, captures, PDFs, or live session artifacts.
-- Keep private debugging material in ignored local paths only.
-- Report vulnerabilities privately as described in [`SECURITY.md`](./SECURITY.md).
 
 ## License
 
-This repository is licensed under the Apache License 2.0. See
-[`LICENSE`](./LICENSE).
+This repository is licensed under the Apache License 2.0. See [`LICENSE`](./LICENSE).
 
-Versions first distributed before April 28, 2026 remain available under the
-licenses they were originally published under, including MIT and Business
-Source License 1.1 where applicable.
+Versions first distributed before April 28, 2026 remain available under the licenses they were originally published under, including MIT and Business Source License 1.1 where applicable.
 
-The license applies to the code and documentation in this repository. It does not grant rights to third-party systems, trademarks, or data exposed by Alma, ILIAS, Moodle, or the University of Tuebingen.
+The license applies to the code and documentation in this repository. It does not grant rights to third-party systems, trademarks, or data exposed by Alma, ILIAS, Moodle, or the University of Tübingen.

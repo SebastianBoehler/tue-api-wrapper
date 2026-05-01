@@ -6,9 +6,9 @@ This target does not call the Next.js or FastAPI surfaces for native credentiale
 
 ## Preview
 
-Current simulator capture of the iOS Today overview surface:
+Current device capture of the iOS Calendar surface:
 
-![iOS today overview](../docs/assets/previews/ios-today-preview.png)
+<img src="../docs/assets/previews/ios-calendar-preview.png" alt="iOS calendar preview" width="360" />
 
 ## Requirements
 

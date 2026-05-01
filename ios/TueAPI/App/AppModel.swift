@@ -47,6 +47,7 @@ final class AppModel {
     var tasks: [IliasTask] = []
     var deadlines: [MoodleDeadline] = []
     var tasksPhase: TasksLoadPhase = .idle
+    var tasksWarning: String?
 
     let keychain = KeychainCredentialsStore()
     private static let baseURLKey = "almaBaseURL"

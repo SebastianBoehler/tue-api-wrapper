@@ -42,14 +42,39 @@ struct IliasOnDeviceClient: UniversityIliasTaskLoading {
         _ = try await UniversitySAMLHandoff.complete(
             response: submitted,
             http: http,
-            isAuthenticated: { response in
-                response.url.host == "ovidius.uni-tuebingen.de"
-                    && response.text.contains("ILIAS Universität Tübingen")
-            }
+            isAuthenticated: Self.isAuthenticatedIliasPage
         )
     }
 
     private var taskOverviewURL: URL {
         URL(string: "https://ovidius.uni-tuebingen.de/ilias3/ilias.php?baseClass=ilderivedtasksgui")!
     }
+
+    private static func isAuthenticatedIliasPage(_ response: PortalHTTPResponse) -> Bool {
+        guard response.url.host == "ovidius.uni-tuebingen.de" else {
+            return false
+        }
+        let html = response.text
+        if loginOrHandoffMarkers.contains(where: html.contains) {
+            return false
+        }
+        return authenticatedMarkers.contains(where: html.contains)
+    }
+
+    private static let authenticatedMarkers = [
+        "ILIAS Universität Tübingen",
+        "logout.php",
+        "il-mainbar-entries",
+        "il-maincontrols-metabar",
+        "baseClass=ilDashboardGUI",
+        "baseClass=ilmembershipoverviewgui",
+        "baseClass=ilderivedtasksgui"
+    ]
+
+    private static let loginOrHandoffMarkers = [
+        "SAMLResponse",
+        "j_username",
+        "j_password",
+        "Login mit zentraler Universitäts-Kennung"
+    ]
 }

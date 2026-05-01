@@ -22,6 +22,12 @@ struct StudyTasksView: View {
                 systemImage: "lock",
                 tint: .secondary
             )
+        case .loaded where model.tasksWarning != nil:
+            return StudyTasksStatusLine(
+                text: model.tasksWarning ?? "",
+                systemImage: "exclamationmark.triangle",
+                tint: .orange
+            )
         case .failed(let message):
             return StudyTasksStatusLine(
                 text: message,
@@ -47,6 +53,12 @@ struct StudyTasksView: View {
                 title: "Login required",
                 systemImage: "key",
                 message: "Connect your university account to load ILIAS tasks and Moodle deadlines."
+            )
+        case .loaded where model.tasksWarning != nil:
+            return StudyEmptyState(
+                title: "Study systems unavailable",
+                systemImage: "exclamationmark.triangle",
+                message: model.tasksWarning ?? "Refresh to try loading your study data again."
             )
         case .failed:
             return StudyEmptyState(

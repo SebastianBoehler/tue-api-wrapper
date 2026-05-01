@@ -137,6 +137,10 @@ struct UpcomingLecturesView: View {
                         StudyIliasTaskRow(task: task)
                     }
                 }
+            } else if let warning = model.tasksWarning {
+                Section("Deadlines") {
+                    StatusBanner(title: "Study systems unavailable", message: warning, systemImage: "exclamationmark.triangle")
+                }
             }
         }
     }

@@ -16,4 +16,11 @@ struct UniversityTaskSnapshot {
     var tasks: [IliasTask]
     var deadlines: [MoodleDeadline]
     var refreshedAt: Date
+    var warnings: [String] = []
+
+    var warningMessage: String? {
+        let message = warnings.joined(separator: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return message.isEmpty ? nil : message
+    }
 }

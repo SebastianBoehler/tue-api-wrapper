@@ -9,8 +9,15 @@ extension AppModel {
                 .fetchTasksAndDeadlines()
             tasks = snapshot.tasks
             deadlines = snapshot.deadlines.filter { $0.isActionable }
+            tasksWarning = snapshot.warningMessage
             tasksPhase = .loaded(snapshot.refreshedAt)
+        } catch UniversityPortalError.missingCredentials {
+            tasks = []
+            deadlines = []
+            tasksWarning = nil
+            tasksPhase = .unavailable
         } catch {
+            tasksWarning = nil
             tasksPhase = .failed(error.localizedDescription)
         }
     }

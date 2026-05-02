@@ -1,0 +1,96 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+from ..alma_feature_client import fetch_current_lectures
+from ..campus_client import CampusClient
+from ..client import AlmaClient
+from ..directory_client import UniversityDirectoryClient
+from ..event_calendar_client import EventCalendarClient
+from ..fitness_client import FitnessClient
+from ..timms_client import TimmsClient
+
+
+@dataclass(slots=True)
+class PublicAlmaApi:
+    client: AlmaClient = field(default_factory=AlmaClient)
+
+    def search_modules(self, query: str, *, max_results: int = 20):
+        return self.client.search_public_module_descriptions(query=query, max_results=max_results)
+
+    def module_search_filters(self):
+        return self.client.fetch_public_module_search_filters()
+
+    def module_detail(self, detail_url: str):
+        return self.client.fetch_public_module_detail(detail_url)
+
+    def current_lectures(self, *, date: str | None = None, limit: int | None = 20):
+        return fetch_current_lectures(self.client, date=date, limit=limit)
+
+
+@dataclass(slots=True)
+class PublicCampusApi:
+    campus_client: CampusClient = field(default_factory=CampusClient)
+    event_client: EventCalendarClient = field(default_factory=EventCalendarClient)
+    fitness_client: FitnessClient = field(default_factory=FitnessClient)
+
+    def canteens(self, *, menu_date: str | None = None):
+        return self.campus_client.fetch_tuebingen_canteens(menu_date=menu_date)
+
+    def canteen(self, canteen_id: int, *, menu_date: str | None = None):
+        return self.campus_client.fetch_canteen(canteen_id, menu_date=menu_date)
+
+    def buildings(self):
+        return self.campus_client.fetch_buildings()
+
+    def building_detail(self, path: str):
+        return self.campus_client.fetch_building_detail(path)
+
+    def events(self, *, query: str = "", limit: int = 24):
+        return self.event_client.fetch_events(query=query, limit=limit)
+
+    def kuf_occupancy(self):
+        return self.fitness_client.fetch_kuf_training_occupancy()
+
+
+@dataclass(slots=True)
+class PublicDirectoryApi:
+    client: UniversityDirectoryClient = field(default_factory=UniversityDirectoryClient)
+
+    def search(self, query: str):
+        return self.client.search(query)
+
+
+@dataclass(slots=True)
+class PublicTimmsApi:
+    client: TimmsClient = field(default_factory=TimmsClient)
+
+    def suggest(self, term: str, *, limit: int = 8):
+        return self.client.suggest(term, limit=limit)
+
+    def search(self, query: str, *, offset: int = 0, limit: int = 20):
+        return self.client.search(query, offset=offset, limit=limit)
+
+    def item(self, item_id: str):
+        return self.client.fetch_item(item_id)
+
+    def streams(self, item_id: str):
+        return self.client.fetch_streams(item_id)
+
+    def tree(self, *, node_id: str | None = None, node_path: str | None = None):
+        return self.client.fetch_tree(node_id=node_id, node_path=node_path)
+
+
+class TuebingenPublicClient:
+    def __init__(
+        self,
+        *,
+        alma: PublicAlmaApi | None = None,
+        campus: PublicCampusApi | None = None,
+        directory: PublicDirectoryApi | None = None,
+        timms: PublicTimmsApi | None = None,
+    ) -> None:
+        self.alma = alma or PublicAlmaApi()
+        self.campus = campus or PublicCampusApi()
+        self.directory = directory or PublicDirectoryApi()
+        self.timms = timms or PublicTimmsApi()

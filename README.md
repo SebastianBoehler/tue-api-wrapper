@@ -87,6 +87,8 @@ iOS app:
 
 The Python package is the best starting point for most contributors. It contains the shared request clients, parsers, API routes, and tests.
 
+For student projects, start with the high-level SDK docs in [`docs/python-sdk.md`](./docs/python-sdk.md). For agent projects, start with the local MCP server docs in [`docs/mcp.md`](./docs/mcp.md).
+
 ### 1. Install the Python package
 
 ```bash
@@ -258,6 +260,8 @@ This project touches university systems and may handle private student data. Tre
 ## Related documentation
 
 - [`package/README.md`](./package/README.md)
+- [`docs/python-sdk.md`](./docs/python-sdk.md)
+- [`docs/mcp.md`](./docs/mcp.md)
 - [`go/README.md`](./go/README.md)
 - [`chatgpt/README.md`](./chatgpt/README.md)
 - [`desktop/README.md`](./desktop/README.md)

@@ -1,98 +1,112 @@
-# tue-api-wrapper package
+# tue-api-wrapper Python package
 
-Core Python package for the unified Alma + ILIAS + Moodle study hub.
+Python SDK, FastAPI server, and local MCP server for University of Tübingen study systems.
 
-This subproject now owns:
+The package has three entry points:
 
-- the request-based Alma client
-- the request-based ILIAS client
-- the original Python CLI entry points
-- the FastAPI backend used by `nextjs/` and `chatgpt/`
+- `TuebingenPublicClient`: public data that does not need credentials
+- `TuebingenAuthenticatedClient`: private student data with explicit credentials or `.env`
+- `tue-mcp`: local MCP server for agents and LLM tools
 
-## Install
+## Install for local development
 
 ```bash
+cd package
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
 
-## Run the backend API
+Install MCP support when you want the agent server:
+
+```bash
+pip install -e ".[mcp]"
+```
+
+## Public data example
+
+```python
+from tue_api_wrapper import TuebingenPublicClient
+
+client = TuebingenPublicClient()
+
+modules = client.alma.search_modules("machine learning", max_results=10)
+events = client.campus.events(query="AI", limit=5)
+canteens = client.campus.canteens()
+recordings = client.timms.search("theoretische informatik", limit=5)
+```
+
+## Authenticated data example
+
+Use a local `.env` file:
+
+```bash
+UNI_USERNAME=your-zdv-id
+UNI_PASSWORD=your-password
+```
+
+Then:
+
+```python
+from tue_api_wrapper import TuebingenAuthenticatedClient
+
+client = TuebingenAuthenticatedClient.from_env()
+
+timetable = client.alma.timetable("Sommer 2026")
+tasks = client.ilias.tasks()
+deadlines = client.moodle.deadlines(days=30)
+inbox = client.mail.inbox(limit=5)
+```
+
+You can also pass credentials directly:
+
+```python
+client = TuebingenAuthenticatedClient.login(
+    username="your-zdv-id",
+    password="your-password",
+)
+```
+
+## Local MCP server
+
+```bash
+cd package
+pip install -e ".[mcp]"
+tue-mcp
+```
+
+Use `stdio` for most local agent clients. For HTTP-based clients:
+
+```bash
+tue-mcp --transport streamable-http --host 127.0.0.1 --port 8765
+```
+
+## FastAPI server
 
 ```bash
 tue-api-server
 ```
 
-The API starts on `http://127.0.0.1:8000` and exposes:
+The API starts on `http://127.0.0.1:8000` and exposes OpenAPI docs at `/docs`.
 
-- `GET /api/dashboard`
-- `GET /api/mail/mailboxes`
-- `GET /api/mail/inbox`
-- `GET /api/mail/messages/{uid}`
-- `GET /api/search`
-- `GET /api/items/{id}`
-- `POST /api/feedback/issues`
-- `GET /api/alma/*`
-- `GET /api/ilias/*`
-- `GET /api/moodle/*`
+## Publishing
 
-New discovery-backed additions:
-
-- `GET /api/alma/current-lectures`
-- `GET /api/alma/portal-messages/feed`
-- `POST /api/alma/portal-messages/feed/refresh`
-- `GET /api/alma/study-planner`
-- `GET /api/alma/course-search`
-- `GET /api/course-detail`
-- `GET /api/ilias/search`
-- `GET /api/ilias/search/options`
-- `GET /api/ilias/info`
-- `GET /api/moodle/dashboard`
-- `GET /api/moodle/calendar`
-- `GET /api/moodle/courses`
-- `GET /api/moodle/categories`
-- `GET /api/moodle/course/{course_id}`
-- `GET /api/moodle/grades`
-- `GET /api/moodle/messages`
-- `GET /api/moodle/notifications`
-
-The existing CLI entry points are still available after installation:
-
-- `alma-timetable`
-- `alma-academics`
-- `alma-document`
-- `ilias-root`
-- `ilias-content`
-- `ilias-learning`
-
-## Credentials
+Python packages are usually published on [PyPI](https://pypi.org/), the Python package registry. This repository is not published there yet. Until then, install from a local checkout or directly from GitHub:
 
 ```bash
-export UNI_USERNAME='your-uni-login'
-export UNI_PASSWORD='your-password'
+pip install "tue-api-wrapper @ git+https://github.com/SebastianBoehler/tue-api-wrapper.git#subdirectory=package"
 ```
 
-`UNI_USERNAME` / `UNI_PASSWORD` is the canonical credential pair for legacy/dev authenticated backend routes. Legacy `ALMA_*` and `ILIAS_*` vars are still accepted as fallbacks for compatibility.
-
-Mail uses the same `UNI_USERNAME` / `UNI_PASSWORD` pair by default. `MAIL_USERNAME` / `MAIL_PASSWORD` remains available only as an optional override if a mailbox ever needs separate values.
-
-Authenticated API endpoints return HTTP 503 when the backend process is missing the required university credentials.
-
-The iOS in-app feedback sheet uses `POST /api/feedback/issues`. Configure it with:
+MCP extras from GitHub:
 
 ```bash
-export GITHUB_FEEDBACK_TOKEN='github-token-with-issues-write'
-export GITHUB_FEEDBACK_REPOSITORY='SebastianBoehler/tue-api-wrapper'
+pip install "tue-api-wrapper[mcp] @ git+https://github.com/SebastianBoehler/tue-api-wrapper.git#subdirectory=package"
 ```
 
-`GITHUB_FEEDBACK_REPOSITORY` is optional and defaults to this repository. The backend stamps created issues with a hidden `tue-api-ios-feedback` source marker so follow-up automation can filter them reliably.
+Publishing to PyPI later will require a PyPI account or trusted publishing setup. Do not publish from an agent without a deliberate release checklist.
 
-These env-backed authenticated routes are not production multi-user auth. Native iOS private-data flows should use on-device Keychain credentials, and ChatGPT private-data flows should use Apps SDK OAuth plus a per-user credential-linking design if the university portals cannot delegate with OAuth/OIDC.
+## More docs
 
-## Tests
-
-```bash
-python3 -m unittest discover -s tests -v
-```
-
-Tests that rely on local HAR captures are skipped automatically when `package/fixtures/` is absent. Those exports are intentionally ignored by git because they may contain session material.
+- [`../docs/python-sdk.md`](../docs/python-sdk.md)
+- [`../docs/mcp.md`](../docs/mcp.md)
+- [`../README.md`](../README.md)

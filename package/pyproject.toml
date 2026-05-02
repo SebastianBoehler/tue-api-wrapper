@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "tue-api-wrapper"
 version = "0.2.0"
-description = "Unified Alma and ILIAS client plus API for the University of Tuebingen."
+description = "Python SDK and local servers for University of Tuebingen study systems."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -18,6 +18,9 @@ dependencies = [
   "uvicorn>=0.34,<1",
 ]
 
+[project.optional-dependencies]
+mcp = ["mcp>=1.26,<2"]
+
 [project.scripts]
 alma-academics = "tue_api_wrapper.alma_academics_cli:main"
 alma-timetable = "tue_api_wrapper.cli:main"
@@ -27,6 +30,7 @@ ilias-learning = "tue_api_wrapper.ilias_learning_cli:main"
 ilias-root = "tue_api_wrapper.ilias_cli:main"
 route-discovery = "tue_api_wrapper.route_discovery_cli:main"
 tue-api-server = "tue_api_wrapper.api_server:main"
+tue-mcp = "tue_api_wrapper.mcp_server:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

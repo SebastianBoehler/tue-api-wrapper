@@ -20,6 +20,7 @@ from .models import (
     TimetableResult,
 )
 from .portal_service import PortalService
+from .sdk import TuebingenAuthenticatedClient, TuebingenPublicClient, UniversityCredentials
 
 __all__ = [
     "AlmaClient",
@@ -43,4 +44,7 @@ __all__ = [
     "MoodleClient",
     "PortalService",
     "TimetableResult",
+    "TuebingenAuthenticatedClient",
+    "TuebingenPublicClient",
+    "UniversityCredentials",
 ]

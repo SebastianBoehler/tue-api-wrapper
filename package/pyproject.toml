@@ -8,6 +8,19 @@ version = "0.2.0"
 description = "Python SDK and local servers for University of Tuebingen study systems."
 readme = "README.md"
 requires-python = ">=3.11"
+authors = [{ name = "Sebastian Boehler" }]
+license = "Apache-2.0"
+keywords = ["university", "tuebingen", "alma", "ilias", "moodle", "mcp"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Internet :: WWW/HTTP",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
   "beautifulsoup4>=4.12,<5",
   "fastapi>=0.115,<1",
@@ -31,6 +44,12 @@ ilias-root = "tue_api_wrapper.ilias_cli:main"
 route-discovery = "tue_api_wrapper.route_discovery_cli:main"
 tue-api-server = "tue_api_wrapper.api_server:main"
 tue-mcp = "tue_api_wrapper.mcp_server:main"
+
+[project.urls]
+Homepage = "https://github.com/SebastianBoehler/tue-api-wrapper"
+Repository = "https://github.com/SebastianBoehler/tue-api-wrapper"
+Issues = "https://github.com/SebastianBoehler/tue-api-wrapper/issues"
+Documentation = "https://github.com/SebastianBoehler/tue-api-wrapper#readme"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

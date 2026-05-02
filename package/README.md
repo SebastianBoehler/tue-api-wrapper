@@ -109,4 +109,6 @@ Publishing to PyPI later will require a PyPI account or trusted publishing setup
 
 - [`../docs/python-sdk.md`](../docs/python-sdk.md)
 - [`../docs/mcp.md`](../docs/mcp.md)
+- [`../docs/release-pypi.md`](../docs/release-pypi.md)
+- [`../examples/`](../examples/)
 - [`../README.md`](../README.md)

@@ -262,6 +262,8 @@ This project touches university systems and may handle private student data. Tre
 - [`package/README.md`](./package/README.md)
 - [`docs/python-sdk.md`](./docs/python-sdk.md)
 - [`docs/mcp.md`](./docs/mcp.md)
+- [`docs/release-pypi.md`](./docs/release-pypi.md)
+- [`examples/`](./examples/)
 - [`go/README.md`](./go/README.md)
 - [`chatgpt/README.md`](./chatgpt/README.md)
 - [`desktop/README.md`](./desktop/README.md)

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "tue-api-wrapper": {
+      "command": "tue-mcp",
+      "args": [
+        "--env-file",
+        "/absolute/path/to/tue-api-wrapper/package/.env"
+      ]
+    }
+  }
+}

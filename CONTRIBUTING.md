@@ -76,6 +76,11 @@ npm run build
 - never commit usernames, passwords, cookies, HAR exports, PDFs, or signed URLs
 - keep local credentials in ignored env files such as `.env.local`
 - keep private debugging fixtures out of version control
+- install the repository guard hook once per checkout:
+
+```bash
+git config core.hooksPath .githooks
+```
 
 ## Change guidelines
 
@@ -91,6 +96,23 @@ When changing a contract:
 - document the new endpoint or behavior
 - add or update tests near the changed parser or client
 - mention whether the flow was verified live, fixture-only, or both
+
+## Route discovery
+
+Use HAR imports only as local analysis inputs. Do not add HAR files to fixtures or commits.
+
+To review whether a browser capture contains structured endpoints:
+
+```bash
+cd package
+route-discovery generic --har ../local-session.har --audit-formats --format markdown
+```
+
+To restrict the audit to one host:
+
+```bash
+route-discovery generic --har ../local-session.har --audit-formats --start-url https://moodle.zdv.uni-tuebingen.de/my/
+```
 
 ## PR checklist
 

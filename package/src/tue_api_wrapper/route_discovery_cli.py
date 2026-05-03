@@ -12,6 +12,7 @@ from .config import AlmaError, AlmaParseError
 from .credentials import read_uni_credentials
 from .ilias_client import IliasClient
 from .route_discovery import discover_routes, discover_routes_from_har
+from .route_discovery_audit import audit_har_response_formats, render_format_audit_markdown
 
 DEFAULT_ALMA_START_URLS = (
     "https://alma.uni-tuebingen.de/alma/pages/cs/sys/portal/hisinoneStartPage.faces",
@@ -112,6 +113,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--auth", action="store_true", help="Use local credentials and crawl an authenticated session.")
     parser.add_argument("--har", help="Analyze a saved HAR file instead of making live requests.")
+    parser.add_argument(
+        "--audit-formats",
+        action="store_true",
+        help="For HAR imports, classify response formats and likely structured data endpoints.",
+    )
     parser.add_argument("--depth", type=int, default=1, help="Maximum follow depth for discovered same-origin pages.")
     parser.add_argument("--max-pages", type=int, default=40, help="Maximum pages to crawl before stopping.")
     parser.add_argument("--timeout", type=int, default=20, help="HTTP timeout in seconds.")
@@ -130,7 +136,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        if args.har:
+        if args.audit_formats:
+            if not args.har:
+                raise ValueError("--audit-formats requires --har.")
+            start_urls = list(args.start_url)
+            allowed_hosts = {urlparse(url).netloc for url in start_urls if urlparse(url).netloc} or None
+            report = audit_har_response_formats(har_path=args.har, allowed_hosts=allowed_hosts)
+        elif args.har:
             report = discover_routes_from_har(har_path=args.har)
             start_urls = list(args.start_url)
         else:
@@ -160,6 +172,8 @@ def main(argv: list[str] | None = None) -> int:
     }
     if args.format == "json":
         print(json.dumps(payload, indent=2, ensure_ascii=False))
+    elif args.audit_formats:
+        print(render_format_audit_markdown(payload))
     else:
         print(_render_markdown(payload, site=args.site, authenticated=args.auth, har_path=args.har))
     return 0

@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+blocked_path_regex='(^|/)(\.env(\..*)?|.*\.har|.*\.pdf|.*\.p12|.*\.pem|.*\.key|.*\.mobileprovision|cookies.*\.txt|.*\.cookies)$'
+secret_regex='(SAMLResponse|Authorization:[[:space:]]*Bearer|Set-Cookie:|Cookie:|UNI_PASSWORD=|ALMA_PASSWORD=|ILIAS_PASSWORD=|MAIL_PASSWORD=|ajax-token=|fdsa=)'
+
+staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
+if [[ -z "$staged_files" ]]; then
+  exit 0
+fi
+
+blocked=()
+while IFS= read -r path; do
+  [[ -z "$path" ]] && continue
+  if [[ "$path" =~ $blocked_path_regex ]]; then
+    blocked+=("$path")
+  fi
+done <<< "$staged_files"
+
+if (( ${#blocked[@]} > 0 )); then
+  printf 'pre-commit: refusing to commit local/private artifacts:\n' >&2
+  printf '  %s\n' "${blocked[@]}" >&2
+  printf 'Keep HAR exports, env files, PDFs, keys, and cookie dumps outside version control.\n' >&2
+  exit 1
+fi
+
+while IFS= read -r path; do
+  [[ -z "$path" ]] && continue
+  case "$path" in
+    .githooks/pre-commit|*.md|package/tests/*)
+      continue
+      ;;
+  esac
+  if git show ":$path" 2>/dev/null | LC_ALL=C grep -Eiq "$secret_regex"; then
+    printf 'pre-commit: %s contains a credential/session-looking marker.\n' "$path" >&2
+    printf 'Redact the value or move the file out of version control.\n' >&2
+    exit 1
+  fi
+done <<< "$staged_files"

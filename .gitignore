@@ -2,6 +2,12 @@
 .learnings/
 .env
 .env.*
+*.cookies
+cookies*.txt
+*.p12
+*.pem
+*.key
+*.mobileprovision
 .next
 .venv
 .pytest_cache

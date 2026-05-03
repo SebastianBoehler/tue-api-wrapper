@@ -24,6 +24,8 @@
   ·
   <a href="#what-you-can-build">Build</a>
   ·
+  <a href="./docs/index.html">Download</a>
+  ·
   <a href="#quick-start">Quick Start</a>
   ·
   <a href="#architecture">Architecture</a>
@@ -81,7 +83,7 @@ iOS app:
 | [`desktop/`](./desktop/) | Electron desktop app with local credential storage and managed backend |
 | [`ios/`](./ios/) | Native SwiftUI app, WidgetKit extension, and on-device clients |
 | [`cli/`](./cli/) | Repo-local wrapper scripts around package entry points |
-| [`docs/`](./docs/) | Discovery notes, screenshots, and supporting documentation |
+| [`docs/`](./docs/) | Download page, install notes, discovery notes, screenshots, and supporting documentation |
 
 ## Quick start
 

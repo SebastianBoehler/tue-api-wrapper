@@ -8,6 +8,15 @@ import re
 
 from .mail_models import MailMessageDetail, MailMessageSummary
 
+_BROADCAST_APPROVAL_RE = re.compile(
+    r"Die Hochschulleitung hat (?:dem|den) Versand dieser (?:Rundmail|Runde) zugestimmt\.?",
+    re.IGNORECASE,
+)
+_BROADCAST_RESPONSIBILITY_RE = re.compile(
+    r"\*{8,}\s*\*\s*\*\s*\*\s*Die inhaltliche Verantwortung liegt bei der Absenderin/dem Absender\s*\*\s*\*{8,}",
+    re.IGNORECASE,
+)
+
 
 def decode_mime_header(value: str | None) -> str:
     if not value:
@@ -57,20 +66,28 @@ def parse_message_detail(
         cc_recipients=_parse_address_list(parsed.get("Cc")),
         received_at=_parse_received_at(parsed.get("Date")),
         preview=extract_text_preview(parsed),
-        body_text=extract_body_text(parsed),
+        body_text=strip_broadcast_boilerplate(extract_body_text(parsed)),
         attachment_names=_extract_attachment_names(parsed),
         is_unread=is_unread,
     )
 
 
 def extract_text_preview(message: Message, limit: int = 160) -> str | None:
-    body = extract_body_text(message)
+    body = strip_broadcast_boilerplate(extract_body_text(message))
     if not body:
         return None
     collapsed = re.sub(r"\s+", " ", body).strip()
     if not collapsed:
         return None
     return collapsed[:limit]
+
+
+def strip_broadcast_boilerplate(value: str | None) -> str | None:
+    if not value:
+        return value
+    cleaned = _BROADCAST_APPROVAL_RE.sub("", value)
+    cleaned = _BROADCAST_RESPONSIBILITY_RE.sub("", cleaned)
+    return cleaned.strip() or None
 
 
 def extract_body_text(message: Message) -> str | None:

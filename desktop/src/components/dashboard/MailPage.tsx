@@ -8,7 +8,7 @@ import type { MailPageProps } from "./types";
 
 const broadcastApprovalPattern = /Die Hochschulleitung hat (?:dem|den) Versand dieser (?:Rundmail|Runde) zugestimmt\.?/i;
 const broadcastResponsibilityBlockPattern =
-  /^\s*\*{8,}\s*\n\s*\*\s*\*\s*\n\s*\*\s*Die inhaltliche Verantwortung liegt bei der Absenderin\/dem Absender\s*\*\s*\n\s*\*{8,}\s*/i;
+  /\*{8,}\s*\*\s*\*\s*\*\s*Die inhaltliche Verantwortung liegt bei der Absenderin\/dem Absender\s*\*\s*\*{8,}/i;
 
 export function MailPage({
   inbox,

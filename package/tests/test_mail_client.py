@@ -17,6 +17,7 @@ from tue_api_wrapper.mail_parsing import (
     extract_body_text,
     extract_text_preview,
     parse_message_detail,
+    strip_broadcast_boilerplate,
 )
 
 
@@ -45,6 +46,35 @@ class MailClientHelpersTests(unittest.TestCase):
 
         preview = extract_text_preview(message_from_bytes(raw_message))
         self.assertEqual(preview, "Hello from the student mailbox. Second line.")
+
+    def test_extract_text_preview_strips_broadcast_boilerplate_before_truncating(self) -> None:
+        raw_message = (
+            b"Subject: Broadcast\r\n"
+            b"MIME-Version: 1.0\r\n"
+            b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
+            b"Die Hochschulleitung hat den Versand dieser Runde zugestimmt.\r\n"
+            b"***********************************************************************\r\n"
+            b"*     *\r\n"
+            b"* Die inhaltliche Verantwortung liegt bei der Absenderin/dem Absender *\r\n"
+            b"***********************************************************************\r\n"
+            b"Sehr geehrte Damen und Herren,\r\n"
+            b"this is the actual message.\r\n"
+        )
+
+        from email import message_from_bytes
+
+        preview = extract_text_preview(message_from_bytes(raw_message))
+        self.assertEqual(preview, "Sehr geehrte Damen und Herren, this is the actual message.")
+
+    def test_strip_broadcast_boilerplate_handles_collapsed_preview(self) -> None:
+        preview = (
+            "Die Hochschulleitung hat den Versand dieser Runde zugestimmt. "
+            "*********************************************************************** * * "
+            "* Die inhaltliche Verantwortung liegt bei der Absenderin/dem Absender * "
+            "*********************************************************************** Actual content"
+        )
+
+        self.assertEqual(strip_broadcast_boilerplate(preview), "Actual content")
 
     def test_extract_body_text_falls_back_to_html(self) -> None:
         raw_message = (

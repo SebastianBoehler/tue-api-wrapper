@@ -46,6 +46,11 @@ def create_mcp_server(*, env_file: str | Path | None = ".env", host: str = "127.
         return _serialized(public_client.campus.canteens(menu_date=menu_date))
 
     @server.tool()
+    def public_campus_seat_availability() -> dict[str, Any]:
+        """Load public University Library seat availability from the Tübingen seatfinder."""
+        return _serialized(public_client.campus.seat_availability())
+
+    @server.tool()
     def public_timms_search(query: str, limit: int = 10) -> dict[str, Any]:
         """Search public TIMMS lecture recordings."""
         return _serialized(public_client.timms.search(query, limit=limit))

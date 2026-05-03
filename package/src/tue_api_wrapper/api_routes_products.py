@@ -12,6 +12,7 @@ from .fitness_client import FitnessClient
 from .campus_client import CampusClient
 from .praxisportal_client import PraxisportalClient
 from .portal_service import serialize
+from .seatfinder_client import SeatfinderClient
 from .timms_client import TimmsClient
 from .talks_client import TalksClient
 
@@ -23,6 +24,7 @@ campus_client = CampusClient()
 talks_client = TalksClient()
 event_calendar_client = EventCalendarClient()
 fitness_client = FitnessClient()
+seatfinder_client = SeatfinderClient()
 
 
 def _translate_public_error(error: Exception) -> HTTPException:
@@ -223,5 +225,13 @@ def campus_events(query: str = Query("", max_length=120), limit: int = Query(24,
 def campus_kuf_training_occupancy() -> dict[str, object]:
     try:
         return serialize(fitness_client.fetch_kuf_training_occupancy())
+    except Exception as error:  # pragma: no cover - exercised via FastAPI surface
+        raise _translate_public_error(error) from error
+
+
+@router.get("/api/campus/seats")
+def campus_seat_availability() -> dict[str, object]:
+    try:
+        return serialize(seatfinder_client.fetch_availability())
     except Exception as error:  # pragma: no cover - exercised via FastAPI surface
         raise _translate_public_error(error) from error

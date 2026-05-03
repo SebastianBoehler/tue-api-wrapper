@@ -8,6 +8,7 @@ from ..client import AlmaClient
 from ..directory_client import UniversityDirectoryClient
 from ..event_calendar_client import EventCalendarClient
 from ..fitness_client import FitnessClient
+from ..seatfinder_client import SeatfinderClient
 from ..timms_client import TimmsClient
 
 
@@ -33,6 +34,7 @@ class PublicCampusApi:
     campus_client: CampusClient = field(default_factory=CampusClient)
     event_client: EventCalendarClient = field(default_factory=EventCalendarClient)
     fitness_client: FitnessClient = field(default_factory=FitnessClient)
+    seatfinder_client: SeatfinderClient = field(default_factory=SeatfinderClient)
 
     def canteens(self, *, menu_date: str | None = None):
         return self.campus_client.fetch_tuebingen_canteens(menu_date=menu_date)
@@ -51,6 +53,9 @@ class PublicCampusApi:
 
     def kuf_occupancy(self):
         return self.fitness_client.fetch_kuf_training_occupancy()
+
+    def seat_availability(self):
+        return self.seatfinder_client.fetch_availability()
 
 
 @dataclass(slots=True)

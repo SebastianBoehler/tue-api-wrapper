@@ -43,6 +43,21 @@ export function CampusPage({ campus, campusError, campusLoading, data, onRefresh
               <time>{campus.fitness.count} people</time>
             </div>
           ) : null}
+          {(campus?.seats?.locations ?? []).slice(0, 5).map((seat) => (
+            <button
+              key={seat.location_id}
+              className="aligned-row"
+              disabled={!seat.url}
+              onClick={() => seat.url ? void window.desktop.openExternal(seat.url) : undefined}
+              type="button"
+            >
+              <div>
+                <strong>{seat.long_name || seat.name}</strong>
+                <span>{seat.updated_at ? `Updated ${formatTimestamp(seat.updated_at)}` : "University Library seatfinder"}</span>
+              </div>
+              <time>{formatSeatCount(seat.free_seats, seat.total_seats)}</time>
+            </button>
+          ))}
           {(campus?.events?.items ?? []).slice(0, 4).map((event) => (
             <button
               key={event.id}
@@ -58,7 +73,7 @@ export function CampusPage({ campus, campusError, campusLoading, data, onRefresh
               <time>{formatTimestamp(event.starts_at)}</time>
             </button>
           ))}
-          {campus && !campus.fitness && !campus.events?.items.length && !campus.canteens?.length ? (
+          {campus && !campus.fitness && !campus.seats?.locations.length && !campus.events?.items.length && !campus.canteens?.length ? (
             <EmptyState>No campus data returned by the public endpoints.</EmptyState>
           ) : null}
         </div>
@@ -88,4 +103,14 @@ export function CampusPage({ campus, campusError, campusLoading, data, onRefresh
       </article>
     </div>
   );
+}
+
+function formatSeatCount(free?: number | null, total?: number | null): string {
+  if (typeof free === "number" && typeof total === "number") {
+    return `${free}/${total} free`;
+  }
+  if (typeof free === "number") {
+    return `${free} free`;
+  }
+  return "Live status";
 }

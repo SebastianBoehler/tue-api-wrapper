@@ -1,5 +1,11 @@
 import type { AlmaCourseAssignmentsPage, DashboardData } from "./dashboard-types";
-import type { CampusCanteen, CampusSnapshot, KufTrainingOccupancy, UniversityCalendarResponse } from "./campus-types";
+import type {
+  CampusCanteen,
+  CampusSnapshot,
+  KufTrainingOccupancy,
+  SeatAvailabilityResponse,
+  UniversityCalendarResponse
+} from "./campus-types";
 import type { UnifiedCourseDetail } from "./course-types";
 import type { MailboxSummary, MailInboxSummary } from "./mail-types";
 import type { DirectoryAction, DirectoryForm, DirectorySearchResponse } from "./people-types";
@@ -71,7 +77,7 @@ function markCourseAssignmentsPending(dashboard: DashboardData): DashboardData {
 
 export async function fetchCampusSnapshot(baseUrl: string): Promise<CampusSnapshot> {
   const errors: string[] = [];
-  const [canteens, events, fitness] = await Promise.all([
+  const [canteens, events, fitness, seats] = await Promise.all([
     fetchJson<CampusCanteen[]>(baseUrl, "/api/campus/canteens").catch((error) => {
       errors.push(errorMessage("Campus food", error));
       return undefined;
@@ -83,6 +89,10 @@ export async function fetchCampusSnapshot(baseUrl: string): Promise<CampusSnapsh
     fetchJson<KufTrainingOccupancy>(baseUrl, "/api/campus/fitness/kuf").catch((error) => {
       errors.push(errorMessage("KUF occupancy", error));
       return undefined;
+    }),
+    fetchJson<SeatAvailabilityResponse>(baseUrl, "/api/campus/seats").catch((error) => {
+      errors.push(errorMessage("Library seats", error));
+      return undefined;
     })
   ]);
 
@@ -90,6 +100,7 @@ export async function fetchCampusSnapshot(baseUrl: string): Promise<CampusSnapsh
     canteens,
     events,
     fitness,
+    seats,
     errors
   };
 }

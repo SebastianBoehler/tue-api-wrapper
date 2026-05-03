@@ -23,6 +23,8 @@ struct CampusDiscoverView: View {
                 CampusMapView()
             case .food:
                 CampusFoodView(model: model)
+            case .seats:
+                CampusSeatView(model: model)
             }
         }
     }
@@ -31,6 +33,7 @@ struct CampusDiscoverView: View {
 private enum CampusDiscoverSection: String, CaseIterable, Identifiable {
     case map
     case food
+    case seats
 
     var id: Self { self }
 
@@ -40,6 +43,8 @@ private enum CampusDiscoverSection: String, CaseIterable, Identifiable {
             "Map"
         case .food:
             "Food"
+        case .seats:
+            "Seats"
         }
     }
 }

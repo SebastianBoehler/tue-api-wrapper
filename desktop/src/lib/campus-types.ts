@@ -39,9 +39,32 @@ export interface KufTrainingOccupancy {
   retrieved_at: string;
 }
 
+export interface SeatLocationStatus {
+  location_id: string;
+  name: string;
+  long_name?: string | null;
+  level?: string | null;
+  building?: string | null;
+  room?: string | null;
+  total_seats?: number | null;
+  free_seats?: number | null;
+  occupied_seats?: number | null;
+  occupancy_percent?: number | null;
+  updated_at?: string | null;
+  url?: string | null;
+  geo_coordinates?: string | null;
+}
+
+export interface SeatAvailabilityResponse {
+  source_url: string;
+  retrieved_at: string;
+  locations: SeatLocationStatus[];
+}
+
 export interface CampusSnapshot {
   canteens?: CampusCanteen[];
   events?: UniversityCalendarResponse;
   fitness?: KufTrainingOccupancy;
+  seats?: SeatAvailabilityResponse;
   errors: string[];
 }

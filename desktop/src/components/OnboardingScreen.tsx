@@ -27,36 +27,36 @@ export function OnboardingScreen({
 
   return (
     <div className="onboarding-shell">
-      <section className="hero-panel onboarding-copy">
-        <p className="eyebrow">Desktop onboarding</p>
-        <h1>TUE Study Hub Desktop</h1>
+      <section className="onboarding-intro">
+        <p className="eyebrow">TUE Study Hub</p>
+        <h1>Your study day in one place.</h1>
         <p className="lead">
-          Connect once to run the local study workspace with live university data and credentials encrypted on
-          this device.
+          Sign in with your university account to see your timetable, course work, mail, study records, and
+          campus information on this device.
         </p>
 
-        <dl className="assurance-list">
+        <div className="onboarding-highlights" aria-label="What Study Hub shows after sign-in">
           <div>
-            <dt>Local runtime</dt>
-            <dd>The desktop app talks to the backend running on this machine.</dd>
+            <span>Today</span>
+            <strong>Classes, deadlines, and rooms</strong>
           </div>
           <div>
-            <dt>Credential storage</dt>
-            <dd>Credentials are encrypted before they are written into the app data directory.</dd>
+            <span>Learning</span>
+            <strong>Alma, ILIAS, Moodle, and mail</strong>
           </div>
           <div>
-            <dt>Data source</dt>
-            <dd>The dashboard loads real Alma, ILIAS, Moodle, talks, and mail data.</dd>
+            <span>Privacy</span>
+            <strong>Your login stays encrypted on this device</strong>
           </div>
-        </dl>
+        </div>
       </section>
 
       <form className="auth-card" onSubmit={handleSubmit}>
         <div className="form-header">
-          <p className="eyebrow">Credentials</p>
+          <p className="eyebrow">Sign in</p>
           <h2>University login</h2>
           <p className="muted">
-            Use the same university username and password that the local backend expects.
+            Use your ZDV ID and university password. Study Hub connects directly from this app.
           </p>
         </div>
 
@@ -88,10 +88,10 @@ export function OnboardingScreen({
         {error ? <p className="inline-error">{error}</p> : null}
 
         <button className="primary-button" type="submit" disabled={!canSubmit}>
-          {saving ? "Saving credentials..." : "Save and continue"}
+          {saving ? "Signing in..." : "Continue"}
         </button>
 
-        <p className="form-note">No demo data is loaded after sign-in.</p>
+        <p className="form-note">Your credentials are saved encrypted and can be removed from settings at any time.</p>
       </form>
     </div>
   );

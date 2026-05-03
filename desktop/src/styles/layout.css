@@ -98,7 +98,6 @@
 
 .section-heading h3,
 .dashboard-header h1,
-.hero-panel h1,
 .auth-card h2,
 .centered-panel h1,
 .status-banner h2 {
@@ -131,8 +130,4 @@
     align-items: flex-start;
   }
 
-  .assurance-list div {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
 }

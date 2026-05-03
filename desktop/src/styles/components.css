@@ -1,14 +1,12 @@
 .status-banner,
 .panel,
-.auth-card,
-.hero-panel {
+.auth-card {
   border: 1px solid var(--panel-border);
   background: var(--panel);
   box-shadow: 0 10px 28px rgba(31, 28, 24, 0.05);
 }
 
 .status-banner,
-.hero-panel,
 .auth-card,
 .panel {
   border-radius: 12px;
@@ -46,7 +44,6 @@
   font-size: 0.9rem;
 }
 
-.hero-panel h1,
 .dashboard-header h1,
 .centered-panel h1 {
   font-size: 1.72rem;
@@ -64,36 +61,6 @@
 
 .status-banner h2 {
   font-size: 1rem;
-}
-
-.onboarding-copy {
-  min-height: 380px;
-}
-
-.assurance-list {
-  display: grid;
-  gap: 0;
-  margin: 32px 0 0;
-  padding: 0;
-  border-top: 1px solid var(--panel-border);
-}
-
-.assurance-list div {
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 18px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--panel-border);
-}
-
-.assurance-list dt {
-  font-weight: 700;
-}
-
-.assurance-list dd {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.5;
 }
 
 .auth-card {

@@ -8,6 +8,7 @@ import { useMailSurface } from "../lib/use-mail-surface";
 import { AssistantPage } from "./dashboard/AssistantPage";
 import { CalendarPage } from "./dashboard/CalendarPage";
 import { CampusPage } from "./dashboard/CampusPage";
+import { CourseDetailPage } from "./dashboard/CourseDetailPage";
 import { CourseDiscoveryPage } from "./dashboard/CourseDiscoveryPage";
 import { DashboardNav } from "./dashboard/DashboardNav";
 import { LearningPage } from "./dashboard/LearningPage";
@@ -15,7 +16,7 @@ import { MailPage } from "./dashboard/MailPage";
 import { StudyPage } from "./dashboard/StudyPage";
 import { TodayPage } from "./dashboard/TodayPage";
 import { ToolsPage } from "./dashboard/ToolsPage";
-import type { DashboardPageId } from "./dashboard/types";
+import type { CourseDetailTarget, DashboardPageId } from "./dashboard/types";
 
 export function DashboardScreen({
   state,
@@ -35,35 +36,43 @@ export function DashboardScreen({
   onClearCredentials: () => Promise<void>;
 }) {
   const [activePage, setActivePage] = useState<DashboardPageId>("today");
+  const [courseDetailTarget, setCourseDetailTarget] = useState<CourseDetailTarget | null>(null);
   const campus = useCampusSnapshot(state.backendUrl ?? null, activePage === "campus");
   const discovery = useCourseDiscovery(state.backendUrl ?? null, activePage === "discovery");
   const mail = useMailSurface(state.backendUrl ?? null, activePage === "mail");
+  const changePage = (page: DashboardPageId) => {
+    setCourseDetailTarget(null);
+    setActivePage(page);
+  };
 
   return (
     <div className="dashboard-shell">
-      <header className="dashboard-header">
-        <div>
-          <p className="eyebrow">Study hub desktop</p>
-          <h1>{data?.hero.title ?? "Study Hub"}</h1>
-          <p className="lead">{data?.hero.subtitle ?? "Your local desktop shell for the Tuebingen study tooling."}</p>
-        </div>
-        <div className="header-actions">
-          <button className="secondary-button" onClick={onRefresh} disabled={loading || !state.backendUrl} type="button">
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
-      </header>
-
-      <DashboardNav activePage={activePage} data={data} onChange={setActivePage} />
+      <DashboardNav
+        activePage={activePage}
+        data={data}
+        loading={loading}
+        onChange={changePage}
+        onRefresh={onRefresh}
+        refreshDisabled={!state.backendUrl}
+      />
 
       {error ? <div className="panel error-panel">{error}</div> : null}
 
       <main className="page-surface">
-        {activePage === "today" ? <TodayPage data={data} state={state} /> : null}
-        {activePage === "calendar" ? <CalendarPage data={data} state={state} /> : null}
-        {activePage === "learning" ? <LearningPage data={data} state={state} /> : null}
-        {activePage === "study" ? <StudyPage data={data} state={state} /> : null}
-        {activePage === "mail" ? (
+        {courseDetailTarget ? (
+          <CourseDetailPage
+            baseUrl={state.backendUrl ?? null}
+            onBack={() => setCourseDetailTarget(null)}
+            target={courseDetailTarget}
+          />
+        ) : null}
+        {!courseDetailTarget && activePage === "today" ? <TodayPage data={data} state={state} /> : null}
+        {!courseDetailTarget && activePage === "calendar" ? (
+          <CalendarPage data={data} onOpenCourseDetail={setCourseDetailTarget} state={state} />
+        ) : null}
+        {!courseDetailTarget && activePage === "learning" ? <LearningPage data={data} state={state} /> : null}
+        {!courseDetailTarget && activePage === "study" ? <StudyPage data={data} state={state} /> : null}
+        {!courseDetailTarget && activePage === "mail" ? (
           <MailPage
             data={data}
             inbox={mail.inbox}
@@ -80,7 +89,7 @@ export function DashboardScreen({
             unreadOnly={mail.unreadOnly}
           />
         ) : null}
-        {activePage === "campus" ? (
+        {!courseDetailTarget && activePage === "campus" ? (
           <CampusPage
             campus={campus.data}
             campusError={campus.error}
@@ -90,21 +99,26 @@ export function DashboardScreen({
             state={state}
           />
         ) : null}
-        {activePage === "discovery" ? (
+        {!courseDetailTarget && activePage === "discovery" ? (
           <CourseDiscoveryPage
             data={data}
             discovery={discovery}
             discoveryError={discovery.error}
             discoveryLoading={discovery.loading}
+            discoverySyncing={discovery.syncing}
             onSearchDiscovery={discovery.search}
+            onOpenCourseDetail={setCourseDetailTarget}
+            onSyncDiscovery={discovery.sync}
+            setDiscoveryDegree={discovery.setDegree}
             setDiscoveryIncludePrivate={discovery.setIncludePrivate}
+            setDiscoveryModuleCode={discovery.setModuleCode}
             setDiscoveryQuery={discovery.setQuery}
             setDiscoverySources={discovery.setSources}
             state={state}
           />
         ) : null}
-        {activePage === "assistant" ? <AssistantPage data={data} state={state} /> : null}
-        {activePage === "tools" ? (
+        {!courseDetailTarget && activePage === "assistant" ? <AssistantPage data={data} state={state} /> : null}
+        {!courseDetailTarget && activePage === "tools" ? (
           <ToolsPage
             data={data}
             loading={loading}

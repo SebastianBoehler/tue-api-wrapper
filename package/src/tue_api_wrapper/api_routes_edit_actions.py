@@ -39,6 +39,15 @@ def alma_exam_reports() -> list[object]:
 
 @router.post("/api/alma/exams/report")
 def alma_exam_report(trigger_name: str = "") -> Response:
+    return _download_exam_report_response(trigger_name)
+
+
+@router.get("/api/alma/exams/report")
+def alma_exam_report_get(trigger_name: str = "") -> Response:
+    return _download_exam_report_response(trigger_name)
+
+
+def _download_exam_report_response(trigger_name: str = "") -> Response:
     try:
         document = download_exam_report(
             portal_service._alma_client(),

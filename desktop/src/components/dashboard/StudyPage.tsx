@@ -1,12 +1,44 @@
+import { useEffect, useMemo, useState } from "react";
+
+import { fetchExamReports } from "../../lib/api";
+import type { DashboardDocumentReport, DashboardExamItem } from "../../lib/dashboard-types";
 import { formatCredits } from "../../lib/format";
 import { EmptyState, PanelHeader } from "./DashboardPrimitives";
 import type { DashboardPageProps } from "./types";
 
 export function StudyPage({ data, state }: DashboardPageProps) {
+  const [examReports, setExamReports] = useState<DashboardDocumentReport[]>([]);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const passedExams = useMemo(() => (data?.exams ?? []).filter(isPassedExam), [data?.exams]);
   const studyNote = data?.study.currentSemesterCreditError
     ?? (data?.study.currentSemesterCreditUnresolved?.length
       ? `${data.study.currentSemesterCreditUnresolved.length} timetable entries have no CP value.`
       : "Live Alma values are reflected in the saved semester total.");
+
+  useEffect(() => {
+    if (!state.backendUrl) return;
+    let cancelled = false;
+    setReportError(null);
+    void fetchExamReports(state.backendUrl)
+      .then((reports) => {
+        if (!cancelled) setExamReports(reports);
+      })
+      .catch((error) => {
+        if (!cancelled) setReportError(error instanceof Error ? error.message : "Could not load exam reports.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.backendUrl]);
+
+  function openExamReport(report: DashboardDocumentReport) {
+    if (!state.backendUrl) return;
+    setReportError(null);
+    const params = new URLSearchParams({ trigger_name: report.trigger_name });
+    void window.desktop.openExternal(`${state.backendUrl}/api/alma/exams/report?${params}`).catch((error) => {
+      setReportError(error instanceof Error ? error.message : "Could not open Alma report.");
+    });
+  }
 
   return (
     <div className="content-grid">
@@ -38,23 +70,23 @@ export function StudyPage({ data, state }: DashboardPageProps) {
       </article>
 
       <article className="panel">
-        <PanelHeader title="Exam records" meta={`${data?.exams.length ?? 0} loaded`} />
+        <PanelHeader title="Passed exams" meta={`${passedExams.length} passed`} />
         <div className="stack-list">
-          {(data?.exams ?? []).map((exam) => (
-            <div key={`${exam.number}-${exam.title}`} className="stack-row compact-row">
+          {passedExams.map((exam) => (
+            <div key={`${exam.number}-${exam.title}-${exam.grade}-${exam.status}`} className="stack-row compact-row">
               <div>
                 <strong>{exam.title}</strong>
-                <span>{exam.number || exam.status || "No structured label available"}</span>
+                <span>{examMeta(exam)}</span>
               </div>
-              <span>{exam.grade || exam.status || "Pending"}</span>
+              <span>{exam.grade || exam.status || "Passed"}</span>
             </div>
           ))}
-          {data?.exams.length === 0 ? <EmptyState>No exam records returned by Alma.</EmptyState> : null}
+          {passedExams.length === 0 ? <EmptyState>No passed exam rows returned by Alma.</EmptyState> : null}
         </div>
       </article>
 
       <article className="panel wide-panel">
-        <PanelHeader title="Documents" meta={`${data?.documents.reports.length ?? 0} report jobs`} />
+        <PanelHeader title="Documents" meta={`${examReports.length} exam reports`} />
         <div className="action-list">
           {state.backendUrl && data?.documents.currentDownloadUrl ? (
             <button
@@ -65,16 +97,35 @@ export function StudyPage({ data, state }: DashboardPageProps) {
               Open current Alma PDF
             </button>
           ) : null}
-          {(data?.documents.reports ?? []).map((report) => (
-            <div key={report.trigger_name} className="stack-row compact-row">
+          {examReports.map((report) => (
+            <button
+              key={report.trigger_name}
+              className="stack-row compact-row"
+              disabled={!state.backendUrl}
+              onClick={() => openExamReport(report)}
+              type="button"
+            >
               <div>
                 <strong>{report.label}</strong>
-                <span>{report.trigger_name}</span>
+                <span>Generated from Alma exam reports</span>
               </div>
-            </div>
+              <span>Open PDF</span>
+            </button>
           ))}
+          {reportError ? <p className="inline-error">{reportError}</p> : null}
+          {!examReports.length && !reportError ? <EmptyState>No Alma exam report actions returned.</EmptyState> : null}
         </div>
       </article>
     </div>
   );
+}
+
+function isPassedExam(exam: DashboardExamItem): boolean {
+  const status = (exam.status ?? "").trim().toUpperCase();
+  const grade = (exam.grade ?? "").trim();
+  return ["BE", "PASSED", "BESTANDEN"].includes(status) || Boolean(grade && !["-", "5,0"].includes(grade));
+}
+
+function examMeta(exam: DashboardExamItem): string {
+  return [exam.number, exam.cp, exam.status].filter(Boolean).join(" · ") || "No structured label available";
 }

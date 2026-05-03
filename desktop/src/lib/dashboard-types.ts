@@ -91,12 +91,14 @@ export interface DashboardTalksPanel {
 }
 
 export interface DashboardDocumentsPanel {
-  reports: Array<{
-    label: string;
-    trigger_name: string;
-  }>;
+  reports: DashboardDocumentReport[];
   currentDownloadAvailable: boolean;
   currentDownloadUrl?: string | null;
+}
+
+export interface DashboardDocumentReport {
+  label: string;
+  trigger_name: string;
 }
 
 export interface DashboardData {

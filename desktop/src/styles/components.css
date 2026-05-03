@@ -189,9 +189,16 @@
 
 .desktop-nav {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.nav-item-list {
+  display: flex;
   gap: 4px;
   overflow-x: auto;
-  border-bottom: 1px solid var(--panel-border);
 }
 
 .nav-item {
@@ -219,6 +226,10 @@
 .nav-item.active {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.nav-refresh {
+  flex: 0 0 auto;
 }
 
 .metric-card strong {

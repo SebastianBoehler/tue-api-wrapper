@@ -10,11 +10,17 @@ interface DashboardNavItem {
 export function DashboardNav({
   activePage,
   data,
-  onChange
+  loading,
+  onChange,
+  onRefresh,
+  refreshDisabled
 }: {
   activePage: DashboardPageId;
   data: DashboardData | null;
+  loading: boolean;
   onChange: (page: DashboardPageId) => void;
+  onRefresh: () => void;
+  refreshDisabled: boolean;
 }) {
   const items: DashboardNavItem[] = [
     { id: "today", label: "Today" },
@@ -30,17 +36,22 @@ export function DashboardNav({
 
   return (
     <nav className="desktop-nav" aria-label="Desktop sections">
-      {items.map((item) => (
-        <button
-          key={item.id}
-          className={item.id === activePage ? "nav-item active" : "nav-item"}
-          onClick={() => onChange(item.id)}
-          type="button"
-        >
-          <span>{item.label}</span>
-          {item.badge !== undefined ? <small>{item.badge}</small> : null}
-        </button>
-      ))}
+      <div className="nav-item-list">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            className={item.id === activePage ? "nav-item active" : "nav-item"}
+            onClick={() => onChange(item.id)}
+            type="button"
+          >
+            <span>{item.label}</span>
+            {item.badge !== undefined ? <small>{item.badge}</small> : null}
+          </button>
+        ))}
+      </div>
+      <button className="ghost-button compact-button nav-refresh" disabled={loading || refreshDisabled} onClick={onRefresh} type="button">
+        {loading ? "Refreshing..." : "Refresh"}
+      </button>
     </nav>
   );
 }

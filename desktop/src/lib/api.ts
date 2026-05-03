@@ -1,4 +1,4 @@
-import type { AlmaCourseAssignmentsPage, DashboardData } from "./dashboard-types";
+import type { AlmaCourseAssignmentsPage, DashboardData, DashboardDocumentReport } from "./dashboard-types";
 import type {
   CampusCanteen,
   CampusSnapshot,
@@ -8,7 +8,7 @@ import type {
 } from "./campus-types";
 import type { CourseDiscoverySearchResponse, CourseDiscoveryStatus } from "./course-discovery-types";
 import type { UnifiedCourseDetail } from "./course-types";
-import type { MailboxSummary, MailInboxSummary } from "./mail-types";
+import type { MailboxSummary, MailInboxSummary, MailMessageDetail } from "./mail-types";
 import type { DirectoryAction, DirectoryForm, DirectorySearchResponse } from "./people-types";
 import type { TimmsItemDetail, TimmsSearchPage, TimmsStreamVariant, TimmsTreePage } from "./timms-types";
 
@@ -28,6 +28,10 @@ export async function fetchDashboard(
 export async function fetchCourseAssignments(baseUrl: string, term: string): Promise<AlmaCourseAssignmentsPage> {
   const params = new URLSearchParams({ term, limit: "100" });
   return fetchJson<AlmaCourseAssignmentsPage>(baseUrl, `/api/alma/timetable/course-assignments?${params}`);
+}
+
+export async function fetchExamReports(baseUrl: string): Promise<DashboardDocumentReport[]> {
+  return fetchJson<DashboardDocumentReport[]>(baseUrl, "/api/alma/exams/reports");
 }
 
 export function applyCourseAssignments(
@@ -127,6 +131,8 @@ export async function searchCourseDiscovery(
     query: string;
     sources: string[];
     kinds?: string[];
+    degree?: string;
+    moduleCode?: string;
     includePrivate: boolean;
     limit?: number;
   }
@@ -134,6 +140,12 @@ export async function searchCourseDiscovery(
   const params = new URLSearchParams({ q: input.query, limit: String(input.limit ?? 20) });
   input.sources.forEach((source) => params.append("source", source));
   input.kinds?.forEach((kind) => params.append("kind", kind));
+  if (input.degree) {
+    params.set("degree", input.degree);
+  }
+  if (input.moduleCode) {
+    params.set("module_code", input.moduleCode);
+  }
   if (input.includePrivate) {
     params.set("include_private", "true");
   }
@@ -142,6 +154,19 @@ export async function searchCourseDiscovery(
 
 export async function fetchCourseDiscoveryStatus(baseUrl: string): Promise<CourseDiscoveryStatus> {
   return fetchJson<CourseDiscoveryStatus>(baseUrl, "/api/discovery/courses/status");
+}
+
+export async function refreshCourseDiscoveryIndex(
+  baseUrl: string,
+  input: { includePrivate: boolean; limit?: number }
+): Promise<CourseDiscoveryStatus> {
+  const params = new URLSearchParams({
+    include_private: String(input.includePrivate),
+    limit: String(input.limit ?? 3000)
+  });
+  return fetchJson<CourseDiscoveryStatus>(baseUrl, `/api/discovery/courses/refresh?${params.toString()}`, {
+    method: "POST"
+  });
 }
 
 export async function fetchMailboxes(baseUrl: string): Promise<MailboxSummary[]> {
@@ -161,6 +186,14 @@ export async function fetchMailInbox(
     params.set("query", options.query.trim());
   }
   return fetchJson<MailInboxSummary>(baseUrl, `/api/mail/inbox?${params.toString()}`);
+}
+
+export async function fetchMailMessage(
+  baseUrl: string,
+  input: { uid: string; mailbox: string }
+): Promise<MailMessageDetail> {
+  const params = new URLSearchParams({ mailbox: input.mailbox });
+  return fetchJson<MailMessageDetail>(baseUrl, `/api/mail/messages/${encodeURIComponent(input.uid)}?${params}`);
 }
 
 export async function moveMailMessage(

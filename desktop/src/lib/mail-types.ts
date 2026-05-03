@@ -22,3 +22,18 @@ export interface MailInboxSummary {
   unread_count: number;
   messages: MailMessageSummary[];
 }
+
+export interface MailMessageDetail {
+  uid: string;
+  mailbox: string;
+  subject: string;
+  from_name?: string | null;
+  from_address?: string | null;
+  to_recipients: string[];
+  cc_recipients: string[];
+  received_at?: string | null;
+  preview?: string | null;
+  body_text?: string | null;
+  attachment_names: string[];
+  is_unread: boolean;
+}

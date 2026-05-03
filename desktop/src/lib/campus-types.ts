@@ -39,6 +39,13 @@ export interface KufTrainingOccupancy {
   retrieved_at: string;
 }
 
+export interface KufOccupancyHistoryRecord {
+  facility_name: string;
+  count: number;
+  recorded_at: string;
+  hour_started_at: string;
+}
+
 export interface SeatLocationStatus {
   location_id: string;
   name: string;
@@ -65,6 +72,7 @@ export interface CampusSnapshot {
   canteens?: CampusCanteen[];
   events?: UniversityCalendarResponse;
   fitness?: KufTrainingOccupancy;
+  fitnessHistory?: KufOccupancyHistoryRecord[];
   seats?: SeatAvailabilityResponse;
   errors: string[];
 }

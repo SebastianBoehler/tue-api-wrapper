@@ -1,7 +1,7 @@
 import type { DesktopRuntimeState } from "../../../shared/desktop-types";
 import type { CampusSnapshot } from "../../lib/campus-types";
 import type { CourseDiscoverySearchResponse, CourseDiscoveryStatus } from "../../lib/course-discovery-types";
-import type { DashboardData } from "../../lib/dashboard-types";
+import type { AlmaTimetableCourseAssignment, DashboardAgendaItem, DashboardData } from "../../lib/dashboard-types";
 import type { MailboxSummary, MailInboxSummary } from "../../lib/mail-types";
 
 export type DashboardPageId =
@@ -18,6 +18,19 @@ export type DashboardPageId =
 export interface DashboardPageProps {
   state: DesktopRuntimeState;
   data: DashboardData | null;
+}
+
+export interface CourseDetailTarget {
+  title: string;
+  url?: string | null;
+  term?: string | null;
+  sourceLabel?: string | null;
+  event?: DashboardAgendaItem | null;
+  assignment?: AlmaTimetableCourseAssignment | null;
+}
+
+export interface CourseNavigationProps {
+  onOpenCourseDetail: (target: CourseDetailTarget) => void;
 }
 
 export interface CampusPageProps extends DashboardPageProps {
@@ -42,19 +55,25 @@ export interface MailPageProps extends DashboardPageProps {
 }
 
 export interface CourseDiscoveryState {
+  degree: string;
   includePrivate: boolean;
+  moduleCode: string;
   query: string;
   response: CourseDiscoverySearchResponse | null;
   sources: string[];
   status: CourseDiscoveryStatus | null;
 }
 
-export interface CourseDiscoveryPageProps extends DashboardPageProps {
+export interface CourseDiscoveryPageProps extends DashboardPageProps, CourseNavigationProps {
   discovery: CourseDiscoveryState;
   discoveryError: string | null;
   discoveryLoading: boolean;
+  discoverySyncing: boolean;
   onSearchDiscovery: () => Promise<void>;
+  onSyncDiscovery: () => Promise<void>;
+  setDiscoveryDegree: (degree: string) => void;
   setDiscoveryIncludePrivate: (includePrivate: boolean) => void;
+  setDiscoveryModuleCode: (moduleCode: string) => void;
   setDiscoveryQuery: (query: string) => void;
   setDiscoverySources: (sources: string[]) => void;
 }

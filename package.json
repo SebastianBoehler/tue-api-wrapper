@@ -10,8 +10,9 @@
     "dev:desktop": "npm --prefix desktop run dev",
     "build:desktop": "npm --prefix desktop run build",
     "package:desktop": "npm --prefix desktop run package",
-    "generate:ios": "xcodegen generate --spec ios/project.yml",
+    "generate:ios": "ios/scripts/generate-project.sh",
     "build:ios": "npm run generate:ios && xcodebuild -project ios/TueAPI.xcodeproj -scheme TueAPI -destination 'generic/platform=iOS Simulator' build",
+    "build:ios:ci": "ios/scripts/build-ci.sh",
     "release-check:ios": "npm run generate:ios && xcodebuild -project ios/TueAPI.xcodeproj -scheme TueAPI -configuration Release -destination 'generic/platform=iOS' -archivePath ios/build/TueAPI.xcarchive archive CODE_SIGNING_ALLOWED=NO",
     "archive:ios": "npm run generate:ios && xcodebuild -project ios/TueAPI.xcodeproj -scheme TueAPI -configuration Release -destination 'generic/platform=iOS' -archivePath ios/build/TueAPI.xcarchive archive",
     "upload:ios:testflight": "xcodebuild -exportArchive -archivePath ios/build/TueAPI.xcarchive -exportPath ios/build/TestFlight -exportOptionsPlist ios/exportOptions/testflight.plist -allowProvisioningUpdates"

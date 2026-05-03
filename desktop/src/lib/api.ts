@@ -6,6 +6,7 @@ import type {
   SeatAvailabilityResponse,
   UniversityCalendarResponse
 } from "./campus-types";
+import type { CourseDiscoverySearchResponse, CourseDiscoveryStatus } from "./course-discovery-types";
 import type { UnifiedCourseDetail } from "./course-types";
 import type { MailboxSummary, MailInboxSummary } from "./mail-types";
 import type { DirectoryAction, DirectoryForm, DirectorySearchResponse } from "./people-types";
@@ -118,6 +119,29 @@ export async function fetchCourseDetail(
     params.set("term", input.term);
   }
   return fetchJson<UnifiedCourseDetail>(baseUrl, `/api/course-detail?${params.toString()}`);
+}
+
+export async function searchCourseDiscovery(
+  baseUrl: string,
+  input: {
+    query: string;
+    sources: string[];
+    kinds?: string[];
+    includePrivate: boolean;
+    limit?: number;
+  }
+): Promise<CourseDiscoverySearchResponse> {
+  const params = new URLSearchParams({ q: input.query, limit: String(input.limit ?? 20) });
+  input.sources.forEach((source) => params.append("source", source));
+  input.kinds?.forEach((kind) => params.append("kind", kind));
+  if (input.includePrivate) {
+    params.set("include_private", "true");
+  }
+  return fetchJson<CourseDiscoverySearchResponse>(baseUrl, `/api/discovery/courses/search?${params.toString()}`);
+}
+
+export async function fetchCourseDiscoveryStatus(baseUrl: string): Promise<CourseDiscoveryStatus> {
+  return fetchJson<CourseDiscoveryStatus>(baseUrl, "/api/discovery/courses/status");
 }
 
 export async function fetchMailboxes(baseUrl: string): Promise<MailboxSummary[]> {

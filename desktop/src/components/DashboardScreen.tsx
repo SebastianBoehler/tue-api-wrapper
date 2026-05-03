@@ -3,10 +3,12 @@ import { useState } from "react";
 import type { DesktopRuntimeState } from "../../shared/desktop-types";
 import type { DashboardData } from "../lib/dashboard-types";
 import { useCampusSnapshot } from "../lib/use-campus-snapshot";
+import { useCourseDiscovery } from "../lib/use-course-discovery";
 import { useMailSurface } from "../lib/use-mail-surface";
 import { AssistantPage } from "./dashboard/AssistantPage";
 import { CalendarPage } from "./dashboard/CalendarPage";
 import { CampusPage } from "./dashboard/CampusPage";
+import { CourseDiscoveryPage } from "./dashboard/CourseDiscoveryPage";
 import { DashboardNav } from "./dashboard/DashboardNav";
 import { LearningPage } from "./dashboard/LearningPage";
 import { MailPage } from "./dashboard/MailPage";
@@ -34,6 +36,7 @@ export function DashboardScreen({
 }) {
   const [activePage, setActivePage] = useState<DashboardPageId>("today");
   const campus = useCampusSnapshot(state.backendUrl ?? null, activePage === "campus");
+  const discovery = useCourseDiscovery(state.backendUrl ?? null, activePage === "discovery");
   const mail = useMailSurface(state.backendUrl ?? null, activePage === "mail");
 
   return (
@@ -84,6 +87,19 @@ export function DashboardScreen({
             campusLoading={campus.loading}
             data={data}
             onRefreshCampus={campus.refresh}
+            state={state}
+          />
+        ) : null}
+        {activePage === "discovery" ? (
+          <CourseDiscoveryPage
+            data={data}
+            discovery={discovery}
+            discoveryError={discovery.error}
+            discoveryLoading={discovery.loading}
+            onSearchDiscovery={discovery.search}
+            setDiscoveryIncludePrivate={discovery.setIncludePrivate}
+            setDiscoveryQuery={discovery.setQuery}
+            setDiscoverySources={discovery.setSources}
             state={state}
           />
         ) : null}

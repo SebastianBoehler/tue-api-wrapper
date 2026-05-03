@@ -1,9 +1,19 @@
 import type { DesktopRuntimeState } from "../../../shared/desktop-types";
 import type { CampusSnapshot } from "../../lib/campus-types";
+import type { CourseDiscoverySearchResponse, CourseDiscoveryStatus } from "../../lib/course-discovery-types";
 import type { DashboardData } from "../../lib/dashboard-types";
 import type { MailboxSummary, MailInboxSummary } from "../../lib/mail-types";
 
-export type DashboardPageId = "today" | "calendar" | "learning" | "study" | "mail" | "campus" | "assistant" | "tools";
+export type DashboardPageId =
+  | "today"
+  | "calendar"
+  | "learning"
+  | "study"
+  | "mail"
+  | "campus"
+  | "discovery"
+  | "assistant"
+  | "tools";
 
 export interface DashboardPageProps {
   state: DesktopRuntimeState;
@@ -29,4 +39,22 @@ export interface MailPageProps extends DashboardPageProps {
   setQuery: (query: string) => void;
   setUnreadOnly: (unreadOnly: boolean) => void;
   onRefreshMail: () => void;
+}
+
+export interface CourseDiscoveryState {
+  includePrivate: boolean;
+  query: string;
+  response: CourseDiscoverySearchResponse | null;
+  sources: string[];
+  status: CourseDiscoveryStatus | null;
+}
+
+export interface CourseDiscoveryPageProps extends DashboardPageProps {
+  discovery: CourseDiscoveryState;
+  discoveryError: string | null;
+  discoveryLoading: boolean;
+  onSearchDiscovery: () => Promise<void>;
+  setDiscoveryIncludePrivate: (includePrivate: boolean) => void;
+  setDiscoveryQuery: (query: string) => void;
+  setDiscoverySources: (sources: string[]) => void;
 }

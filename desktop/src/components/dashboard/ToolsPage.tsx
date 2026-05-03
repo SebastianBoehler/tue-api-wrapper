@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import type { DiscoverySettings } from "../../../shared/desktop-types";
+import { refreshCourseDiscoveryIndex } from "../../lib/api";
 import { PeopleSearchPanel } from "./PeopleSearchPanel";
 import { PanelHeader } from "./DashboardPrimitives";
 import { TimmsArchivePanel } from "./TimmsArchivePanel";
@@ -99,6 +101,32 @@ function RuntimeSettings({
   state: DashboardPageProps["state"];
   stateReady: boolean;
 }) {
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [indexSyncing, setIndexSyncing] = useState(false);
+
+  async function saveDiscoverySettings(nextSettings: DiscoverySettings): Promise<void> {
+    setSettingsSaving(true);
+    try {
+      await window.desktop.saveDiscoverySettings(nextSettings);
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
+  async function syncCourseIndex(): Promise<void> {
+    if (!state.backendUrl) {
+      return;
+    }
+    setIndexSyncing(true);
+    try {
+      await refreshCourseDiscoveryIndex(state.backendUrl, { includePrivate: true });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIndexSyncing(false);
+    }
+  }
+
   return (
     <div className="content-grid">
       <article className="panel">
@@ -115,6 +143,55 @@ function RuntimeSettings({
               <strong>Local service</strong>
               <span>{runtimeLabel(state.backendState, state.backendUrl, state.backendError)}</span>
             </div>
+          </div>
+          <div className="stack-row compact-row">
+            <div>
+              <strong>Semantic course search</strong>
+              <span>{semanticLabel(state.discoverySettings.semanticSearchEnabled, settingsSaving)}</span>
+            </div>
+            <label className="switch-control">
+              <input
+                checked={state.discoverySettings.semanticSearchEnabled}
+                disabled={settingsSaving}
+                onChange={(event) => void saveDiscoverySettings({
+                  ...state.discoverySettings,
+                  semanticSearchEnabled: event.target.checked,
+                  vectorStore: event.target.checked ? "lancedb" : "memory"
+                })}
+                type="checkbox"
+              />
+              <span />
+            </label>
+          </div>
+          <label className="field">
+            <span>Embedding model</span>
+            <input
+              key={state.discoverySettings.embeddingModel}
+              disabled={settingsSaving || !state.discoverySettings.semanticSearchEnabled}
+              onBlur={(event) => {
+                const embeddingModel = event.target.value.trim();
+                if (embeddingModel && embeddingModel !== state.discoverySettings.embeddingModel) {
+                  void saveDiscoverySettings({ ...state.discoverySettings, embeddingModel });
+                }
+              }}
+              placeholder="sentence-transformers/all-MiniLM-L6-v2"
+              type="text"
+              defaultValue={state.discoverySettings.embeddingModel}
+            />
+          </label>
+          <div className="stack-row compact-row">
+            <div>
+              <strong>Course index</strong>
+              <span>Sync Alma, ILIAS, and Moodle into the local discovery cache.</span>
+            </div>
+            <button
+              className="secondary-button compact-button"
+              disabled={!state.backendUrl || indexSyncing}
+              onClick={() => void syncCourseIndex()}
+              type="button"
+            >
+              {indexSyncing ? "Syncing..." : "Sync"}
+            </button>
           </div>
         </div>
         <div className="settings-actions">
@@ -160,6 +237,13 @@ function RuntimeSettings({
       </article>
     </div>
   );
+}
+
+function semanticLabel(enabled: boolean, saving: boolean): string {
+  if (saving) {
+    return "Saving and restarting local service";
+  }
+  return enabled ? "Enabled with local LanceDB embeddings" : "Disabled";
 }
 
 function runtimeLabel(state: string, backendUrl: string | null, error: string | null): string {

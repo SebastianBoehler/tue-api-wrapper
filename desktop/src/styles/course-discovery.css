@@ -18,6 +18,24 @@
   gap: 8px;
 }
 
+.discovery-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.discovery-filter-grid input,
+.discovery-filter-grid select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: inherit;
+  font: inherit;
+  padding: 10px 12px;
+}
+
 .check-row {
   display: inline-flex;
   align-items: center;
@@ -94,6 +112,7 @@
 
 @media (max-width: 980px) {
   .course-discovery-layout,
+  .discovery-filter-grid,
   .discovery-result-row {
     grid-template-columns: 1fr;
   }

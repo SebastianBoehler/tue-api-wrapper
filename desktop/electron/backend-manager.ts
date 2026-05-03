@@ -1,12 +1,11 @@
-import { app } from "electron";
 import { spawn } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { existsSync } from "node:fs";
-import path from "node:path";
 import getPort, { portNumbers } from "get-port";
 
-import type { CredentialInput, DesktopRuntimeState } from "../shared/desktop-types";
+import type { CredentialInput, DesktopRuntimeState, DiscoverySettings } from "../shared/desktop-types";
+import { resolveBackendRuntime } from "./backend-runtime";
 import { CredentialStore } from "./credential-store";
+import { DEFAULT_DISCOVERY_SETTINGS, DiscoverySettingsStore, normalizeDiscoverySettings } from "./discovery-settings-store";
 
 const START_TIMEOUT_MS = 20_000;
 const SHUTDOWN_TIMEOUT_MS = 3_000;
@@ -19,10 +18,14 @@ export class BackendManager extends EventEmitter {
     username: null,
     backendState: "missing_credentials",
     backendUrl: null,
-    backendError: null
+    backendError: null,
+    discoverySettings: DEFAULT_DISCOVERY_SETTINGS
   };
 
-  constructor(private readonly store: CredentialStore) {
+  constructor(
+    private readonly store: CredentialStore,
+    private readonly discoverySettingsStore: DiscoverySettingsStore
+  ) {
     super();
   }
 
@@ -31,6 +34,8 @@ export class BackendManager extends EventEmitter {
   }
 
   async initialize(): Promise<void> {
+    const discoverySettings = await this.discoverySettingsStore.load();
+    this.updateState({ discoverySettings });
     const credentials = await this.store.load();
     if (!credentials) {
       this.updateState({
@@ -78,6 +83,16 @@ export class BackendManager extends EventEmitter {
     await this.start(credentials);
   }
 
+  async saveDiscoverySettings(input: DiscoverySettings): Promise<DiscoverySettings> {
+    const discoverySettings = await this.discoverySettingsStore.save(normalizeDiscoverySettings(input));
+    this.updateState({ discoverySettings });
+    const credentials = await this.store.load();
+    if (credentials) {
+      await this.start(credentials);
+    }
+    return discoverySettings;
+  }
+
   async dispose(): Promise<void> {
     await this.stop();
   }
@@ -88,6 +103,7 @@ export class BackendManager extends EventEmitter {
     const port = await getPort({ port: portNumbers(18123, 18163) });
     const backendUrl = `http://127.0.0.1:${port}`;
     const runtime = resolveBackendRuntime();
+    const discoverySettings = await this.discoverySettingsStore.load();
 
     this.lastStderrLine = "";
     this.updateState({
@@ -95,13 +111,15 @@ export class BackendManager extends EventEmitter {
       username: credentials.username,
       backendState: "starting",
       backendUrl,
-      backendError: null
+      backendError: null,
+      discoverySettings
     });
 
     const child = spawn(runtime.command, runtime.args, {
       env: {
         ...process.env,
         ...runtime.env,
+        ...discoveryEnv(discoverySettings),
         PORT: String(port),
         UNI_USERNAME: credentials.username,
         UNI_PASSWORD: credentials.password
@@ -191,6 +209,20 @@ export class BackendManager extends EventEmitter {
   }
 }
 
+function discoveryEnv(settings: DiscoverySettings): Record<string, string> {
+  if (!settings.semanticSearchEnabled) {
+    return {
+      TUE_DISCOVERY_EMBEDDINGS: "off",
+      TUE_DISCOVERY_VECTOR_STORE: "memory"
+    };
+  }
+  return {
+    TUE_DISCOVERY_EMBEDDINGS: "local",
+    TUE_DISCOVERY_VECTOR_STORE: settings.vectorStore,
+    TUE_DISCOVERY_MODEL: settings.embeddingModel
+  };
+}
+
 function normalizeCredentials(input: CredentialInput): CredentialInput {
   const username = input.username.trim();
   const password = input.password.trim();
@@ -198,49 +230,6 @@ function normalizeCredentials(input: CredentialInput): CredentialInput {
     throw new Error("Username and password are both required.");
   }
   return { username, password };
-}
-
-function resolveBackendRuntime(): {
-  command: string;
-  args: string[];
-  env: Record<string, string>;
-} {
-  if (app.isPackaged) {
-    const executable = path.join(
-      process.resourcesPath,
-      "backend",
-      process.platform === "win32" ? "tue-api-server.exe" : "tue-api-server"
-    );
-
-    if (!existsSync(executable)) {
-      throw new Error(`Packaged backend binary not found at ${executable}. Run npm run build:backend before packaging.`);
-    }
-
-    return {
-      command: executable,
-      args: [],
-      env: {}
-    };
-  }
-
-  const repoRoot = path.resolve(__dirname, "..", "..", "..");
-  const packageRoot = path.join(repoRoot, "package");
-  const venvPython = process.platform === "win32"
-    ? path.join(packageRoot, ".venv", "Scripts", "python.exe")
-    : path.join(packageRoot, ".venv", "bin", "python");
-  const command = existsSync(venvPython)
-    ? venvPython
-    : process.env.PYTHON ?? (process.platform === "win32" ? "python" : "python3");
-
-  return {
-    command,
-    args: ["-m", "tue_api_wrapper.api_server"],
-    env: {
-      PYTHONPATH: [path.join(packageRoot, "src"), process.env.PYTHONPATH]
-        .filter(Boolean)
-        .join(path.delimiter)
-    }
-  };
 }
 
 async function waitForHealth(baseUrl: string, timeoutMs: number): Promise<boolean> {

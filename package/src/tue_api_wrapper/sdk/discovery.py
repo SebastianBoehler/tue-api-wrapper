@@ -20,7 +20,7 @@ class CourseDiscoveryApi:
         module_code: str | None = None,
         term: str | None = None,
         tags: tuple[str, ...] = (),
-        include_private: bool = False,
+        include_private: bool = True,
         limit: int = 20,
     ):
         return self.service.search(
@@ -37,7 +37,7 @@ class CourseDiscoveryApi:
             limit=limit,
         )
 
-    def refresh(self, *, query: str = "", include_private: bool = False, limit: int = 80):
+    def refresh(self, *, query: str = "", include_private: bool = True, limit: int = 3000):
         return self.service.refresh(query=query, include_private=include_private, limit=limit)
 
     def status(self):

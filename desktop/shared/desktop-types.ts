@@ -11,6 +11,13 @@ export interface DesktopRuntimeState {
   backendState: BackendLifecycleState;
   backendUrl: string | null;
   backendError: string | null;
+  discoverySettings: DiscoverySettings;
+}
+
+export interface DiscoverySettings {
+  semanticSearchEnabled: boolean;
+  vectorStore: "memory" | "lancedb";
+  embeddingModel: string;
 }
 
 export interface AssistantConfig {

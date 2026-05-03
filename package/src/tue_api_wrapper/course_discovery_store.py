@@ -39,9 +39,9 @@ def _matches_filters(document: CourseDiscoveryDocument, filters: CourseDiscovery
         return False
     if filters.kinds and document.kind not in filters.kinds:
         return False
-    if filters.degree and filters.degree.lower() not in _haystack(document):
+    if filters.degree and not _contains_any(document.degrees or ((document.degree,) if document.degree else ()), filters.degree):
         return False
-    if filters.module_code and filters.module_code.lower() not in (document.module_code or "").lower():
+    if filters.module_code and not _contains_any(document.module_categories, filters.module_code):
         return False
     if filters.term and filters.term.lower() not in (document.term or "").lower():
         return False
@@ -62,6 +62,8 @@ def _lexical_score(document: CourseDiscoveryDocument, query_tokens: tuple[str, .
             score += 2.5
         if document.module_code and token in document.module_code.lower():
             score += 2
+        if any(token in category.lower() for category in document.module_categories):
+            score += 2
     return score / max(len(query_tokens), 1)
 
 
@@ -71,8 +73,8 @@ def _reason(document: CourseDiscoveryDocument, query_tokens: tuple[str, ...]) ->
     title_tokens = set(_tokens(document.title))
     if any(token in title_tokens for token in query_tokens):
         return "Title match"
-    if document.module_code and any(token in document.module_code.lower() for token in query_tokens):
-        return "Module code match"
+    if any(token in category.lower() for token in query_tokens for category in document.module_categories):
+        return "Module area match"
     return "Description or metadata match"
 
 
@@ -81,4 +83,9 @@ def _tokens(value: str) -> tuple[str, ...]:
 
 
 def _haystack(document: CourseDiscoveryDocument) -> str:
-    return " ".join((document.text, " ".join(document.tags))).lower()
+    return " ".join((document.text, " ".join(document.tags), " ".join(document.module_categories), " ".join(document.degrees))).lower()
+
+
+def _contains_any(values: tuple[str, ...], needle: str) -> bool:
+    lowered = needle.lower()
+    return any(lowered in value.lower() for value in values)

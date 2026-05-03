@@ -3,6 +3,7 @@ import { app, BrowserWindow } from "electron";
 import { AssistantStore } from "./assistant-store";
 import { BackendManager } from "./backend-manager";
 import { CredentialStore } from "./credential-store";
+import { DiscoverySettingsStore } from "./discovery-settings-store";
 import { registerIpc } from "./ipc";
 import { createMainWindow } from "./window";
 
@@ -14,7 +15,8 @@ async function bootstrap(): Promise<void> {
 
   const store = new CredentialStore(app.getPath("userData"));
   const assistantStore = new AssistantStore(app.getPath("userData"));
-  backendManager = new BackendManager(store);
+  const discoverySettingsStore = new DiscoverySettingsStore(app.getPath("userData"));
+  backendManager = new BackendManager(store, discoverySettingsStore);
   registerIpc(backendManager, assistantStore);
   await backendManager.initialize();
 

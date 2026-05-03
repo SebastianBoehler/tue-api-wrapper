@@ -1,12 +1,20 @@
 import { contextBridge, ipcRenderer } from "electron";
 
-import type { AssistantChatRequest, AssistantChatResponse, AssistantConfig, CredentialInput, DesktopRuntimeState } from "../shared/desktop-types";
+import type {
+  AssistantChatRequest,
+  AssistantChatResponse,
+  AssistantConfig,
+  CredentialInput,
+  DesktopRuntimeState,
+  DiscoverySettings
+} from "../shared/desktop-types";
 
 contextBridge.exposeInMainWorld("desktop", {
   getState: (): Promise<DesktopRuntimeState> => ipcRenderer.invoke("desktop:get-state"),
   saveCredentials: (input: CredentialInput): Promise<void> => ipcRenderer.invoke("desktop:save-credentials", input),
   clearCredentials: (): Promise<void> => ipcRenderer.invoke("desktop:clear-credentials"),
   restartBackend: (): Promise<void> => ipcRenderer.invoke("desktop:restart-backend"),
+  saveDiscoverySettings: (input: DiscoverySettings): Promise<DiscoverySettings> => ipcRenderer.invoke("desktop:save-discovery-settings", input),
   openExternal: (url: string): Promise<void> => ipcRenderer.invoke("desktop:open-external", url),
   getAssistantConfig: (): Promise<AssistantConfig> => ipcRenderer.invoke("assistant:get-config"),
   saveAssistantConfig: (input: AssistantConfig): Promise<AssistantConfig> => ipcRenderer.invoke("assistant:save-config", input),

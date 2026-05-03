@@ -13,6 +13,8 @@ class CourseDiscoveryDocument:
     url: str | None = None
     module_code: str | None = None
     degree: str | None = None
+    module_categories: tuple[str, ...] = ()
+    degrees: tuple[str, ...] = ()
     term: str | None = None
     instructors: tuple[str, ...] = ()
     tags: tuple[str, ...] = ()
@@ -37,12 +39,29 @@ class CourseDiscoveryResult:
 
 
 @dataclass(frozen=True)
+class CourseDiscoveryFacetOption:
+    value: str
+    label: str
+    count: int
+
+
+@dataclass(frozen=True)
+class CourseDiscoveryFacets:
+    sources: tuple[CourseDiscoveryFacetOption, ...] = ()
+    kinds: tuple[CourseDiscoveryFacetOption, ...] = ()
+    module_codes: tuple[CourseDiscoveryFacetOption, ...] = ()
+    degrees: tuple[CourseDiscoveryFacetOption, ...] = ()
+    tags: tuple[CourseDiscoveryFacetOption, ...] = ()
+
+
+@dataclass(frozen=True)
 class CourseDiscoveryStatus:
     document_count: int
     semantic_available: bool
     vector_store: str
     embedding_model: str | None
     last_refresh: str | None
+    facets: CourseDiscoveryFacets = field(default_factory=CourseDiscoveryFacets)
     errors: tuple[str, ...] = ()
 
 

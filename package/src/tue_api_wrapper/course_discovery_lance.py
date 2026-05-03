@@ -55,7 +55,7 @@ class LanceDiscoveryStore:
             if document is None or not _matches(document, filters):
                 continue
             distance = float(row.get("_distance", 0.0))
-            results.append(CourseDiscoveryResult(document, max(0.0, 1.0 - distance), "Semantic vector match"))
+            results.append(CourseDiscoveryResult(document, _distance_to_similarity(distance), "Semantic vector match"))
             if len(results) >= limit:
                 break
         return tuple(results) or self._lexical.search(query, filters, limit)
@@ -87,3 +87,8 @@ def _matches(document: CourseDiscoveryDocument, filters: CourseDiscoveryFilters)
     temporary = InMemoryDiscoveryStore()
     temporary.replace((document,))
     return bool(temporary.search("", filters, 1))
+
+
+def _distance_to_similarity(distance: float) -> float:
+    # LanceDB reports squared L2 distance for normalized vectors by default.
+    return max(0.0, min(1.0, 1.0 - (distance / 2.0)))

@@ -11,8 +11,13 @@ export function CourseDiscoveryPage({
   discovery,
   discoveryError,
   discoveryLoading,
+  discoverySyncing,
+  onOpenCourseDetail,
   onSearchDiscovery,
+  onSyncDiscovery,
+  setDiscoveryDegree,
   setDiscoveryIncludePrivate,
+  setDiscoveryModuleCode,
   setDiscoveryQuery,
   setDiscoverySources
 }: CourseDiscoveryPageProps) {
@@ -24,7 +29,7 @@ export function CourseDiscoveryPage({
       <section className="panel course-discovery-search">
         <div className="section-heading">
           <h3>Course discovery</h3>
-          <span>{status ? `${status.document_count} indexed` : "Local index"}</span>
+          <span>{status ? `${status.document_count} indexed` : "Not synced"}</span>
         </div>
         <div className="field">
           <span>Search</span>
@@ -48,6 +53,33 @@ export function CourseDiscoveryPage({
             </label>
           ))}
         </div>
+        <div className="discovery-filter-grid">
+          <label className="field">
+            <span>Module area</span>
+            <input
+              list="course-discovery-module-codes"
+              onChange={(event) => setDiscoveryModuleCode(event.target.value)}
+              placeholder="All areas"
+              value={discovery.moduleCode}
+            />
+            <datalist id="course-discovery-module-codes">
+              {status?.facets.module_codes.map((option) => (
+                <option key={option.value} value={option.value}>{option.label} ({option.count})</option>
+              ))}
+            </datalist>
+          </label>
+          <label className="field">
+            <span>Degree</span>
+            <select value={discovery.degree} onChange={(event) => setDiscoveryDegree(event.target.value)}>
+              <option value="">All degrees</option>
+              {status?.facets.degrees.slice(0, 80).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} ({option.count})
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <label className="check-row">
           <input
             checked={discovery.includePrivate}
@@ -64,11 +96,19 @@ export function CourseDiscoveryPage({
         >
           {discoveryLoading ? "Searching..." : "Search courses"}
         </button>
+        <button
+          className="secondary-button full-width"
+          disabled={discoverySyncing}
+          onClick={() => void onSyncDiscovery()}
+          type="button"
+        >
+          {discoverySyncing ? "Syncing..." : "Sync course index"}
+        </button>
         {status ? (
           <p className="form-note">
             {status.semantic_available
-              ? `Semantic search via ${status.vector_store} and ${status.embedding_model}.`
-              : "Semantic search is local-only and currently disabled."}
+              ? `Semantic search via ${status.vector_store} and ${status.embedding_model}. ${syncLabel(status.last_refresh)}`
+              : `Cached lexical search. ${syncLabel(status.last_refresh)}`}
           </p>
         ) : null}
         {discoveryError ? <p className="inline-error">{discoveryError}</p> : null}
@@ -81,9 +121,11 @@ export function CourseDiscoveryPage({
           <span>{results.length} matches</span>
         </div>
         <div className="discovery-result-list">
-          {results.map((result) => <DiscoveryResultRow key={result.document.id} result={result} />)}
+          {results.map((result) => (
+            <DiscoveryResultRow key={result.document.id} onOpenCourseDetail={onOpenCourseDetail} result={result} />
+          ))}
           {!results.length ? (
-            <p className="muted">Search Alma modules publicly, then opt into authenticated local sources when needed.</p>
+            <p className="muted">Sync the course index, then search across Alma, ILIAS, and Moodle.</p>
           ) : null}
         </div>
       </section>
@@ -91,13 +133,23 @@ export function CourseDiscoveryPage({
   );
 }
 
-function DiscoveryResultRow({ result }: { result: CourseDiscoveryResult }) {
+function DiscoveryResultRow({
+  onOpenCourseDetail,
+  result
+}: {
+  onOpenCourseDetail: CourseDiscoveryPageProps["onOpenCourseDetail"];
+  result: CourseDiscoveryResult;
+}) {
   const document = result.document;
   return (
     <button
       className="discovery-result-row"
-      disabled={!document.url}
-      onClick={() => document.url ? void window.desktop.openExternal(document.url) : undefined}
+      onClick={() => onOpenCourseDetail({
+        title: document.module_code || document.title,
+        url: almaDetailUrl(document.url),
+        term: document.term,
+        sourceLabel: `Discovery · ${document.source}`
+      })}
       type="button"
     >
       <div>
@@ -106,13 +158,21 @@ function DiscoveryResultRow({ result }: { result: CourseDiscoveryResult }) {
         <span>{document.text}</span>
       </div>
       <div className="result-meta">
-        <span>{document.module_code || document.term || result.match_reason}</span>
+        <span>{document.module_categories[0] || document.module_code || document.term || result.match_reason}</span>
         <strong>{result.score.toFixed(1)}</strong>
       </div>
     </button>
   );
 }
 
+function almaDetailUrl(url: string | null): string | null {
+  return url && /\/alma\//i.test(url) ? url : null;
+}
+
 function toggle(values: string[], value: string): string[] {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
+}
+
+function syncLabel(value: string | null): string {
+  return value ? `Last synced ${new Date(value).toLocaleString()}.` : "Sync the index to search the cached corpus.";
 }

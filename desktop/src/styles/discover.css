@@ -149,6 +149,47 @@
   justify-items: end;
 }
 
+.switch-control {
+  position: relative;
+  display: inline-flex;
+  width: 46px;
+  height: 26px;
+  cursor: pointer;
+}
+
+.switch-control input {
+  position: absolute;
+  opacity: 0;
+}
+
+.switch-control span {
+  width: 100%;
+  border-radius: 999px;
+  background: #d8d0c7;
+  transition: background 0.16s ease;
+}
+
+.switch-control span::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(31, 28, 24, 0.22);
+  transition: transform 0.16s ease;
+}
+
+.switch-control input:checked + span {
+  background: var(--accent);
+}
+
+.switch-control input:checked + span::after {
+  transform: translateX(20px);
+}
+
 .assistant-layout {
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr) minmax(240px, 320px);

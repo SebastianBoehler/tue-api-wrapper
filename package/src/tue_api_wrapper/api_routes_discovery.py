@@ -25,7 +25,7 @@ def course_discovery_search(
     module_code: str = "",
     term: str = "",
     tag: list[str] = Query(default=[]),
-    include_private: bool = Query(False),
+    include_private: bool = Query(True),
     limit: int = Query(20, ge=1, le=80),
 ) -> dict[str, object]:
     try:
@@ -51,8 +51,8 @@ def course_discovery_search(
 @router.post("/api/discovery/courses/refresh")
 def course_discovery_refresh(
     q: str = Query("", max_length=200),
-    include_private: bool = Query(False),
-    limit: int = Query(80, ge=1, le=200),
+    include_private: bool = Query(True),
+    limit: int = Query(3000, ge=1, le=10000),
 ) -> dict[str, object]:
     return serialize(discovery_service.refresh(query=q, include_private=include_private, limit=limit))
 

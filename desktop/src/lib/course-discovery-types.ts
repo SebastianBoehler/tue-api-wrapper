@@ -7,6 +7,8 @@ export interface CourseDiscoveryDocument {
   url: string | null;
   module_code: string | null;
   degree: string | null;
+  module_categories: string[];
+  degrees: string[];
   term: string | null;
   instructors: string[];
   tags: string[];
@@ -25,7 +27,22 @@ export interface CourseDiscoveryStatus {
   vector_store: string;
   embedding_model: string | null;
   last_refresh: string | null;
+  facets: CourseDiscoveryFacets;
   errors: string[];
+}
+
+export interface CourseDiscoveryFacetOption {
+  value: string;
+  label: string;
+  count: number;
+}
+
+export interface CourseDiscoveryFacets {
+  sources: CourseDiscoveryFacetOption[];
+  kinds: CourseDiscoveryFacetOption[];
+  module_codes: CourseDiscoveryFacetOption[];
+  degrees: CourseDiscoveryFacetOption[];
+  tags: CourseDiscoveryFacetOption[];
 }
 
 export interface CourseDiscoverySearchResponse {

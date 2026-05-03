@@ -66,7 +66,7 @@ def create_mcp_server(*, env_file: str | Path | None = ".env", host: str = "127.
         query: str,
         source: str = "",
         kind: str = "",
-        include_private: bool = False,
+        include_private: bool = True,
         limit: int = 10,
     ) -> dict[str, Any]:
         """Search Alma modules and optional local authenticated course sources."""
@@ -82,6 +82,11 @@ def create_mcp_server(*, env_file: str | Path | None = ".env", host: str = "127.
     def course_discovery_status() -> dict[str, Any]:
         """Show local course discovery index and semantic search availability."""
         return _serialized(discovery_service.status())
+
+    @server.tool()
+    def course_discovery_refresh(include_private: bool = True, limit: int = 3000) -> dict[str, Any]:
+        """Sync Alma, ILIAS, and Moodle course data into the local discovery index."""
+        return _serialized(discovery_service.refresh(include_private=include_private, limit=limit))
 
     @server.tool()
     def authenticated_alma_timetable(term: str) -> dict[str, Any]:

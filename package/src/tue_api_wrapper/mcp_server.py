@@ -4,6 +4,8 @@ import argparse
 from pathlib import Path
 from typing import Any
 
+from .course_discovery_models import CourseDiscoveryFilters
+from .course_discovery_service import CourseDiscoveryService
 from .portal_common import serialize
 from .sdk import TuebingenAuthenticatedClient, TuebingenPublicClient
 
@@ -15,6 +17,10 @@ def create_mcp_server(*, env_file: str | Path | None = ".env", host: str = "127.
         raise RuntimeError("Install MCP support with: pip install -e '.[mcp]'") from error
 
     public_client = TuebingenPublicClient()
+    discovery_service = CourseDiscoveryService(
+        alma_loader=lambda: _authenticated(env_file).alma.client,
+        ilias_loader=lambda: _authenticated(env_file).ilias.client,
+    )
     server = FastMCP(
         "tue-api-wrapper",
         instructions=(
@@ -56,6 +62,28 @@ def create_mcp_server(*, env_file: str | Path | None = ".env", host: str = "127.
         return _serialized(public_client.timms.search(query, limit=limit))
 
     @server.tool()
+    def course_discovery_search(
+        query: str,
+        source: str = "",
+        kind: str = "",
+        include_private: bool = False,
+        limit: int = 10,
+    ) -> dict[str, Any]:
+        """Search Alma modules and optional local authenticated course sources."""
+        filters = CourseDiscoveryFilters(
+            sources=_csv(source),
+            kinds=_csv(kind),
+        )
+        return _serialized(
+            discovery_service.search(query, filters=filters, include_private=include_private, limit=limit)
+        )
+
+    @server.tool()
+    def course_discovery_status() -> dict[str, Any]:
+        """Show local course discovery index and semantic search availability."""
+        return _serialized(discovery_service.status())
+
+    @server.tool()
     def authenticated_alma_timetable(term: str) -> dict[str, Any]:
         """Load the authenticated Alma timetable for a term such as Sommer 2026."""
         return _serialized(_authenticated(env_file).alma.timetable(term))
@@ -95,6 +123,10 @@ def _authenticated(env_file: str | Path | None) -> TuebingenAuthenticatedClient:
 def _serialized(value: object) -> dict[str, Any]:
     payload = serialize(value)
     return payload if isinstance(payload, dict) else {"items": payload}
+
+
+def _csv(value: str) -> tuple[str, ...]:
+    return tuple(part.strip().lower() for part in value.split(",") if part.strip())
 
 
 def _parser() -> argparse.ArgumentParser:

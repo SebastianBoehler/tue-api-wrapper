@@ -10,6 +10,7 @@ from ..event_calendar_client import EventCalendarClient
 from ..fitness_client import FitnessClient
 from ..seatfinder_client import SeatfinderClient
 from ..timms_client import TimmsClient
+from .discovery import CourseDiscoveryApi
 
 
 @dataclass(slots=True)
@@ -93,9 +94,11 @@ class TuebingenPublicClient:
         alma: PublicAlmaApi | None = None,
         campus: PublicCampusApi | None = None,
         directory: PublicDirectoryApi | None = None,
+        discovery: CourseDiscoveryApi | None = None,
         timms: PublicTimmsApi | None = None,
     ) -> None:
         self.alma = alma or PublicAlmaApi()
         self.campus = campus or PublicCampusApi()
         self.directory = directory or PublicDirectoryApi()
+        self.discovery = discovery or CourseDiscoveryApi()
         self.timms = timms or PublicTimmsApi()

@@ -33,6 +33,7 @@ dependencies = [
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.26,<2"]
+discovery = ["lancedb>=0.25,<1", "sentence-transformers>=5,<6"]
 
 [project.scripts]
 alma-academics = "tue_api_wrapper.alma_academics_cli:main"

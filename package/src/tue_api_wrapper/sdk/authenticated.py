@@ -7,11 +7,13 @@ from ..alma_course_assignments_client import fetch_timetable_course_assignments
 from ..alma_course_search_client import search_courses
 from ..alma_planner_client import fetch_study_planner
 from ..client import AlmaClient
+from ..course_discovery_service import CourseDiscoveryService
 from ..ilias_client import IliasClient
 from ..ilias_feature_client import fetch_ilias_info_page, fetch_ilias_search_filters, search_ilias
 from ..mail_client import MailClient
 from ..moodle_client import MoodleClient
 from .credentials import UniversityCredentials
+from .discovery import CourseDiscoveryApi
 from .public import TuebingenPublicClient
 
 
@@ -175,6 +177,12 @@ class TuebingenAuthenticatedClient:
         self.ilias = AuthenticatedIliasApi(credentials)
         self.moodle = AuthenticatedMoodleApi(credentials)
         self.mail = AuthenticatedMailApi(credentials)
+        self.discovery = CourseDiscoveryApi(
+            CourseDiscoveryService(
+                alma_loader=lambda: self.alma.client,
+                ilias_loader=lambda: self.ilias.client,
+            )
+        )
 
     @classmethod
     def login(

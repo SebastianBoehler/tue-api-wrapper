@@ -10,10 +10,7 @@ from .portal_service import PortalService, serialize
 
 router = APIRouter()
 portal_service = PortalService()
-discovery_service = CourseDiscoveryService(
-    alma_loader=portal_service._alma_client,
-    ilias_loader=portal_service._ilias_client,
-)
+discovery_service: CourseDiscoveryService | None = None
 
 
 @router.get("/api/discovery/courses/search")
@@ -30,7 +27,7 @@ def course_discovery_search(
 ) -> dict[str, object]:
     try:
         return serialize(
-            discovery_service.search(
+            _discovery_service().search(
                 q,
                 filters=CourseDiscoveryFilters(
                     sources=tuple(_clean(source)),
@@ -54,12 +51,22 @@ def course_discovery_refresh(
     include_private: bool = Query(True),
     limit: int = Query(3000, ge=1, le=10000),
 ) -> dict[str, object]:
-    return serialize(discovery_service.refresh(query=q, include_private=include_private, limit=limit))
+    return serialize(_discovery_service().refresh(query=q, include_private=include_private, limit=limit))
 
 
 @router.get("/api/discovery/courses/status")
 def course_discovery_status() -> dict[str, object]:
-    return serialize(discovery_service.status())
+    return serialize(_discovery_service().status())
+
+
+def _discovery_service() -> CourseDiscoveryService:
+    global discovery_service
+    if discovery_service is None:
+        discovery_service = CourseDiscoveryService(
+            alma_loader=portal_service._alma_client,
+            ilias_loader=portal_service._ilias_client,
+        )
+    return discovery_service
 
 
 def _clean(values: list[str]) -> list[str]:

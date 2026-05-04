@@ -199,6 +199,11 @@ class AlmaClient:
             raise AlmaLoginError("Session is not authenticated; the course catalog page redirected back to login.")
         return parse_course_catalog_page(response.text)
 
+    def fetch_study_planner(self):
+        from .alma_planner_client import fetch_study_planner
+
+        return fetch_study_planner(self)
+
     @property
     def public_module_search_url(self) -> str:
         return (

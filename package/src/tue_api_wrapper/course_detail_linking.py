@@ -4,6 +4,7 @@ import re
 from typing import TYPE_CHECKING
 
 from .alma_course_search_client import search_courses
+from .alma_course_search_matching import select_course_search_result
 from .alma_course_search_models import AlmaCourseSearchResult
 from .alma_detail_client import fetch_public_module_detail
 from .config import AlmaError, AlmaParseError
@@ -31,6 +32,7 @@ REGISTRATION_SIGNAL_RE = re.compile(
     re.IGNORECASE,
 )
 ILIAS_COURSE_CONTENT_TYPES = ("crs", "grp", "cat")
+COURSE_CODE_PREFIX_RE = re.compile(r"^(?P<number>[A-ZÄÖÜ]{2,12}[-\s]?\d{2,5}[A-Z]?)\s+(?P<title>.+)$")
 
 
 def resolve_alma_course_detail(
@@ -51,14 +53,15 @@ def resolve_alma_course_detail(
     if search_client is None:
         raise AlmaParseError("Resolving a course by title requires an authenticated Alma client.")
 
-    page = search_courses(search_client, query=normalized_title, term=term, limit=12)
-    candidates = tuple(result for result in page.results if result.detail_url)
-    exact_matches = tuple(
-        result
-        for result in candidates
-        if normalize_text(result.title) == normalize_text(normalized_title)
-    )
-    selected = _single_or_none(exact_matches) or _single_or_none(candidates)
+    number, title = _split_lookup_title(normalized_title)
+    selected = None
+    candidates: tuple[AlmaCourseSearchResult, ...] = ()
+    for query in _alma_lookup_queries(number, title):
+        page = search_courses(search_client, query=query, term=term, limit=30)
+        candidates = tuple(result for result in page.results if result.detail_url)
+        selected = select_course_search_result(candidates, number=number, title=title)
+        if selected is not None:
+            break
     if selected is None:
         if candidates:
             raise AlmaParseError(
@@ -67,6 +70,23 @@ def resolve_alma_course_detail(
         raise AlmaParseError(f"No Alma detail page matched '{normalized_title}'.")
 
     return fetch_public_module_detail(detail_client, selected.detail_url or "")
+
+
+def _split_lookup_title(value: str) -> tuple[str | None, str]:
+    match = COURSE_CODE_PREFIX_RE.match(value)
+    if match is None:
+        identifiers = extract_course_identifiers(value)
+        return (identifiers[0], value) if identifiers else (None, value)
+    return match.group("number"), match.group("title")
+
+
+def _alma_lookup_queries(number: str | None, title: str) -> tuple[str, ...]:
+    specs: list[tuple[str, str]] = []
+    if number:
+        specs.extend((term, "Alma course number") for term in identifier_search_terms(number))
+    if title:
+        specs.append((title, "Alma title"))
+    return tuple(query for query, _ in dedupe_query_specs(specs))
 
 
 def build_unified_course_detail(
@@ -240,10 +260,6 @@ def _extract_registration_hints(detail: AlmaModuleDetail) -> tuple[CourseRegistr
             seen.add(key)
             hints.append(CourseRegistrationHint(source="alma", label=label, text=field.value))
     return tuple(hints[:6])
-
-
-def _single_or_none(results: tuple[AlmaCourseSearchResult, ...]) -> AlmaCourseSearchResult | None:
-    return results[0] if len(results) == 1 else None
 
 
 def _dedupe_key(result: IliasSearchResult) -> str:

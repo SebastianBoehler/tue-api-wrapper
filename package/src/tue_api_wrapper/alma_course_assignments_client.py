@@ -10,6 +10,7 @@ from .alma_course_assignments_models import (
 )
 from .alma_course_credits import AlmaCourseCredit, extract_detail_credits, extract_occurrence_credits
 from .alma_course_search_client import search_courses
+from .alma_course_search_matching import select_course_search_result
 from .alma_course_search_models import AlmaCourseSearchResult
 from .client import AlmaClient
 from .config import AlmaError
@@ -71,7 +72,7 @@ def _fetch_course_assignment(
     occurrence_credit = extract_occurrence_credits(occurrences)
     try:
         page = search_courses(client, query=_search_query(number, title), term=course_search_term, limit=30)
-        result = _select_result(page.results, number=number, title=title)
+        result = select_course_search_result(page.results, number=number, title=title)
         if result is None or not result.detail_url:
             raise ValueError(f"No Alma course-search result matched '{summary}'.")
         detail = client.fetch_public_module_detail(result.detail_url)
@@ -124,25 +125,6 @@ def _normalize_term(label: str) -> str:
 
 def _normalize(value: str | None) -> str:
     return re.sub(r"[^a-z0-9]+", "", (value or "").casefold())
-
-
-def _select_result(
-    results: tuple[AlmaCourseSearchResult, ...],
-    *,
-    number: str | None,
-    title: str,
-) -> AlmaCourseSearchResult | None:
-    title_key = _normalize(title)
-    number_key = _normalize(number)
-    for result in results:
-        result_title = _normalize(result.title)
-        if number_key and _normalize(result.number) == number_key and (title_key in result_title or result_title in title_key):
-            return result
-    for result in results:
-        result_title = _normalize(result.title)
-        if title_key in result_title or result_title in title_key:
-            return result
-    return results[0] if len(results) == 1 else None
 
 
 def _search_public_credit_candidate(client: AlmaClient, title: str) -> AlmaCourseCredit | None:

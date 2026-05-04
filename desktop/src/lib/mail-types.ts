@@ -14,6 +14,7 @@ export interface MailMessageSummary {
   received_at?: string | null;
   preview?: string | null;
   is_unread: boolean;
+  is_approved_broadcast?: boolean;
 }
 
 export interface MailInboxSummary {
@@ -36,4 +37,5 @@ export interface MailMessageDetail {
   body_text?: string | null;
   attachment_names: string[];
   is_unread: boolean;
+  is_approved_broadcast?: boolean;
 }

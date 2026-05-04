@@ -17,6 +17,7 @@ from tue_api_wrapper.mail_parsing import (
     extract_body_text,
     extract_text_preview,
     parse_message_detail,
+    parse_message_summary,
     strip_broadcast_boilerplate,
 )
 
@@ -75,6 +76,28 @@ class MailClientHelpersTests(unittest.TestCase):
         )
 
         self.assertEqual(strip_broadcast_boilerplate(preview), "Actual content")
+
+    def test_parse_summary_keeps_broadcast_approval_signal_after_cleaning_preview(self) -> None:
+        raw_message = (
+            b"Subject: Broadcast\r\n"
+            b"From: Office <office@example.com>\r\n"
+            b"MIME-Version: 1.0\r\n"
+            b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
+            b"Die Hochschulleitung hat den Versand dieser Runde zugestimmt.\r\n"
+            b"***********************************************************************\r\n"
+            b"*     *\r\n"
+            b"* Die inhaltliche Verantwortung liegt bei der Absenderin/dem Absender *\r\n"
+            b"***********************************************************************\r\n"
+            b"Actual inbox preview text.\r\n"
+        )
+
+        summary = parse_message_summary(raw_message, uid="7", is_unread=False)
+        detail = parse_message_detail(raw_message, uid="7", mailbox="INBOX", is_unread=False)
+
+        self.assertTrue(summary.is_approved_broadcast)
+        self.assertEqual(summary.preview, "Actual inbox preview text.")
+        self.assertTrue(detail.is_approved_broadcast)
+        self.assertEqual(detail.body_text, "Actual inbox preview text.")
 
     def test_extract_body_text_falls_back_to_html(self) -> None:
         raw_message = (

@@ -12,6 +12,7 @@ class MailMessageSummary:
     received_at: str | None
     preview: str | None
     is_unread: bool
+    is_approved_broadcast: bool = False
 
 
 @dataclass(frozen=True)
@@ -45,3 +46,4 @@ class MailMessageDetail:
     body_text: str | None
     attachment_names: tuple[str, ...]
     is_unread: bool
+    is_approved_broadcast: bool = False

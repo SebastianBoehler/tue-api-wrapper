@@ -34,6 +34,7 @@ def decode_mime_header(value: str | None) -> str:
 def parse_message_summary(raw_message: bytes, *, uid: str, is_unread: bool) -> MailMessageSummary:
     parsed = _message_from_bytes(raw_message)
     sender_name, sender_address = _parse_single_address(parsed.get("From"))
+    body = extract_body_text(parsed)
 
     return MailMessageSummary(
         uid=uid,
@@ -41,8 +42,9 @@ def parse_message_summary(raw_message: bytes, *, uid: str, is_unread: bool) -> M
         from_name=sender_name,
         from_address=sender_address,
         received_at=_parse_received_at(parsed.get("Date")),
-        preview=extract_text_preview(parsed),
+        preview=preview_from_text(strip_broadcast_boilerplate(body)),
         is_unread=is_unread,
+        is_approved_broadcast=has_broadcast_approval(body),
     )
 
 
@@ -55,6 +57,8 @@ def parse_message_detail(
 ) -> MailMessageDetail:
     parsed = _message_from_bytes(raw_message)
     sender_name, sender_address = _parse_single_address(parsed.get("From"))
+    body = extract_body_text(parsed)
+    cleaned_body = strip_broadcast_boilerplate(body)
 
     return MailMessageDetail(
         uid=uid,
@@ -65,21 +69,29 @@ def parse_message_detail(
         to_recipients=_parse_address_list(parsed.get("To")),
         cc_recipients=_parse_address_list(parsed.get("Cc")),
         received_at=_parse_received_at(parsed.get("Date")),
-        preview=extract_text_preview(parsed),
-        body_text=strip_broadcast_boilerplate(extract_body_text(parsed)),
+        preview=preview_from_text(cleaned_body),
+        body_text=cleaned_body,
         attachment_names=_extract_attachment_names(parsed),
         is_unread=is_unread,
+        is_approved_broadcast=has_broadcast_approval(body),
     )
 
 
 def extract_text_preview(message: Message, limit: int = 160) -> str | None:
-    body = strip_broadcast_boilerplate(extract_body_text(message))
-    if not body:
+    return preview_from_text(strip_broadcast_boilerplate(extract_body_text(message)), limit=limit)
+
+
+def preview_from_text(value: str | None, limit: int = 160) -> str | None:
+    if not value:
         return None
-    collapsed = re.sub(r"\s+", " ", body).strip()
+    collapsed = re.sub(r"\s+", " ", value).strip()
     if not collapsed:
         return None
     return collapsed[:limit]
+
+
+def has_broadcast_approval(value: str | None) -> bool:
+    return bool(value and _BROADCAST_APPROVAL_RE.search(value))
 
 
 def strip_broadcast_boilerplate(value: str | None) -> str | None:

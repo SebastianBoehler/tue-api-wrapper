@@ -123,7 +123,7 @@ export function MailPage({
         <div className="stack-list">
           {(inbox?.messages ?? []).map((item) => {
             const preview = cleanPreview(item.preview);
-            const hasApproval = hasBroadcastApproval(item.preview);
+            const hasApproval = Boolean(item.is_approved_broadcast) || hasBroadcastApproval(item.preview);
             return (
               <button
                 key={item.uid}
@@ -200,7 +200,7 @@ function MailMessageContent({ message }: { message: MailMessageDetail }) {
         <span>{message.from_name || message.from_address || "Unknown sender"}</span>
         {message.to_recipients.length ? <span>To: {message.to_recipients.join(", ")}</span> : null}
         {message.cc_recipients.length ? <span>CC: {message.cc_recipients.join(", ")}</span> : null}
-        {hasBroadcastApproval(message.body_text, message.preview) ? (
+        {message.is_approved_broadcast || hasBroadcastApproval(message.body_text, message.preview) ? (
           <span className="mail-verification-badge">✓ Approved broadcast mail</span>
         ) : null}
       </div>

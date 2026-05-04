@@ -166,13 +166,23 @@ enum CalendarSchedule {
     static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "de_DE")
+        calendar.firstWeekday = 2
         calendar.timeZone = TimeZone(identifier: "Europe/Berlin") ?? .current
         return calendar
     }()
 
     static func days(from events: [LectureEvent]) -> [Date] {
-        let starts = events.map { calendar.startOfDay(for: $0.startDate) }
-        return Array(Set(starts)).sorted()
+        let starts = Array(Set(events.map { calendar.startOfDay(for: $0.startDate) })).sorted()
+        guard let firstDay = starts.first, let lastDay = starts.last else {
+            return []
+        }
+        let weekStart = startOfWeek(containing: firstDay)
+        let weekEnd = endOfWeek(containing: lastDay)
+        let span = calendar.dateComponents([.day], from: weekStart, to: weekEnd).day ?? 0
+
+        return stride(from: 0, through: span, by: 1).compactMap { offset in
+            calendar.date(byAdding: .day, value: offset, to: weekStart)
+        }
     }
 
     static func events(on day: Date, from events: [LectureEvent]) -> [LectureEvent] {
@@ -226,5 +236,15 @@ enum CalendarSchedule {
 
     static func dayTitle(_ day: Date) -> String {
         day.formatted(.dateTime.weekday(.wide).day().month(.wide))
+    }
+
+    private static func startOfWeek(containing day: Date) -> Date {
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: day)
+        return calendar.date(from: components).map(calendar.startOfDay(for:)) ?? day
+    }
+
+    private static func endOfWeek(containing day: Date) -> Date {
+        let start = startOfWeek(containing: day)
+        return calendar.date(byAdding: .day, value: 6, to: start) ?? day
     }
 }

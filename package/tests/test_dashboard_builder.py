@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 import sys
 from threading import Event
@@ -29,21 +29,20 @@ from tue_api_wrapper.models import (
 class _FakeAlmaClient:
     studyservice_url = "https://alma.example/studyservice"
 
+    def __init__(self, occurrences: tuple[CalendarOccurrence, ...] | None = None) -> None:
+        self._occurrences = occurrences
+
     def fetch_timetable_for_term(self, term_label: str) -> TimetableResult:
-        occurrence = CalendarOccurrence(
-            summary="ML Seminar",
-            start=datetime(2026, 4, 13, 10, 15),
-            end=datetime(2026, 4, 13, 11, 45),
-            location="Sand 14",
-            description=None,
-        )
         return TimetableResult(
             term_label=term_label,
             term_id="229",
             export_url="https://alma.example/export.ics",
             raw_ics="",
             events=(),
-            occurrences=(occurrence,),
+            occurrences=self._occurrences
+            or (
+                _occurrence("ML Seminar", datetime(2026, 4, 13, 10, 15), datetime(2026, 4, 13, 11, 45)),
+            ),
             available_terms={term_label: "229"},
         )
 
@@ -171,6 +170,52 @@ class DashboardBuilderTests(unittest.TestCase):
         assignments.assert_not_called()
         self.assertIsNone(dashboard["study"]["currentSemesterCredits"])
         self.assertNotIn("Saved semester CP", [metric["label"] for metric in dashboard["metrics"]])
+
+    def test_dashboard_agenda_uses_upcoming_occurrences(self) -> None:
+        alma = _FakeAlmaClient(
+            (
+                _occurrence("Past lecture", datetime(2026, 4, 19, 10, 0), datetime(2026, 4, 19, 12, 0)),
+                _occurrence("Today lecture", datetime(2026, 5, 3, 10, 0), datetime(2026, 5, 3, 12, 0)),
+                _occurrence("Future lecture", datetime(2026, 5, 11, 10, 0), datetime(2026, 5, 11, 12, 0)),
+            )
+        )
+
+        dashboard = build_dashboard_payload(
+            term_label="Sommer 2026",
+            limit=1,
+            include_course_assignments=False,
+            today=date(2026, 5, 3),
+            load_alma_client=lambda: alma,
+            load_ilias_client=lambda: _FakeIliasClient(),
+            load_mail_panel=lambda *, limit: {"available": True, "items": []},
+            load_talks_panel=lambda *, limit: {"available": False, "totalHits": 0, "items": [], "error": None},
+        )
+
+        self.assertEqual([item["summary"] for item in dashboard["agenda"]["items"]], ["Today lecture", "Future lecture"])
+        self.assertEqual(_metric_value(dashboard, "Upcoming events"), 2)
+
+
+def _occurrence(
+    summary: str,
+    start: datetime,
+    end: datetime,
+) -> CalendarOccurrence:
+    return CalendarOccurrence(
+        summary=summary,
+        start=start,
+        end=end,
+        location="Sand 14",
+        description=None,
+    )
+
+
+def _metric_value(dashboard: dict[str, object], label: str) -> object:
+    metrics = dashboard["metrics"]
+    assert isinstance(metrics, list)
+    for metric in metrics:
+        if isinstance(metric, dict) and metric.get("label") == label:
+            return metric.get("value")
+    raise AssertionError(f"Metric {label!r} not found.")
 
 
 if __name__ == "__main__":

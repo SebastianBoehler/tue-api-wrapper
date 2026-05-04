@@ -126,6 +126,7 @@ export interface DashboardData {
   documents: DashboardDocumentsPanel;
   exams: DashboardExamItem[];
   ilias: {
+    title?: string | null;
     memberships: DashboardMembershipItem[];
     tasks: DashboardTaskItem[];
   };

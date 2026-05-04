@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { fetchCourseDetail } from "../../lib/api";
 import { courseLookupQuery, courseNavigationUrl, stripCourseCode } from "../../lib/course-detail-url";
+import type { AlmaCourseSlot } from "../../lib/dashboard-types";
 import type { AlmaCourseDetail, CourseDetailSection, CourseDetailTable, UnifiedCourseDetail } from "../../lib/course-types";
 import { formatCredits, formatDateRange } from "../../lib/format";
 import { EmptyState, PanelHeader } from "./DashboardPrimitives";
@@ -249,7 +250,7 @@ function iliasSearchUrl(query: string): string {
   return `https://ovidius.uni-tuebingen.de/ilias.php?${params}`;
 }
 
-function slotText(slot: NonNullable<DashboardPageProps["data"]>["study"]["currentSemesterCourses"][number]["slots"][number]): string {
+function slotText(slot: AlmaCourseSlot): string {
   const time = [slot.start_time, slot.end_time].filter(Boolean).join(" - ");
   return [time, slot.location].filter(Boolean).join(" · ");
 }

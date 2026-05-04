@@ -41,7 +41,6 @@ struct CalendarDayStrip: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .disabled(dayEvents.isEmpty)
                 }
             }
             .padding(.horizontal, 2)

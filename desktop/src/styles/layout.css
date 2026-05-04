@@ -29,6 +29,7 @@
 .dashboard-shell {
   display: grid;
   gap: 18px;
+  min-width: 0;
 }
 
 .dashboard-header {
@@ -46,6 +47,7 @@
 .page-grid {
   display: grid;
   gap: 16px;
+  min-width: 0;
 }
 
 .hero-strip {

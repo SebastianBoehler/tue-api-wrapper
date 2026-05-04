@@ -10,7 +10,7 @@
     "dev:electron:build": "tsc -p tsconfig.electron.json --watch --preserveWatchOutput",
     "dev:electron:run": "wait-on tcp:5173 file:dist-electron/electron/main.js && nodemon --watch dist-electron --ext js --exec electron .",
     "build": "npm run build:renderer && npm run build:electron",
-    "build:renderer": "vite build",
+    "build:renderer": "tsc --noEmit -p tsconfig.json && vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
     "build:backend": "node scripts/build-python-sidecar.mjs",
     "package": "npm run build && electron-builder --config electron-builder.yml",

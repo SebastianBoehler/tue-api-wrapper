@@ -2,17 +2,41 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import type { AlmaTimetableCourseAssignment, DashboardAgendaItem } from "../../lib/dashboard-types";
 import { courseLookupQuery, extractCourseDetailUrl } from "../../lib/course-detail-url";
-import { formatDateRange } from "../../lib/format";
+import {
+  courseColor,
+  dedupeEvents,
+  defaultWeekIndex,
+  eventKey,
+  eventPlacement,
+  filterUpcomingEvents,
+  groupEventsByWeek,
+  hourLabel,
+  hourTop,
+  normalizeCourseSummary,
+  timelineBounds
+} from "./calendar-schedule";
 import { EmptyState } from "./DashboardPrimitives";
 import type { CourseNavigationProps, DashboardPageProps } from "./types";
 
 export function CalendarPage({ data, onOpenCourseDetail }: DashboardPageProps & CourseNavigationProps) {
   const rawEvents = data?.agenda.items ?? [];
-  const events = useMemo(() => dedupeEvents(rawEvents), [rawEvents]);
-  const days = useMemo(() => groupEventsByDay(events), [events]);
+  const dedupedEvents = useMemo(() => dedupeEvents(rawEvents), [rawEvents]);
+  const events = useMemo(() => filterUpcomingEvents(dedupedEvents), [dedupedEvents]);
+  const weeks = useMemo(() => groupEventsByWeek(events), [events]);
+  const [weekIndex, setWeekIndex] = useState(0);
+  const week = weeks[weekIndex] ?? null;
+  const days = week?.days ?? [];
   const timeline = useMemo(() => timelineBounds(events), [events]);
   const [selectedEvent, setSelectedEvent] = useState<DashboardAgendaItem | null>(null);
-  const hiddenDuplicates = rawEvents.length - events.length;
+  const hiddenDuplicates = rawEvents.length - dedupedEvents.length;
+
+  useEffect(() => {
+    setWeekIndex((current) => {
+      if (!weeks.length) return 0;
+      if (weeks[current]) return current;
+      return defaultWeekIndex(weeks);
+    });
+  }, [weeks]);
 
   useEffect(() => {
     setSelectedEvent((current) => current && events.includes(current) ? current : null);
@@ -25,7 +49,25 @@ export function CalendarPage({ data, onOpenCourseDetail }: DashboardPageProps & 
           <div className="section-heading schedule-heading">
             <h3>Timetable</h3>
             <div className="schedule-heading-meta">
-              <span>{days.length} days · {events.length} events{hiddenDuplicates ? ` · ${hiddenDuplicates} duplicate hidden` : ""}</span>
+              <span>{week?.label ?? "No week"} · {events.length} events{hiddenDuplicates ? ` · ${hiddenDuplicates} duplicate hidden` : ""}</span>
+              <div className="schedule-week-controls">
+                <button
+                  className="ghost-button compact-button"
+                  disabled={weekIndex <= 0}
+                  onClick={() => setWeekIndex((index) => Math.max(0, index - 1))}
+                  type="button"
+                >
+                  Previous
+                </button>
+                <button
+                  className="ghost-button compact-button"
+                  disabled={weekIndex >= weeks.length - 1}
+                  onClick={() => setWeekIndex((index) => Math.min(weeks.length - 1, index + 1))}
+                  type="button"
+                >
+                  Next
+                </button>
+              </div>
               {data?.agenda.exportUrl ? (
                 <button className="ghost-button compact-button" onClick={() => void window.desktop.openExternal(data.agenda.exportUrl ?? "")} type="button">
                   Open export
@@ -36,7 +78,7 @@ export function CalendarPage({ data, onOpenCourseDetail }: DashboardPageProps & 
           {days.length > 0 ? (
             <div
               className="schedule-timeline"
-              style={{ gridTemplateColumns: `54px repeat(${days.length}, minmax(168px, 1fr))` }}
+              style={{ gridTemplateColumns: "54px repeat(7, minmax(0, 1fr))" }}
             >
               <div className="schedule-time-gutter" style={{ height: timeline.height }}>
                 {timeline.hours.map((hour) => (
@@ -50,6 +92,7 @@ export function CalendarPage({ data, onOpenCourseDetail }: DashboardPageProps & 
                     <span>{day.dateLabel}</span>
                   </div>
                   <div className="schedule-day-lane" style={{ height: timeline.height }}>
+                    {day.items.length === 0 ? <span className="schedule-empty-day">No courses</span> : null}
                     {day.items.map((item) => {
                       const color = courseColor(item.summary);
                       const placement = eventPlacement(item, timeline);
@@ -91,9 +134,6 @@ export function CalendarPage({ data, onOpenCourseDetail }: DashboardPageProps & 
   );
 }
 
-const HOUR_HEIGHT = 58;
-const MIN_SLOT_HEIGHT = 74;
-
 function courseDetailTarget(item: DashboardAgendaItem, data: DashboardPageProps["data"]) {
   const assignment = findCourseAssignment(data?.study.currentSemesterCourses ?? [], item);
   return {
@@ -106,121 +146,20 @@ function courseDetailTarget(item: DashboardAgendaItem, data: DashboardPageProps[
   };
 }
 
-function groupEventsByDay(events: DashboardAgendaItem[]) {
-  const formatter = new Intl.DateTimeFormat("de-DE", { weekday: "short" });
-  const dateFormatter = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" });
-  const groups = new Map<string, DashboardAgendaItem[]>();
-
-  for (const event of events) {
-    const date = new Date(event.start);
-    if (Number.isNaN(date.getTime())) {
-      continue;
-    }
-    const key = date.toISOString().slice(0, 10);
-    groups.set(key, [...(groups.get(key) ?? []), event]);
-  }
-
-  return [...groups.entries()].slice(0, 7).map(([key, items]) => {
-    const date = new Date(`${key}T00:00:00`);
-    return {
-      key,
-      weekday: formatter.format(date),
-      dateLabel: dateFormatter.format(date),
-      items: items.sort((left, right) => new Date(left.start).getTime() - new Date(right.start).getTime())
-    };
-  });
-}
-
-function dedupeEvents(events: DashboardAgendaItem[]): DashboardAgendaItem[] {
-  const seen = new Set<string>();
-  return events.filter((event) => {
-    const key = eventKey(event);
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.add(key);
-    return true;
-  });
-}
-
-function eventKey(event: DashboardAgendaItem): string {
-  return [
-    normalizeCourseSummary(event.summary),
-    isoDateKey(event.start),
-    event.end ? isoDateKey(event.end) : "",
-    (event.location ?? "").replace(/\s+/g, " ").trim().toLocaleLowerCase("de-DE")
-  ].join("|");
-}
-
-function timelineBounds(events: DashboardAgendaItem[]) {
-  const starts = events.map((event) => minutesOfDay(event.start)).filter((value) => value >= 0);
-  const ends = events.map((event) => minutesOfDay(event.end ?? event.start)).filter((value) => value >= 0);
-  const firstStart = starts.length ? Math.min(...starts) : 8 * 60;
-  const lastEnd = ends.length ? Math.max(...ends) : 18 * 60;
-  const startHour = Math.max(7, Math.floor(firstStart / 60));
-  const endHour = Math.min(22, Math.ceil(lastEnd / 60));
-  const hours = Array.from({ length: Math.max(1, endHour - startHour + 1) }, (_, index) => startHour + index);
-  return {
-    endHour,
-    height: Math.max(1, endHour - startHour) * HOUR_HEIGHT,
-    hours,
-    startHour
-  };
-}
-
-function isoDateKey(value: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toISOString();
-}
-
-function eventPlacement(event: DashboardAgendaItem, timeline: ReturnType<typeof timelineBounds>) {
-  const start = minutesOfDay(event.start);
-  const end = minutesOfDay(event.end ?? event.start);
-  const top = ((start - timeline.startHour * 60) / 60) * HOUR_HEIGHT;
-  const duration = Math.max(30, end - start);
-  return {
-    height: Math.max(MIN_SLOT_HEIGHT, (duration / 60) * HOUR_HEIGHT - 8),
-    top: Math.max(0, top)
-  };
-}
-
-function minutesOfDay(value: string): number {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return -1;
-  }
-  return date.getHours() * 60 + date.getMinutes();
-}
-
-function hourTop(hour: number, timeline: ReturnType<typeof timelineBounds>): number {
-  return (hour - timeline.startHour) * HOUR_HEIGHT;
-}
-
-function hourLabel(hour: number): string {
-  return `${String(hour).padStart(2, "0")}:00`;
-}
-
 function formatTime(start: string, end?: string | null): string {
-  return formatDateRange(start, end).replace(/^[^,]+,\s*/, "");
-}
+  const startDate = new Date(start);
+  if (Number.isNaN(startDate.getTime())) return "Time pending";
 
-function courseColor(summary: string) {
-  const key = courseKey(summary);
-  let hash = 0;
-  for (const char of key) {
-    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  }
-  const hue = (hash * 137.508) % 360;
-  return {
-    accent: `hsl(${hue.toFixed(0)} 68% 42%)`,
-    background: `hsl(${hue.toFixed(0)} 72% 96%)`,
-    focus: `hsl(${hue.toFixed(0)} 72% 48% / 0.2)`
-  };
-}
+  const formatter = new Intl.DateTimeFormat("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+  if (!end) return formatter.format(startDate);
 
-function courseKey(summary: string): string {
-  const code = summary.match(/\b[A-Z]{2,}\s?\d{3,}[A-Z]?\b/i)?.[0];
-  return (code ?? summary).replace(/\s+/g, "").toUpperCase();
+  const endDate = new Date(end);
+  return Number.isNaN(endDate.getTime())
+    ? formatter.format(startDate)
+    : `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
 }
 
 function findCourseAssignment(
@@ -232,8 +171,4 @@ function findCourseAssignment(
   }
   const summaryKey = normalizeCourseSummary(event.summary);
   return assignments.find((assignment) => normalizeCourseSummary(assignment.summary) === summaryKey) ?? null;
-}
-
-function normalizeCourseSummary(value: string): string {
-  return value.replace(/\s+/g, " ").trim().toLocaleLowerCase("de-DE");
 }

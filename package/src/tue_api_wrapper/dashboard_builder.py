@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any, Callable
 
 from .alma_course_assignments_client import build_timetable_course_assignments
@@ -46,6 +46,7 @@ def build_dashboard_payload(
     term_label: str = DEFAULT_DASHBOARD_TERM,
     limit: int = 8,
     include_course_assignments: bool = True,
+    today: date | None = None,
     load_alma_client: Callable[[], AlmaClient],
     load_ilias_client: Callable[[], IliasClient],
     load_mail_panel: Callable[..., dict[str, Any]],
@@ -69,7 +70,7 @@ def build_dashboard_payload(
         mail = mail_future.result()
         talks = talks_future.result()
 
-    return _compose_dashboard(alma=alma, ilias=ilias, mail=mail, talks=talks, limit=limit)
+    return _compose_dashboard(alma=alma, ilias=ilias, mail=mail, talks=talks, limit=limit, today=today)
 
 
 def _load_alma_dashboard(
@@ -79,10 +80,17 @@ def _load_alma_dashboard(
     include_course_assignments: bool,
 ) -> AlmaDashboardData:
     alma = load_alma_client()
-    timetable = alma.fetch_timetable_for_term(term_label)
-    enrollments = alma.fetch_enrollment_page()
-    exams = tuple(alma.fetch_exam_overview()[:limit])
-    studyservice_contract = alma.fetch_studyservice_contract()
+    with ThreadPoolExecutor(max_workers=4, thread_name_prefix="dashboard-alma") as executor:
+        timetable_future = executor.submit(alma.fetch_timetable_for_term, term_label)
+        enrollments_future = executor.submit(alma.fetch_enrollment_page)
+        exams_future = executor.submit(lambda: tuple(alma.fetch_exam_overview()[:limit]))
+        studyservice_future = executor.submit(alma.fetch_studyservice_contract)
+
+        timetable = timetable_future.result()
+        enrollments = enrollments_future.result()
+        exams = exams_future.result()
+        studyservice_contract = studyservice_future.result()
+
     current_credit_error = None
     if include_course_assignments:
         try:
@@ -123,8 +131,10 @@ def _compose_dashboard(
     mail: dict[str, Any],
     talks: dict[str, Any],
     limit: int,
+    today: date | None,
 ) -> dict[str, Any]:
     documents = alma.studyservice_contract.reports[:limit]
+    upcoming_occurrences = _upcoming_occurrences(alma.timetable.occurrences, today=today)
     passed_exams = [
         exam
         for exam in alma.exams
@@ -139,7 +149,7 @@ def _compose_dashboard(
     course_assignments = alma.course_assignments
 
     metrics = [
-        {"label": "Upcoming events", "value": len(alma.timetable.occurrences)},
+        {"label": "Upcoming events", "value": len(upcoming_occurrences)},
         {"label": "Open tasks", "value": len(ilias.tasks)},
         {"label": "Learning spaces", "value": len(ilias.memberships)},
         {"label": "Passed exams", "value": len(passed_exams)},
@@ -159,7 +169,7 @@ def _compose_dashboard(
         "metrics": metrics,
         "agenda": {
             "exportUrl": alma.timetable.export_url,
-            "items": serialize(alma.timetable.occurrences[:limit]),
+            "items": serialize(upcoming_occurrences),
         },
         "study": {
             "selectedTerm": alma.enrollments.selected_term,
@@ -197,6 +207,15 @@ def _compose_dashboard(
         "talks": talks,
         "quickLinks": _quick_links(),
     }
+
+
+def _upcoming_occurrences(
+    occurrences: tuple[Any, ...],
+    *,
+    today: date | None,
+) -> tuple[Any, ...]:
+    cutoff = today or datetime.now().date()
+    return tuple(item for item in occurrences if (item.end or item.start).date() >= cutoff)
 
 
 def _quick_links() -> list[dict[str, str]]:

@@ -2,13 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .alma_detail_html import (
-    extract_module_detail_contract,
-    find_module_study_program_tab,
-    find_show_all_modules_trigger,
-    merge_module_detail_tabs,
-    parse_module_detail_page,
-)
+from .alma_detail_html import extract_module_detail_contract, find_show_all_modules_trigger, merge_module_detail_tabs, parse_module_detail_page
+from .alma_detail_tabs import detail_tabs_to_fetch
 from .alma_detail_forms import set_assignment_row_limits
 from .config import AlmaParseError
 from .models import AlmaModuleDetail
@@ -26,11 +21,24 @@ def fetch_public_module_detail(client: "AlmaClient", detail_url: str) -> AlmaMod
     response.raise_for_status()
 
     base_detail = parse_module_detail_page(response.text, response.url)
-    contract = extract_module_detail_contract(response.text, response.url)
-    tab = find_module_study_program_tab(contract)
-    if tab is None or tab.is_active or contract.action_url is None:
-        return _fetch_expanded_assignment_tables(client, base_detail, response.text, response.url)
+    detail = base_detail
+    latest_html = response.text
+    latest_url = response.url
+    pending_labels = [tab.label for tab in detail_tabs_to_fetch(extract_module_detail_contract(response.text, response.url))]
+    for label in pending_labels:
+        latest_contract = extract_module_detail_contract(latest_html, latest_url)
+        tab = next((item for item in detail_tabs_to_fetch(latest_contract) if item.label == label), None)
+        if tab is None:
+            continue
+        tab_response = _post_detail_tab(client, latest_html, latest_url, tab)
+        detail = merge_module_detail_tabs(detail, parse_module_detail_page(tab_response.text, tab_response.url))
+        latest_html = tab_response.text
+        latest_url = tab_response.url
+    return _fetch_expanded_assignment_tables(client, detail, latest_html, latest_url)
 
+
+def _post_detail_tab(client: "AlmaClient", html: str, page_url: str, tab):
+    contract = extract_module_detail_contract(html, page_url)
     payload = dict(contract.payload)
     set_assignment_row_limits(payload)
     if contract.submit_marker_name is not None:
@@ -46,19 +54,14 @@ def fetch_public_module_detail(client: "AlmaClient", detail_url: str) -> AlmaMod
     payload.setdefault("DISABLE_VALIDATION", "true")
     payload.setdefault("DISABLE_AUTOSCROLL", "true")
 
-    tab_response = client.session.post(
-        contract.action_url,
+    response = client.session.post(
+        contract.action_url or page_url,
         data=payload,
         timeout=client.timeout_seconds,
         allow_redirects=True,
     )
-    tab_response.raise_for_status()
-
-    tab_detail = merge_module_detail_tabs(
-        base_detail,
-        parse_module_detail_page(tab_response.text, tab_response.url),
-    )
-    return _fetch_expanded_assignment_tables(client, tab_detail, tab_response.text, tab_response.url)
+    response.raise_for_status()
+    return response
 
 
 def _fetch_expanded_assignment_tables(

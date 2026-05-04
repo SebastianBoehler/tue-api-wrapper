@@ -101,9 +101,6 @@ def extract_module_detail_contract(html: str, page_url: str) -> AlmaDetailPageCo
     )
 
 
-def find_module_study_program_tab(contract: AlmaDetailPageContract) -> AlmaDetailTabControl | None:
-    return next((tab for tab in contract.tabs if _is_module_study_program_label(tab.label)), None)
-
 def parse_module_detail_page(html: str, page_url: str) -> AlmaModuleDetail:
     html = _unwrap_partial_response(html)
     soup = BeautifulSoup(html, "html.parser")

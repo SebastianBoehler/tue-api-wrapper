@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { fetchExamReports } from "../../lib/api";
-import type { DashboardDocumentReport, DashboardExamItem } from "../../lib/dashboard-types";
+import type { DashboardDocumentReport, DashboardEnrollmentEntry, DashboardExamItem, DashboardStudyPlannerModule } from "../../lib/dashboard-types";
 import { formatCredits } from "../../lib/format";
 import { EmptyState, PanelHeader } from "./DashboardPrimitives";
 import type { DashboardPageProps } from "./types";
@@ -11,6 +11,8 @@ export function StudyPage({ data, state }: DashboardPageProps) {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const passedExams = useMemo(() => (data?.exams ?? []).filter(isPassedExam), [data?.exams]);
+  const plannerModules = useMemo(() => progressModules(data?.study.planner?.modules ?? []), [data?.study.planner?.modules]);
+  const enrollments = data?.study.enrollments ?? [];
   const studyNote = data?.study.currentSemesterCreditError
     ?? (data?.study.currentSemesterCreditUnresolved?.length
       ? `${data.study.currentSemesterCreditUnresolved.length} timetable entries have no CP value.`
@@ -95,6 +97,46 @@ export function StudyPage({ data, state }: DashboardPageProps) {
         </div>
       </article>
 
+      <article className="panel">
+        <PanelHeader title="Module areas" meta={data?.study.planner?.title ?? "Alma planner"} />
+        <div className="stack-list">
+          {plannerModules.map((module) => (
+            <div key={`${module.number}-${module.title}`} className="stack-row compact-row">
+              <div>
+                <strong>{module.title}</strong>
+                <span>{module.number ?? "No module code"}</span>
+                {typeof module.progress_percent === "number" ? (
+                  <div className="progress-track" aria-label={`${module.title} progress`}>
+                    <span style={{ width: `${module.progress_percent}%` }} />
+                  </div>
+                ) : null}
+              </div>
+              <span>{module.credits_summary ?? "No CP"}</span>
+            </div>
+          ))}
+          {data?.study.plannerError ? <p className="inline-error">{data.study.plannerError}</p> : null}
+          {!plannerModules.length && !data?.study.plannerError ? (
+            <EmptyState>No Alma planner module areas returned.</EmptyState>
+          ) : null}
+        </div>
+      </article>
+
+      <article className="panel">
+        <PanelHeader title="Enrollments" meta={`${enrollments.length} rows`} />
+        <div className="stack-list">
+          {enrollments.slice(0, 8).map((entry) => (
+            <div key={`${entry.number}-${entry.title}-${entry.status}`} className="stack-row compact-row">
+              <div>
+                <strong>{entry.title}</strong>
+                <span>{enrollmentMeta(entry)}</span>
+              </div>
+              <span>{entry.status ?? "No status"}</span>
+            </div>
+          ))}
+          {enrollments.length === 0 ? <EmptyState>No Alma enrollment rows returned.</EmptyState> : null}
+        </div>
+      </article>
+
       <article className="panel wide-panel">
         <PanelHeader title="Documents" meta={reportLoading ? "Loading reports..." : `${examReports.length} exam reports`} />
         <div className="action-list">
@@ -141,4 +183,12 @@ function isPassedExam(exam: DashboardExamItem): boolean {
 
 function examMeta(exam: DashboardExamItem): string {
   return [exam.number, exam.cp, exam.status].filter(Boolean).join(" · ") || "No structured label available";
+}
+
+function progressModules(modules: DashboardStudyPlannerModule[]): DashboardStudyPlannerModule[] {
+  return modules.filter((module) => module.credits_summary || module.credits_required || module.credits_earned);
+}
+
+function enrollmentMeta(entry: DashboardEnrollmentEntry): string {
+  return [entry.number, entry.event_type, entry.semester, entry.schedule_text].filter(Boolean).join(" · ");
 }

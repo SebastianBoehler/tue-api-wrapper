@@ -2,7 +2,7 @@ import type { CourseDiscoveryResult } from "../../lib/course-discovery-types";
 import type { CourseDiscoveryPageProps } from "./types";
 
 const SOURCE_OPTIONS = [
-  { id: "alma", label: "Alma" },
+  { id: "alma", label: "Alma courses and modules" },
   { id: "ilias", label: "ILIAS" },
   { id: "moodle", label: "Moodle" }
 ];
@@ -153,7 +153,7 @@ function DiscoveryResultRow({
       type="button"
     >
       <div>
-        <span className="source-pill">{document.source} / {document.kind}</span>
+        <span className="source-pill">{discoverySourceLabel(document.source, document.kind)}</span>
         <strong>{document.title}</strong>
         <span>{document.text}</span>
       </div>
@@ -163,6 +163,13 @@ function DiscoveryResultRow({
       </div>
     </button>
   );
+}
+
+function discoverySourceLabel(source: string, kind: string): string {
+  if (source === "alma" && kind === "module") return "Alma module handbook";
+  if (source === "alma" && kind === "course") return "Alma course search";
+  if (source === "alma" && kind === "lecture") return "Alma current lectures";
+  return `${source} / ${kind}`;
 }
 
 function almaDetailUrl(url: string | null): string | null {

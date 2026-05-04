@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from .alma_catalog_models import AlmaCourseCatalogContract, AlmaCourseCatalogPage, AlmaCourseCatalogTermOption
-from .alma_academics_html import parse_course_catalog_page
+from .alma_catalog_tree_html import parse_course_catalog_page
 from .config import AlmaParseError
 
 

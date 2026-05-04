@@ -7,6 +7,7 @@ from typing import Any, Callable
 
 from .alma_course_assignments_client import build_timetable_course_assignments
 from .alma_course_assignments_models import AlmaTimetableCourseAssignmentsPage
+from .alma_planner_models import AlmaStudyPlannerPage
 from .alma_studyservice_models import AlmaStudyServicePage
 from .client import AlmaClient
 from .config import AlmaError
@@ -29,6 +30,8 @@ class AlmaDashboardData:
     enrollments: AlmaEnrollmentPage
     exams: tuple[AlmaExamNode, ...]
     studyservice_contract: AlmaStudyServicePage
+    study_planner: AlmaStudyPlannerPage | None
+    study_planner_error: str | None
     studyservice_url: str
     course_assignments: AlmaTimetableCourseAssignmentsPage | None
     current_credit_error: str | None
@@ -85,11 +88,18 @@ def _load_alma_dashboard(
         enrollments_future = executor.submit(alma.fetch_enrollment_page)
         exams_future = executor.submit(lambda: tuple(alma.fetch_exam_overview()[:limit]))
         studyservice_future = executor.submit(alma.fetch_studyservice_contract)
+        study_planner_future = executor.submit(alma.fetch_study_planner)
 
         timetable = timetable_future.result()
         enrollments = enrollments_future.result()
         exams = exams_future.result()
         studyservice_contract = studyservice_future.result()
+        study_planner = None
+        study_planner_error = None
+        try:
+            study_planner = study_planner_future.result()
+        except AlmaError as error:
+            study_planner_error = str(error)
 
     current_credit_error = None
     if include_course_assignments:
@@ -106,6 +116,8 @@ def _load_alma_dashboard(
         enrollments=enrollments,
         exams=exams,
         studyservice_contract=studyservice_contract,
+        study_planner=study_planner,
+        study_planner_error=study_planner_error,
         studyservice_url=alma.studyservice_url,
         course_assignments=course_assignments,
         current_credit_error=current_credit_error,
@@ -185,6 +197,9 @@ def _compose_dashboard(
             ),
             "currentSemesterCreditError": alma.current_credit_error,
             "availableTerms": serialize(alma.enrollments.available_terms),
+            "enrollments": serialize(alma.enrollments.entries),
+            "planner": serialize(alma.study_planner),
+            "plannerError": alma.study_planner_error,
         },
         "documents": {
             "reports": serialize(documents),

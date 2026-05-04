@@ -76,6 +76,8 @@ def parse_study_planner_page(html: str, page_url: str) -> AlmaStudyPlannerPage:
             number, module_title = _split_module_heading(heading)
             detail_link = cell.find("a", href=lambda value: bool(value and "_flowId=detailView-flow" in value))
             credits = cell.find("span", attrs={"title": "CP erworben/soll"})
+            credits_summary = _clean_text(credits.get_text(" ", strip=True)) if credits is not None else None
+            earned, required = _parse_credit_progress(credits_summary)
             modules.append(
                 AlmaStudyPlannerModule(
                     row_index=row_index,
@@ -83,7 +85,10 @@ def parse_study_planner_page(html: str, page_url: str) -> AlmaStudyPlannerPage:
                     column_span=span,
                     title=module_title,
                     number=number,
-                    credits_summary=_clean_text(credits.get_text(" ", strip=True)) if credits is not None else None,
+                    credits_summary=credits_summary,
+                    credits_earned=earned,
+                    credits_required=required,
+                    progress_percent=_progress_percent(earned, required),
                     detail_url=urljoin(page_url, detail_link["href"]) if detail_link is not None else None,
                     is_expandable=cell.find("button", attrs={"name": lambda value: bool(value and value.endswith(":explodeModule"))}) is not None,
                 )
@@ -110,3 +115,26 @@ def parse_study_planner_page(html: str, page_url: str) -> AlmaStudyPlannerPage:
             show_alternative_semesters=_button_enabled(":switchAlternativeFachsemester"),
         ),
     )
+
+
+def _parse_credit_progress(value: str | None) -> tuple[float | None, float | None]:
+    if not value or "/" not in value:
+        return None, None
+    earned, required = value.split("/", 1)
+    return _parse_credit_value(earned), _parse_credit_value(required)
+
+
+def _parse_credit_value(value: str) -> float | None:
+    normalized = value.strip().replace(",", ".")
+    if not normalized or normalized == "-":
+        return 0.0 if normalized == "-" else None
+    try:
+        return float(normalized)
+    except ValueError:
+        return None
+
+
+def _progress_percent(earned: float | None, required: float | None) -> float | None:
+    if earned is None or required is None or required <= 0:
+        return None
+    return round(min(100.0, max(0.0, earned / required * 100)), 1)

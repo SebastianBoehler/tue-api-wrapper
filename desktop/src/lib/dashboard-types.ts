@@ -101,6 +101,26 @@ export interface DashboardDocumentReport {
   trigger_name: string;
 }
 
+export interface DashboardStudyPlannerModule {
+  title: string;
+  number?: string | null;
+  credits_summary?: string | null;
+  credits_earned?: number | null;
+  credits_required?: number | null;
+  progress_percent?: number | null;
+  detail_url?: string | null;
+}
+
+export interface DashboardEnrollmentEntry {
+  title: string;
+  number?: string | null;
+  event_type?: string | null;
+  status?: string | null;
+  semester?: string | null;
+  schedule_text?: string | null;
+  detail_url?: string | null;
+}
+
 export interface DashboardData {
   generatedAt: string;
   termLabel: string;
@@ -122,6 +142,12 @@ export interface DashboardData {
     currentSemesterCreditUnresolved?: string[];
     currentSemesterCreditError?: string | null;
     currentSemesterCourses?: AlmaTimetableCourseAssignment[];
+    enrollments?: DashboardEnrollmentEntry[];
+    planner?: {
+      title: string;
+      modules: DashboardStudyPlannerModule[];
+    } | null;
+    plannerError?: string | null;
   };
   documents: DashboardDocumentsPanel;
   exams: DashboardExamItem[];

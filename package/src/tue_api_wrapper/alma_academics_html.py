@@ -5,11 +5,11 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
+from .alma_catalog_tree_html import parse_course_catalog_page
 from .alma_detail_html import parse_module_detail_page
+from .alma_enrollment_html import parse_enrollment_page
 from .config import AlmaParseError
 from .models import (
-    AlmaCourseCatalogNode,
-    AlmaEnrollmentPage,
     AlmaExamNode,
     AlmaAdvancedModuleSearchForm,
     AlmaModuleSearchForm,
@@ -20,36 +20,6 @@ from .models import (
     AlmaModuleSearchResultsPage,
     AlmaSearchOption,
 )
-
-
-def parse_enrollment_page(html: str) -> AlmaEnrollmentPage:
-    soup = BeautifulSoup(html, "html.parser")
-    form = soup.find("form", id="studentOverviewForm")
-    if form is None:
-        raise AlmaParseError("Could not find the Alma enrollment overview form.")
-
-    select = form.find("select", attrs={"name": "studentOverviewForm:enrollmentsDiv:termSelector:termPeriodDropDownList_input"})
-    if select is None:
-        raise AlmaParseError("Could not find the Alma enrollment term selector.")
-
-    terms: dict[str, str] = {}
-    selected_term: str | None = None
-    for option in select.find_all("option"):
-        label = option.get_text(" ", strip=True)
-        value = option.get("value", "").strip()
-        if label and value:
-            terms[label] = value
-            if option.has_attr("selected"):
-                selected_term = label
-
-    message = None
-    text = " ".join(form.get_text(" ", strip=True).split())
-    match = re.search(r"Sie haben bisher.+?(?:angemeldet\.|zugelassen\.)", text)
-    if match:
-        message = match.group(0)
-
-    return AlmaEnrollmentPage(selected_term=selected_term, available_terms=terms, message=message)
-
 
 def parse_exam_overview(html: str) -> tuple[AlmaExamNode, ...]:
     soup = BeautifulSoup(html, "html.parser")
@@ -93,38 +63,6 @@ def parse_exam_overview(html: str) -> tuple[AlmaExamNode, ...]:
                 remark=field_value("remark"),
                 exception=field_value("exceptionNein") or field_value("exceptionJa"),
                 release_date=field_value("geplantesFreigabedatum"),
-            )
-        )
-    return tuple(rows)
-
-
-def parse_course_catalog_page(html: str) -> tuple[AlmaCourseCatalogNode, ...]:
-    soup = BeautifulSoup(html, "html.parser")
-    table = soup.find("table", class_="treeTableWithIcons")
-    if table is None:
-        raise AlmaParseError("Could not find the Alma course catalog tree table.")
-
-    rows: list[AlmaCourseCatalogNode] = []
-    for tr in table.find_all("tr"):
-        classes = tr.get("class", [])
-        level_match = next((re.search(r"treeTableCellLevel(\d+)", item) for item in classes if "treeTableCellLevel" in item), None)
-        if level_match is None:
-            continue
-        level = int(level_match.group(1))
-        title_node = tr.find(id=re.compile(r":ot_3$"))
-        if title_node is None:
-            continue
-        description_node = tr.find(id=re.compile(r":ot_4$"))
-        permalink = tr.find("input", attrs={"id": "autologinRequestUrl"})
-        icon = tr.find("img", class_="imagetop")
-        rows.append(
-            AlmaCourseCatalogNode(
-                level=level,
-                kind=icon.get("alt") if icon else None,
-                title=" ".join(title_node.get_text(" ", strip=True).split()),
-                description=" ".join(description_node.get_text(" ", strip=True).split()) if description_node else None,
-                permalink=permalink.get("value") if permalink else None,
-                expandable=tr.find("button", class_="treeTableIcon") is not None,
             )
         )
     return tuple(rows)

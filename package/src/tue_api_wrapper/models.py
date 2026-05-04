@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 
 from .calendar_room_models import CalendarRoomDetails
+from .alma_enrollment_models import AlmaEnrollmentEntry
 
 
 @dataclass(frozen=True)
@@ -51,6 +52,7 @@ class AlmaEnrollmentPage:
     selected_term: str | None
     available_terms: dict[str, str]
     message: str | None
+    entries: tuple[AlmaEnrollmentEntry, ...] = ()
 
 
 @dataclass(frozen=True)

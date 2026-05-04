@@ -18,6 +18,9 @@ class AlmaStudyPlannerModule:
     title: str
     number: str | None
     credits_summary: str | None
+    credits_earned: float | None
+    credits_required: float | None
+    progress_percent: float | None
     detail_url: str | None
     is_expandable: bool
 

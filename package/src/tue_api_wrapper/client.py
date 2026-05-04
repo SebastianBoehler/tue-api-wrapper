@@ -13,13 +13,13 @@ from .alma_studyservice_models import AlmaStudyServicePage
 from .alma_academics_html import (
     extract_advanced_module_search_form,
     extract_module_search_form,
-    parse_course_catalog_page,
     parse_enrollment_page,
     parse_exam_overview,
     parse_module_search_page,
     parse_module_search_results,
     parse_module_search_results_page,
 )
+from .alma_catalog_tree_html import parse_course_catalog_page
 from .alma_detail_client import fetch_public_module_detail
 from .config import (
     AlmaLoginError,
@@ -173,7 +173,7 @@ class AlmaClient:
         response.raise_for_status()
         if self._looks_logged_out(response.text):
             raise AlmaLoginError("Session is not authenticated; the enrollment page redirected back to login.")
-        return parse_enrollment_page(response.text)
+        return parse_enrollment_page(response.text, response.url)
 
     def fetch_exam_overview(self) -> tuple[AlmaExamNode, ...]:
         response = self.session.get(

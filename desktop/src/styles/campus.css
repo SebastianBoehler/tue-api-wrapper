@@ -21,13 +21,18 @@
 .campus-live-card-header {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 24px;
   align-items: flex-start;
+  margin-bottom: 6px;
 }
 
 .campus-live-card-header h4,
 .campus-live-card p {
   margin: 0;
+}
+
+.campus-live-card-header h4 {
+  line-height: 1.24;
 }
 
 .campus-live-card-header strong {

@@ -96,7 +96,6 @@ function KufPanel({ fitness, history }: { fitness: KufTrainingOccupancy | null; 
     <section className="campus-live-card">
       <div className="campus-live-card-header">
         <div>
-          <span className="source-pill">KuF</span>
           <h4>{fitness?.facility_name ?? "Training occupancy"}</h4>
         </div>
         <strong>{fitness ? `${fitness.count}` : "—"}</strong>
@@ -116,7 +115,6 @@ function SeatPanel({ seats }: { seats: SeatAvailabilityResponse | null }) {
     <section className="campus-live-card">
       <div className="campus-live-card-header">
         <div>
-          <span className="source-pill">Library seats</span>
           <h4>Room capacity</h4>
         </div>
         <strong>{summary.label}</strong>

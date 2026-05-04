@@ -8,6 +8,7 @@ import type { DashboardPageProps } from "./types";
 
 export function StudyPage({ data, state }: DashboardPageProps) {
   const [examReports, setExamReports] = useState<DashboardDocumentReport[]>([]);
+  const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const passedExams = useMemo(() => (data?.exams ?? []).filter(isPassedExam), [data?.exams]);
   const studyNote = data?.study.currentSemesterCreditError
@@ -16,15 +17,24 @@ export function StudyPage({ data, state }: DashboardPageProps) {
       : "Live Alma values are reflected in the saved semester total.");
 
   useEffect(() => {
-    if (!state.backendUrl) return;
+    if (!state.backendUrl) {
+      setExamReports([]);
+      setReportLoading(false);
+      return;
+    }
     let cancelled = false;
+    setExamReports([]);
     setReportError(null);
+    setReportLoading(true);
     void fetchExamReports(state.backendUrl)
       .then((reports) => {
         if (!cancelled) setExamReports(reports);
       })
       .catch((error) => {
         if (!cancelled) setReportError(error instanceof Error ? error.message : "Could not load exam reports.");
+      })
+      .finally(() => {
+        if (!cancelled) setReportLoading(false);
       });
     return () => {
       cancelled = true;
@@ -86,7 +96,7 @@ export function StudyPage({ data, state }: DashboardPageProps) {
       </article>
 
       <article className="panel wide-panel">
-        <PanelHeader title="Documents" meta={`${examReports.length} exam reports`} />
+        <PanelHeader title="Documents" meta={reportLoading ? "Loading reports..." : `${examReports.length} exam reports`} />
         <div className="action-list">
           {state.backendUrl && data?.documents.currentDownloadUrl ? (
             <button
@@ -112,8 +122,11 @@ export function StudyPage({ data, state }: DashboardPageProps) {
               <span>Open PDF</span>
             </button>
           ))}
+          {reportLoading ? <EmptyState>Loading Alma exam reports...</EmptyState> : null}
           {reportError ? <p className="inline-error">{reportError}</p> : null}
-          {!examReports.length && !reportError ? <EmptyState>No Alma exam report actions returned.</EmptyState> : null}
+          {!reportLoading && !examReports.length && !reportError ? (
+            <EmptyState>No Alma exam report actions returned.</EmptyState>
+          ) : null}
         </div>
       </article>
     </div>

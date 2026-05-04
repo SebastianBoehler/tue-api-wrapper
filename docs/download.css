@@ -153,9 +153,9 @@ h2 {
 .preview img {
   display: block;
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: 0 24px 70px rgba(31, 28, 24, 0.14);
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 22px 58px rgba(31, 28, 24, 0.16);
 }
 
 .platforms,

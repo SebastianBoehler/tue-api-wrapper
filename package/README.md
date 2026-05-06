@@ -91,7 +91,19 @@ The API starts on `http://127.0.0.1:8000` and exposes OpenAPI docs at `/docs`.
 
 ## Publishing
 
-Python packages are usually published on [PyPI](https://pypi.org/), the Python package registry. This repository is not published there yet. Until then, install from a local checkout or directly from GitHub:
+Install the published package from [PyPI](https://pypi.org/project/tue-api-wrapper/):
+
+```bash
+pip install tue-api-wrapper
+```
+
+Install with MCP extras:
+
+```bash
+pip install "tue-api-wrapper[mcp]"
+```
+
+You can also install directly from GitHub:
 
 ```bash
 pip install "tue-api-wrapper @ git+https://github.com/SebastianBoehler/tue-api-wrapper.git#subdirectory=package"
@@ -103,7 +115,7 @@ MCP extras from GitHub:
 pip install "tue-api-wrapper[mcp] @ git+https://github.com/SebastianBoehler/tue-api-wrapper.git#subdirectory=package"
 ```
 
-Publishing to PyPI later will require a PyPI account or trusted publishing setup. Do not publish from an agent without a deliberate release checklist.
+Release steps live in [`../docs/release-pypi.md`](../docs/release-pypi.md).
 
 ## More docs
 

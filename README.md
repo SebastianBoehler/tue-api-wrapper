@@ -252,6 +252,7 @@ tue-mcp --transport streamable-http --host 127.0.0.1 --port 8765
 | `nextjs/` | Next.js dashboard |
 | `desktop/` | Electron desktop app with local credential handling |
 | `ios/` | SwiftUI app and native client work |
+| `flutter/` | Flutter app and native Dart clients for Android and iOS |
 | `chatgpt/` | ChatGPT app, MCP integration, and widget UI |
 | `go/` | Go CLI experiments for stable request flows |
 | `cli/` | Repo-local wrapper scripts |
@@ -265,6 +266,7 @@ Run the checks that match your change:
 ```bash
 cd package && pytest
 cd java && gradle build
+cd flutter && flutter analyze
 npm --prefix desktop run build
 npm --prefix nextjs run build
 npm run generate:ios

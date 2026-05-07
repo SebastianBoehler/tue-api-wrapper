@@ -1,0 +1,24 @@
+name: tue_api_flutter
+description: Native Flutter clients and a mobile app for University of Tuebingen study systems.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: ">=9.2.0 <11.0.0"
+  html: ">=0.15.4 <1.0.0"
+  http: ">=1.2.0 <2.0.0"
+  xml: ">=6.5.0 <7.0.0"
+
+dev_dependencies:
+  flutter_lints: ">=4.0.0 <7.0.0"
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

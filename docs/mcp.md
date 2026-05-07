@@ -22,12 +22,7 @@ UNI_USERNAME=your-zdv-id
 UNI_PASSWORD=your-password
 ```
 
-Optional mail-only overrides:
-
-```bash
-MAIL_USERNAME=your-mail-login
-MAIL_PASSWORD=your-mail-password
-```
+The same university username and password are used for Alma, ILIAS, Moodle, and mail.
 
 ## Run With Stdio
 

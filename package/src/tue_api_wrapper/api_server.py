@@ -25,7 +25,7 @@ from .portal_service import DEFAULT_DASHBOARD_TERM, PortalService, normalize_das
 
 app = FastAPI(
     title="tue-api-wrapper",
-    version="0.2.0",
+    version="0.2.1",
     description="Unified Alma and ILIAS backend for CLI, web, and ChatGPT surfaces.",
 )
 app.add_middleware(

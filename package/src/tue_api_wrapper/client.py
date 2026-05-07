@@ -8,7 +8,10 @@ from urllib.parse import parse_qsl, quote, unquote, urlparse
 from bs4 import BeautifulSoup
 import requests
 
-from .alma_documents_html import extract_studyservice_page
+from .alma_studyservice_client import (
+    fetch_studyservice_contract,
+    fetch_studyservice_documents_contract,
+)
 from .alma_studyservice_models import AlmaStudyServicePage
 from .alma_academics_html import (
     extract_advanced_module_search_form,
@@ -399,11 +402,10 @@ class AlmaClient:
         )
 
     def fetch_studyservice_contract(self) -> AlmaStudyServicePage:
-        response = self.session.get(self.studyservice_url, timeout=self.timeout_seconds)
-        response.raise_for_status()
-        if self._looks_logged_out(response.text):
-            raise AlmaLoginError("Session is not authenticated; the study service page redirected back to login.")
-        return extract_studyservice_page(response.text, response.url)
+        return fetch_studyservice_documents_contract(self)
+
+    def fetch_studyservice_tab(self, label: str) -> AlmaStudyServicePage:
+        return fetch_studyservice_contract(self, tab_label=label)
 
     def list_studyservice_reports(self) -> tuple[AlmaDocumentReport, ...]:
         return self.fetch_studyservice_contract().reports

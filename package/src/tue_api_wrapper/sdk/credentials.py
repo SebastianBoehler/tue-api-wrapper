@@ -9,8 +9,6 @@ from pathlib import Path
 class UniversityCredentials:
     username: str
     password: str
-    mail_username: str | None = None
-    mail_password: str | None = None
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = ".env") -> "UniversityCredentials":
@@ -22,19 +20,7 @@ class UniversityCredentials:
                 "Set UNI_USERNAME and UNI_PASSWORD in the environment, in .env, "
                 "or pass credentials directly to TuebingenAuthenticatedClient.login(...)."
             )
-        return cls(
-            username=username,
-            password=password,
-            mail_username=_read_first(values, "MAIL_USERNAME"),
-            mail_password=_read_first(values, "MAIL_PASSWORD"),
-        )
-
-    @property
-    def mail_login(self) -> tuple[str, str]:
-        return (
-            self.mail_username or self.username,
-            self.mail_password or self.password,
-        )
+        return cls(username=username, password=password)
 
 
 def read_env_file(path: str | Path | None) -> dict[str, str]:

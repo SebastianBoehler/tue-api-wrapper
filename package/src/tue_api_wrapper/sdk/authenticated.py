@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
-
 from ..alma_catalog_client import fetch_course_catalog_page
 from ..alma_course_assignments_client import fetch_timetable_course_assignments
 from ..alma_course_registration_client import (
@@ -118,6 +116,12 @@ class AuthenticatedAlmaApi:
 
     def documents(self):
         return self.client.list_studyservice_reports()
+
+    def document_reports(self):
+        return self.documents()
+
+    def studyservice_documents(self):
+        return self.client.fetch_studyservice_contract()
 
     def studyservice_summary(self):
         return self.client.fetch_studyservice_contract()
@@ -235,9 +239,8 @@ class AuthenticatedMailApi:
     @property
     def client(self) -> MailClient:
         if self._client is None:
-            username, password = self.credentials.mail_login
             client = MailClient()
-            client.login(username, password)
+            client.login(self.credentials.username, self.credentials.password)
             self._client = client
         return self._client
 
@@ -286,14 +289,8 @@ class TuebingenAuthenticatedClient:
         *,
         username: str,
         password: str,
-        mail_username: str | None = None,
-        mail_password: str | None = None,
     ) -> "TuebingenAuthenticatedClient":
-        return cls(UniversityCredentials(username, password, mail_username, mail_password))
-
-    @classmethod
-    def from_env(cls, env_file: str | Path | None = ".env") -> "TuebingenAuthenticatedClient":
-        return cls(UniversityCredentials.from_env(env_file))
+        return cls(UniversityCredentials(username, password))
 
     def close(self) -> None:
         self.mail.close()

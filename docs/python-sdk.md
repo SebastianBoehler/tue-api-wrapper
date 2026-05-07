@@ -31,6 +31,7 @@ client = TuebingenPublicClient()
 modules = client.alma.search_modules("machine learning", max_results=10)
 lectures = client.alma.current_lectures(date="02.05.2026", limit=20)
 canteens = client.campus.canteens()
+gym = client.campus.gym_occupancy()
 events = client.campus.events(query="KI", limit=10)
 people = client.directory.search("informatik")
 recordings = client.timms.search("theoretische informatik", limit=5)
@@ -40,33 +41,29 @@ recordings = client.timms.search("theoretische informatik", limit=5)
 
 Use `TuebingenAuthenticatedClient` for private student data. Credentials stay in your local process.
 
-Create a `.env` file:
-
-```bash
-UNI_USERNAME=your-zdv-id
-UNI_PASSWORD=your-password
-```
-
-Then:
+Load credentials with the standard Python environment API and pass them explicitly:
 
 ```python
+import os
 from tue_api_wrapper import TuebingenAuthenticatedClient
 
-client = TuebingenAuthenticatedClient.from_env()
+client = TuebingenAuthenticatedClient.login(
+    username=os.environ["UNI_USERNAME"],
+    password=os.environ["UNI_PASSWORD"],
+)
 
 timetable = client.alma.timetable("Sommer 2026")
+documents = client.alma.studyservice_documents()
 tasks = client.ilias.tasks()
 deadlines = client.moodle.deadlines(days=30)
 inbox = client.mail.inbox(limit=5)
 ```
 
-Or pass credentials directly:
+In a local shell:
 
-```python
-client = TuebingenAuthenticatedClient.login(
-    username="your-zdv-id",
-    password="your-password",
-)
+```bash
+export UNI_USERNAME=your-zdv-id
+export UNI_PASSWORD=your-password
 ```
 
 ## Available Namespaces
@@ -74,13 +71,13 @@ client = TuebingenAuthenticatedClient.login(
 Public:
 
 - `client.alma`: public module search, module details, current lectures
-- `client.campus`: canteens, buildings, events, KuF occupancy
+- `client.campus`: canteens, buildings, events, gym/KuF occupancy
 - `client.directory`: public university directory search
 - `client.timms`: public lecture recording search and metadata
 
 Authenticated:
 
-- `client.alma`: timetable, course offerings, exams, enrollments, study planner, documents
+- `client.alma`: timetable, course offerings, exams, enrollments, study planner, document reports
 - `client.ilias`: root page, memberships, tasks, content, forums, exercises, search
 - `client.moodle`: dashboard, deadlines, courses, grades, messages, notifications
 - `client.mail`: inbox, mailboxes, message details

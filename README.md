@@ -123,12 +123,7 @@ export UNI_USERNAME="your-uni-login"
 export UNI_PASSWORD="your-password"
 ```
 
-Mail can use the same pair. If your mailbox needs separate credentials, set:
-
-```bash
-export MAIL_USERNAME="your-mail-login"
-export MAIL_PASSWORD="your-mail-password"
-```
+The same university username and password are used for Alma, ILIAS, Moodle, and mail.
 
 Authenticated routes return explicit errors when credentials or upstream systems fail. The project should not silently switch to mock data.
 

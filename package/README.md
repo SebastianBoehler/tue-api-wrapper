@@ -5,7 +5,7 @@ Python SDK, FastAPI server, and local MCP server for University of Tübingen stu
 The package has three entry points:
 
 - `TuebingenPublicClient`: public data that does not need credentials
-- `TuebingenAuthenticatedClient`: private student data with explicit credentials or `.env`
+- `TuebingenAuthenticatedClient`: private student data with explicit credentials
 - `tue-mcp`: local MCP server for agents and LLM tools
 
 ## Install for local development
@@ -32,39 +32,36 @@ client = TuebingenPublicClient()
 
 modules = client.alma.search_modules("machine learning", max_results=10)
 events = client.campus.events(query="AI", limit=5)
+gym = client.campus.gym_occupancy()
 canteens = client.campus.canteens()
 recordings = client.timms.search("theoretische informatik", limit=5)
 ```
 
 ## Authenticated data example
 
-Use a local `.env` file:
-
-```bash
-UNI_USERNAME=your-zdv-id
-UNI_PASSWORD=your-password
-```
-
-Then:
+Load credentials with the standard Python environment API and pass them explicitly:
 
 ```python
+import os
 from tue_api_wrapper import TuebingenAuthenticatedClient
 
-client = TuebingenAuthenticatedClient.from_env()
+client = TuebingenAuthenticatedClient.login(
+    username=os.environ["UNI_USERNAME"],
+    password=os.environ["UNI_PASSWORD"],
+)
 
 timetable = client.alma.timetable("Sommer 2026")
+documents = client.alma.studyservice_documents()
 tasks = client.ilias.tasks()
 deadlines = client.moodle.deadlines(days=30)
 inbox = client.mail.inbox(limit=5)
 ```
 
-You can also pass credentials directly:
+In a local shell:
 
-```python
-client = TuebingenAuthenticatedClient.login(
-    username="your-zdv-id",
-    password="your-password",
-)
+```bash
+export UNI_USERNAME=your-zdv-id
+export UNI_PASSWORD=your-password
 ```
 
 ## Local MCP server

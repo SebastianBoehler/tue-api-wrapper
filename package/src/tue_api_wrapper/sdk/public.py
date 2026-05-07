@@ -57,6 +57,9 @@ class PublicCampusApi:
     def kuf_occupancy(self):
         return self.fitness_client.fetch_kuf_training_occupancy()
 
+    def gym_occupancy(self):
+        return self.kuf_occupancy()
+
     def seat_availability(self):
         return self.seatfinder_client.fetch_availability()
 

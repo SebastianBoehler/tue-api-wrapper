@@ -44,6 +44,35 @@ STUDYSERVICE_HTML = """
 </form>
 """
 
+STUDYSERVICE_STATUS_TAB_HTML = """
+<form id="studyserviceForm" action="/alma/pages/cm/exa/enrollment/info/start.xhtml?_flowExecutionKey=e4s1">
+  <input type="hidden" name="activePageElementId" value="" />
+  <input type="hidden" name="refreshButtonClickedId" value="" />
+  <input type="hidden" name="studyserviceForm_SUBMIT" value="1" />
+  <input type="hidden" name="javax.faces.ViewState" value="view-1" />
+  <ul>
+    <li><button type="submit" name="studyserviceForm:content.1" class="tabButton active">Einzureichende Unterlagen Aktive Registerkarte</button></li>
+    <li><button type="submit" name="studyserviceForm:content.10" class="tabButton">Bescheide / Bescheinigungen</button></li>
+  </ul>
+</form>
+"""
+
+STUDYSERVICE_DOCUMENTS_TAB_HTML = """
+<form id="studyserviceForm" action="/alma/pages/cm/exa/enrollment/info/start.xhtml?_flowExecutionKey=e4s2">
+  <input type="hidden" name="activePageElementId" value="" />
+  <input type="hidden" name="refreshButtonClickedId" value="" />
+  <input type="hidden" name="studyserviceForm_SUBMIT" value="1" />
+  <input type="hidden" name="javax.faces.ViewState" value="view-2" />
+  <ul>
+    <li><button type="submit" name="studyserviceForm:content.1" class="tabButton">Einzureichende Unterlagen</button></li>
+    <li><button type="submit" name="studyserviceForm:content.10" class="tabButton active">Bescheide / Bescheinigungen Aktive Registerkarte</button></li>
+  </ul>
+  <button name="studyserviceForm:report:reports:reportButtons:0:job2">
+    <span class="jobname">Transcript of records</span>
+  </button>
+</form>
+"""
+
 JOB_CONFIG_HTML = """
 <form id="studyserviceForm" action="/alma/pages/cm/exa/enrollment/info/start.xhtml?_flowExecutionKey=e4s3">
   <input type="hidden" name="activePageElementId" value="" />
@@ -188,6 +217,20 @@ class EditActionTests(unittest.TestCase):
         self.assertEqual(start_payload["activePageElementId"].split(":")[-1], "startJob")
         setting = next(value for key, value in start_payload.items() if key.endswith(":setting_0:setting_input"))
         self.assertEqual(setting, "229")
+
+    def test_studyservice_contract_switches_to_documents_tab(self) -> None:
+        session = _Session(
+            gets=[_FakeResponse(url="https://alma.example/studyservice", text=STUDYSERVICE_STATUS_TAB_HTML)],
+            posts=[_FakeResponse(url="https://alma.example/studyservice", text=STUDYSERVICE_DOCUMENTS_TAB_HTML)],
+        )
+        client = AlmaClient(base_url="https://alma.example", session=session)
+
+        page = client.fetch_studyservice_contract()
+
+        self.assertEqual(page.active_tab_label, "Bescheide / Bescheinigungen Aktive Registerkarte")
+        self.assertEqual(page.reports[0].label, "Transcript of records")
+        self.assertEqual(session.posts[0][1]["activePageElementId"], "studyserviceForm:content.10")
+        self.assertEqual(session.posts[0][1]["studyserviceForm:_idcl"], "studyserviceForm:content.10")
 
     def test_ilias_favorite_requires_add_to_desk_url(self) -> None:
         session = _Session(

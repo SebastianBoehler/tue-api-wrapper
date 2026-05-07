@@ -19,10 +19,7 @@ def read_uni_credentials() -> tuple[str | None, str | None]:
 
 
 def read_mail_credentials() -> tuple[str | None, str | None]:
-    return (
-        _read_first("UNI_USERNAME", "MAIL_USERNAME", "ALMA_USERNAME", "ILIAS_USERNAME"),
-        _read_first("UNI_PASSWORD", "MAIL_PASSWORD", "ALMA_PASSWORD", "ILIAS_PASSWORD"),
-    )
+    return read_uni_credentials()
 
 
 def require_uni_credentials() -> tuple[str, str]:
@@ -39,7 +36,6 @@ def require_mail_credentials() -> tuple[str, str]:
     username, password = read_mail_credentials()
     if not username or not password:
         raise ValueError(
-            "Set UNI_USERNAME and UNI_PASSWORD before using mail commands. "
-            "MAIL_USERNAME and MAIL_PASSWORD remain available only as optional overrides."
+            "Set UNI_USERNAME and UNI_PASSWORD before using mail commands."
         )
     return username, password

@@ -173,13 +173,12 @@ class MailClientHelpersTests(unittest.TestCase):
         self.assertFalse(_matches_message_filters(message, query="library", sender=""))
         self.assertFalse(_matches_message_filters(message, query="", sender="ub.uni-tuebingen"))
 
-    def test_read_mail_credentials_prefers_mail_specific_username(self) -> None:
+    def test_read_mail_credentials_uses_shared_university_login(self) -> None:
         with patch.dict(
             "os.environ",
             {
                 "UNI_USERNAME": "student-zdv-id",
                 "UNI_PASSWORD": "shared-password",
-                "MAIL_USERNAME": "mail-override-id",
             },
             clear=True,
         ):

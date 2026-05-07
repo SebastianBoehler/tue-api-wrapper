@@ -45,8 +45,7 @@ class PortalService:
         username, password = read_mail_credentials()
         if not username or not password:
             raise MailError(
-                "Set UNI_USERNAME and UNI_PASSWORD before using mail endpoints. "
-                "MAIL_USERNAME and MAIL_PASSWORD remain available as optional overrides."
+                "Set UNI_USERNAME and UNI_PASSWORD before using mail endpoints."
             )
 
         client = MailClient()

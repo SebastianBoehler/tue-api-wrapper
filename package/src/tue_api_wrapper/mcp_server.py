@@ -7,7 +7,7 @@ from typing import Any
 from .course_discovery_models import CourseDiscoveryFilters
 from .course_discovery_service import CourseDiscoveryService
 from .portal_common import serialize
-from .sdk import TuebingenAuthenticatedClient, TuebingenPublicClient
+from .sdk import TuebingenAuthenticatedClient, TuebingenPublicClient, UniversityCredentials
 
 
 def create_mcp_server(*, env_file: str | Path | None = ".env", host: str = "127.0.0.1", port: int = 8765):
@@ -126,7 +126,7 @@ def main(argv: list[str] | None = None) -> None:
 
 
 def _authenticated(env_file: str | Path | None) -> TuebingenAuthenticatedClient:
-    return TuebingenAuthenticatedClient.from_env(env_file)
+    return TuebingenAuthenticatedClient(UniversityCredentials.from_env(env_file))
 
 
 def _serialized(value: object) -> dict[str, Any]:
